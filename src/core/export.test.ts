@@ -27,7 +27,7 @@ function parse(csv: string): string[][] {
   let row: string[] = [];
   let cur = '';
   let q = false;
-  const s = csv.replace(/^﻿/, '');
+  const s = csv.replace(/^\uFEFF/, '');
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
     if (q) {
@@ -129,10 +129,18 @@ describe('bookCsv', () => {
     expect(rows.find((r) => r[2] === '#4')![1]).toBe('O"Neil, Jr.');
   });
 
+  test('formula-like text is guarded with a leading quote; negative numbers are not', () => {
+    const g = saveReconcile(withName(sample(), 'p4', '=SUM(1)'), 1, 6, null, '+note', now); // diff -2
+    const rows = parse(bookCsv(g));
+    expect(rows.find((r) => r[2] === '#4')![1]).toBe("'=SUM(1)");
+    const rec = rows.findIndex((r) => r[0] === 'Reconcile');
+    expect(rows[rec + 2].slice(0, 8)).toEqual(['Q1', '6', '8', '-2', 'noted', '', '2', "'+note"]);
+  });
+
   test('header block and BOM', () => {
     const csv = bookCsv(game());
-    expect(csv.startsWith('﻿Team,Opponent,Date,Home/Away,Coach,Scorer,Timer\r\n')).toBe(true);
-    expect(csv.split('﻿').length).toBe(2);
+    expect(csv.startsWith('\uFEFFTeam,Opponent,Date,Home/Away,Coach,Scorer,Timer\r\n')).toBe(true);
+    expect(csv.split('\uFEFF').length).toBe(2);
     expect(parse(csv)[1]).toEqual(['Team A', "St. Mary's", '2026-11-14', 'home', 'Coach One', 'Scorer One', 'Timer One']);
   });
 });
@@ -141,22 +149,35 @@ describe('playsCsv', () => {
   test('one row per event in order; us_score climbs 2, 3, 6; edited shows yes', () => {
     let g = add(game(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'FG3', playerId: 'p4' },
       { type: 'FTM', playerId: 'p0' }, { type: 'FTX', playerId: 'p0' }, { type: 'OPP_PTS', oppPoints: 3 });
-    g = editEvent(g, orderedEvents(g)[1].id, { type: 'FG3', playerId: 'p4' }, now);
+    g = editEvent(g, orderedEvents(g)[1].id, { type: 'FG2', playerId: 'p4' }, now);
     const rows = parse(playsCsv(g));
     expect(rows[0]).toEqual(['seq', 'period', 'team', 'number', 'player', 'event', 'points',
-      'us_score', 'opp_score', 'entered_at', 'edited']);
+      'us_score', 'opp_score', 'entered_at', 'edited', 'detail']);
     expect(rows.length).toBe(1 + orderedEvents(g).length);
-    expect(rows.slice(1, 4).map((r) => r[7])).toEqual(['2', '5', '6']);
+    expect(rows.slice(1, 4).map((r) => r[7])).toEqual(['2', '4', '5']);
     expect(rows[1].slice(1, 7)).toEqual(['Q1', 'us', '4', 'Player Four', 'FG2', '2']);
-    expect(rows[4].slice(5, 8)).toEqual(['FTX', '0', '6']);
-    expect(rows[5].slice(2, 9)).toEqual(['opp', '', '', 'OPP_PTS', '3', '6', '3']);
+    expect(rows[4].slice(5, 8)).toEqual(['FTX', '0', '5']);
+    expect(rows[5].slice(2, 9)).toEqual(['opp', '', '', 'OPP_PTS', '3', '5', '3']);
     expect(rows.map((r) => r[10]).slice(1)).toEqual(['no', 'yes', 'no', 'no', 'no']);
+  });
+
+  test('TIMEOUT rows carry their kind in detail; others leave it empty', () => {
+    const g = add(game(), 1, { type: 'TIMEOUT', timeoutKind: 'thirty' }, { type: 'FG2', playerId: 'p4' });
+    const rows = parse(playsCsv(g));
+    expect(rows[1][5]).toBe('TIMEOUT');
+    expect(rows[1][11]).toBe('thirty');
+    expect(rows[2][11]).toBe('');
+  });
+
+  test('plays CSV stays raw for formula-like text', () => {
+    const rows = parse(playsCsv(add(withName(game(), 'p4', '=SUM(1)'), 1, { type: 'FG2', playerId: 'p4' })));
+    expect(rows[1][4]).toBe('=SUM(1)');
   });
 
   test('non-scoring events leave points empty; keeps raw 00 and BOM', () => {
     const g = add(game(), 1, { type: 'FOUL', playerId: 'p00' });
     const csv = playsCsv(g);
-    expect(csv.startsWith('﻿seq,')).toBe(true);
+    expect(csv.startsWith('\uFEFFseq,')).toBe(true);
     const r = parse(csv)[1];
     expect(r[3]).toBe('00');
     expect(r[6]).toBe('');

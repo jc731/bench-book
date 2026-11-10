@@ -9,7 +9,7 @@ describe('toCsv', () => {
 
   test('CRLF between rows, empty row is an empty line, BOM exactly once at the start', () => {
     const out = toCsv([['a', 'b'], [], ['c']]);
-    expect(out).toBe('﻿a,b\r\n\r\nc');
-    expect(out.split('﻿').length).toBe(2);
+    expect(out).toBe('\uFEFFa,b\r\n\r\nc');
+    expect(out.split('\uFEFF').length).toBe(2);
   });
 });

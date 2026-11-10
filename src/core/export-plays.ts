@@ -16,7 +16,7 @@ export function playsCsv(g: Game): string {
   const byId = new Map(g.roster.map((p) => [p.id, p]));
   const rows: (string | number)[][] = [[
     'seq', 'period', 'team', 'number', 'player', 'event', 'points', 'us_score', 'opp_score',
-    'entered_at', 'edited',
+    'entered_at', 'edited', 'detail',
   ]];
   let us = 0;
   let opp = 0;
@@ -35,6 +35,7 @@ export function playsCsv(g: Game): string {
     rows.push([
       e.order, periodLabel(e.period), e.type === 'OPP_PTS' ? 'opp' : 'us', p?.number ?? '',
       p?.name ?? '', e.type, points, us, opp, e.enteredAt, e.editedAt ? 'yes' : 'no',
+      e.type === 'TIMEOUT' ? (e.timeoutKind ?? '') : '',
     ]);
   }
   return toCsv(rows);

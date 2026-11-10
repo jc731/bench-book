@@ -71,5 +71,5 @@ export function bookCsv(g: Game): string {
       c.oppTapped, c.note,
     ]);
   }
-  return toCsv(rows);
+  return toCsv(rows, { guard: true });
 }
