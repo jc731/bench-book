@@ -46,6 +46,18 @@ describe('event log', () => {
     expect(new Set(g.events.map((e) => e.id)).size).toBe(3);
   });
 
+  test('appendEvent stamps a non-default currentPeriod', () => {
+    const g = { ...newGame(info, roster, t0), currentPeriod: 3 };
+    const g2 = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0);
+    expect(g2.events[0].period).toBe(3);
+  });
+
+  test('insertEventBefore and moveFrom throw on an unknown id', () => {
+    const g = threeEvents();
+    expect(() => insertEventBefore(g, 'nope', { type: 'FG2', playerId: 'p1' }, t1)).toThrow();
+    expect(() => moveFrom(g, 'nope', 2, t1)).toThrow();
+  });
+
   test('appendEvent honors an explicit period', () => {
     const g = appendEvent(newGame(info, roster, t0), { type: 'FOUL', playerId: 'p1', period: 3 }, t0);
     expect(g.events[0].period).toBe(3);
