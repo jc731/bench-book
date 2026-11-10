@@ -1,4 +1,5 @@
 import { Live } from './Live';
+import { Log } from './Log';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
 
@@ -19,7 +20,8 @@ export function App() {
         </div>
       )}
       {view === 'live' && <Live store={store} />}
-      {view !== 'setup' && view !== 'live' && (
+      {view === 'log' && <Log store={store} />}
+      {view !== 'setup' && view !== 'live' && view !== 'log' && (
         <main class="min-h-0 flex-1 overflow-y-auto p-4">
           <h1 class="text-2xl font-bold">Bench Book</h1>
           <p class="mt-2 text-slate-300">
