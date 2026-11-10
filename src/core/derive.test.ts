@@ -177,10 +177,11 @@ describe('player foul state', () => {
   });
 
   test('personal fouls accumulate across periods for player state but not for team bonus', () => {
-    let g = fouls(game(), 1, 2);
-    g = fouls(g, 2, 2);
+    let g = fouls(game(), 1, 3);
+    g = fouls(g, 2, 3);
     const d = derive(g);
-    expect(d.players[0].foulState).toBe('warn');
+    expect(d.players[0].foulState).toBe('out'); // 6 personal fouls across periods
+    expect(d.teamFoulsForBonus(2)).toBe(3); // a cross-period sum would be 6
     expect(d.oppInBonus(2)).toBe(false);
   });
 });
@@ -210,8 +211,11 @@ describe('timeouts', () => {
   });
 
   test('timeouts and OPP_PTS do not score for us or add fouls', () => {
-    const d = derive(add(game(), 1, { type: 'TIMEOUT', timeoutKind: 'full' }));
+    const d = derive(add(game(), 1, { type: 'TIMEOUT', timeoutKind: 'full' }, { type: 'OPP_PTS', oppPoints: 3 }));
+    expect(d.timeouts.full.used).toBe(1);
+    expect(d.oppTotal).toBe(3);
     expect(d.usTotal).toBe(0);
+    expect(d.usByPeriod).toEqual({});
     expect(d.teamFoulsByPeriod).toEqual({});
   });
 });
