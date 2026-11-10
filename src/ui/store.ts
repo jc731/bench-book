@@ -40,6 +40,7 @@ export function useGameStore() {
   const [game, setGame] = useState<Game | null>(state.current.game);
   const [saving, setSaving] = useState(persistent);
   const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
+  const [reconcilePeriod, setReconcilePeriod] = useState<number | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const persistAsked = useRef(false);
 
@@ -92,12 +93,18 @@ export function useGameStore() {
     state.current = { game: null, stack: [] };
     setGame(null);
     setToast(null);
+    setReconcilePeriod(null);
     setView('setup');
   }, [storage]);
 
   const clearToast = useCallback(() => setToast(null), []);
 
-  return { game, saving, view, setView, update, undo, toast, clearToast, start, discard };
+  const canUndo = state.current.stack.length > 0;
+
+  return {
+    game, saving, view, setView, update, undo, canUndo, toast, clearToast, start, discard,
+    reconcilePeriod, setReconcilePeriod,
+  };
 }
 
 export type GameStore = ReturnType<typeof useGameStore>;

@@ -1,3 +1,4 @@
+import { Live } from './Live';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
 
@@ -13,14 +14,15 @@ export function App() {
         </div>
       )}
       {view === 'setup' && <Setup store={store} />}
-      {view !== 'setup' && (
+      {view === 'live' && <Live store={store} />}
+      {view !== 'setup' && view !== 'live' && (
         <main class="p-4">
           <h1 class="text-2xl font-bold">Bench Book</h1>
           <p class="mt-2 text-slate-300">
-            {gameLabel(store.game?.info.opponent)} — the {view} view arrives in a later task.
+            {gameLabel(store.game?.info.opponent)} — {view === 'reconcile' ? 'Reconcile: coming soon' : `the ${view} view arrives in a later task`}.
           </p>
-          <button class="mt-4 min-h-11 rounded-lg border border-slate-500 px-4" onClick={() => store.setView('setup')}>
-            Back to setup
+          <button class="mt-4 min-h-11 rounded-lg border border-slate-500 px-4" onClick={() => store.setView('live')}>
+            Back
           </button>
         </main>
       )}
