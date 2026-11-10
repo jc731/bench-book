@@ -36,7 +36,7 @@ export interface Derived {
   timeouts: TimeoutState;
 }
 
-const POINTS = { FG2: 2, FG3: 3, FTM: 1 } as const;
+export const POINTS = { FG2: 2, FG3: 3, FTM: 1 } as const;
 const MARK = { FG2: '2', FG3: '3', FTM: 'FT', FTX: '0' } as const;
 
 function bump(map: Record<number, number>, key: number, by: number): void {
