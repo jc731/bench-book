@@ -2,9 +2,8 @@ import { useState } from 'preact/hooks';
 import { newGame } from '../core/events';
 import { clearRoster, loadRoster, saveRoster } from '../core/storage';
 import type { GameInfo, Player } from '../core/types';
+import { MAX_PLAYERS, validateRoster } from './roster';
 import { getStorage, type GameStore } from './store';
-
-const MAX_PLAYERS = 15;
 
 const input =
   'min-h-11 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-base text-white placeholder:text-slate-400 focus:border-amber-400 focus:outline-none';
@@ -24,23 +23,6 @@ function blankPlayer(): Player {
 function isIos(): boolean {
   const nav = navigator as Navigator & { standalone?: boolean };
   return /iPad|iPhone|iPod/.test(nav.userAgent) && !nav.standalone;
-}
-
-export function validateRoster(players: Player[]): string[] {
-  const errors: string[] = [];
-  if (players.length < 1) errors.push('Add at least one player.');
-  if (players.length > MAX_PLAYERS) errors.push(`At most ${MAX_PLAYERS} players.`);
-  if (players.some((p) => p.number.trim() === '')) errors.push('Every player needs a jersey number.');
-  const seen = new Set<string>();
-  const dupes = new Set<string>();
-  for (const p of players) {
-    const n = p.number.trim();
-    if (n === '') continue;
-    if (seen.has(n)) dupes.add(n);
-    seen.add(n);
-  }
-  if (dupes.size) errors.push(`Duplicate number: ${[...dupes].map((n) => '#' + n).join(', ')}.`);
-  return errors;
 }
 
 export function Setup({ store }: { store: GameStore }) {
@@ -78,8 +60,8 @@ export function Setup({ store }: { store: GameStore }) {
     const clean = roster.map((p) => ({
       ...p,
       number: p.number.trim(),
-      name: p.name.trim(),
-      pos: p.pos.trim(),
+      name: (p.name ?? '').trim(),
+      pos: (p.pos ?? '').trim(),
     }));
     saveRoster(storage, clean);
     store.start({

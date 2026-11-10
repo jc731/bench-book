@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
-import { popUndo, pushUndo, type UndoEntry } from './undo-stack';
+import { applyUndo, applyUpdate, type GameState } from './game-state';
 
 export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end';
 export type Toast = { text: string; canUndo: boolean };
@@ -36,47 +36,43 @@ export function getStorage(): { storage: Storage; persistent: boolean } {
 
 export function useGameStore() {
   const [{ storage, persistent }] = useState(getStorage);
-  const [game, setGame] = useState<Game | null>(() => loadGame(storage, new Date()));
+  const state = useRef<GameState>({ game: loadGame(storage, new Date()), stack: [] });
+  const [game, setGame] = useState<Game | null>(state.current.game);
   const [saving, setSaving] = useState(persistent);
-  const [view, setView] = useState<View>(() => (game ? 'live' : 'setup'));
+  const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
   const [toast, setToast] = useState<Toast | null>(null);
-  const stack = useRef<UndoEntry<Game>[]>([]);
   const persistAsked = useRef(false);
 
-  const persist = useCallback(
-    (g: Game) => {
-      setSaving(persistent && saveGame(storage, g));
+  // The ref is the source of truth; state only mirrors it for rendering.
+  const commit = useCallback(
+    (next: GameState) => {
+      state.current = next;
+      setGame(next.game);
+      if (next.game) setSaving(persistent && saveGame(storage, next.game));
     },
     [storage, persistent],
   );
 
   const update = useCallback(
     (fn: (g: Game, now: Date) => Game, label: string) => {
-      if (!game) return;
-      const next = fn(game, new Date());
-      stack.current = pushUndo(stack.current, { snapshot: game, label });
-      setGame(next);
-      persist(next);
+      if (!state.current.game) return;
+      commit(applyUpdate(state.current, fn, label, new Date()));
       setToast({ text: label, canUndo: true });
     },
-    [game, persist],
+    [commit],
   );
 
   const undo = useCallback((): string | null => {
-    const { entry, stack: rest } = popUndo(stack.current);
-    if (!entry) return null;
-    stack.current = rest;
-    setGame(entry.snapshot);
-    persist(entry.snapshot);
-    setToast({ text: 'Undid ' + entry.label, canUndo: false });
-    return entry.label;
-  }, [persist]);
+    const r = applyUndo(state.current);
+    if (r.label === null) return null;
+    commit(r.state);
+    setToast({ text: 'Undid ' + r.label, canUndo: false });
+    return r.label;
+  }, [commit]);
 
   const start = useCallback(
     (g: Game) => {
-      stack.current = [];
-      setGame(g);
-      persist(g);
+      commit({ game: g, stack: [] });
       setToast(null);
       setView('live');
       if (!persistAsked.current) {
@@ -88,12 +84,12 @@ export function useGameStore() {
         }
       }
     },
-    [persist],
+    [commit],
   );
 
   const discard = useCallback(() => {
     clearGame(storage);
-    stack.current = [];
+    state.current = { game: null, stack: [] };
     setGame(null);
     setToast(null);
     setView('setup');
