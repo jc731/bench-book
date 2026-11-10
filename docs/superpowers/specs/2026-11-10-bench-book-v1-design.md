@@ -102,7 +102,7 @@ built into v1:
   repo. That text predates the 2023 change to the bonus, but this rule wasn't part of it.
   (My call, settled from that source.)*
 - **Player fouls:** a technical counts as a personal foul, as the Murray instructions
-  say. Show a warning at 4. At 5, mark the player **out**, but still accept entries,
+  say. Show a warning at 4. At 5, **or at 2 technicals** (an NFHS disqualification), mark the player **out**, but still accept entries,
   because the scorer may have charged the wrong player.
 - **Timeouts:** these mirror the book: Full ×3, 30-sec ×2, plus one extra timeout per
   OT period. The app shows 2 OT boxes, as the book does, and adds more if the game goes
@@ -133,13 +133,13 @@ built into v1:
   technical foul.
 - **Team events:** timeout (Full / 30 / OT), bench technical, end period.
 - **Opponent:** quick +1 / +2 / +3 buttons keep a live opponent total, so the scoreboard on
-  screen is useful. These buttons are optional. The opponent's period score is confirmed at
+  screen is useful. They are **off by default** (a setup checkbox turns them on), because they double the tapping. The opponent's period score is confirmed at
   the reconcile step either way. *(My call. The owner said "my team only," but the book's
   Score by Qtr box has both teams.)*
 - **A status strip, always visible:** both scores, the period, our team fouls this period
   (flagged "opponent in bonus" from our 5th), and our timeouts left by type. *(v1 tracks
   only OUR fouls, so whether WE are in the bonus is left to the officials and the book.)*
-- **Undo** reverses the last event. A **log** view lists every event, newest first. Any
+- **Undo** reverses the last action of any kind (entry, edit, delete, end period). Every entry shows a brief confirmation with Undo. A **log** view lists every event, newest first. Any
   event can be edited (player, type, period) or deleted, and every running total
   recalculates.
 - **Running score view:** a 1–112 grid like the book, filled in from the order the events
@@ -148,7 +148,9 @@ built into v1:
 
 ### At the end of each period: the reconcile step
 
-When the scorer taps "end period":
+*(Revised 2026-11-10 after the plan critique: **"End period" is one tap that advances immediately**. A missed tap would put the next quarter's fouls in the wrong quarter, so it must be cheap. The steps below then happen on a **non-blocking "check against the book" card** that the scorer opens whenever there's a moment, not as a screen that takes over at the end of the period. The card also lists each player's fouls and the team fouls for a by-eye check against the book. A missed "End period" can be fixed in the log with "move this and everything after to the next period".)*
+
+When the scorer reconciles a period:
 
 1. The app asks for **our period score as written in the book** and **the opponent's
    period score**. The opponent field is prefilled from the live buttons, if those were
