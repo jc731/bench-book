@@ -13,8 +13,10 @@ export function applyUpdate(
   now: Date,
 ): GameState {
   if (!state.game) return state;
+  const next = fn(state.game, now);
+  if (next === state.game) return state; // nothing changed: no undo step
   return {
-    game: fn(state.game, now),
+    game: next,
     stack: pushUndo(state.stack, { snapshot: state.game, label }),
   };
 }

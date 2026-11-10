@@ -41,6 +41,7 @@ export function useGameStore() {
   const [saving, setSaving] = useState(persistent);
   const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
   const [reconcilePeriod, setReconcilePeriod] = useState<number | null>(null);
+  const [reconcileReturn, setReconcileReturn] = useState<View>('live');
   const [toast, setToast] = useState<Toast | null>(null);
   const persistAsked = useRef(false);
 
@@ -57,7 +58,9 @@ export function useGameStore() {
   const update = useCallback(
     (fn: (g: Game, now: Date) => Game, label: string) => {
       if (!state.current.game) return;
-      commit(applyUpdate(state.current, fn, label, new Date()));
+      const next = applyUpdate(state.current, fn, label, new Date());
+      if (next === state.current) return; // no change, so no toast either
+      commit(next);
       setToast({ text: label, canUndo: true });
     },
     [commit],
@@ -97,13 +100,20 @@ export function useGameStore() {
     setView('setup');
   }, [storage]);
 
+  /** Opens Reconcile for a period; Later and Save come back to `from`. */
+  const openReconcile = useCallback((period: number, from: View) => {
+    setReconcilePeriod(period);
+    setReconcileReturn(from);
+    setView('reconcile');
+  }, []);
+
   const clearToast = useCallback(() => setToast(null), []);
 
   const canUndo = state.current.stack.length > 0;
 
   return {
     game, saving, view, setView, update, undo, canUndo, toast, clearToast, start, discard,
-    reconcilePeriod, setReconcilePeriod,
+    reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile,
   };
 }
 

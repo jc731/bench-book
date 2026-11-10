@@ -21,7 +21,7 @@ const opt = 'min-h-14 rounded-xl bg-slate-600 text-xl font-bold active:bg-slate-
 type SheetKind = 'timeout' | 'endPeriod' | 'menu' | null;
 
 export function Live({ store }: { store: GameStore }) {
-  const { game, toast, clearToast, update, undo, canUndo, setView, setReconcilePeriod } = store;
+  const { game, toast, clearToast, update, undo, canUndo, setView, openReconcile } = store;
   const [picked, setPicked] = useState<Player | null>(null);
   const [sheet, setSheet] = useState<SheetKind>(null);
 
@@ -51,13 +51,9 @@ export function Live({ store }: { store: GameStore }) {
     setSheet(null);
   };
   const doEndGame = () => {
-    update((g, now) => endGame(g, now), 'End game');
+    update((g, now) => (g.endedAt ? g : endGame(g, now)), 'End game');
     setSheet(null);
     setView('end');
-  };
-  const openReconcile = (p: number) => {
-    setReconcilePeriod(p);
-    setView('reconcile');
   };
   const openEnd = () => {
     setSheet(null);
@@ -76,7 +72,7 @@ export function Live({ store }: { store: GameStore }) {
           <button
             type="button"
             class="h-full w-full bg-amber-400 px-3 text-left text-sm font-semibold text-slate-900"
-            onClick={() => openReconcile(banner.period)}
+            onClick={() => openReconcile(banner.period, 'live')}
           >
             {banner.text}
           </button>

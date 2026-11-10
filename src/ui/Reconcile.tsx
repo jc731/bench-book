@@ -3,7 +3,7 @@ import { derive } from '../core/derive';
 import { periodLabel } from '../core/periods';
 import { checkPeriod, saveReconcile } from '../core/reconcile';
 import { Log } from './Log';
-import { compareText, cumulativeThrough, parseScore, statusChipText } from './reconcile-logic';
+import { compareText, cumulativeThrough, parseScore, reconcileDraftToSave, statusChipText } from './reconcile-logic';
 import type { GameStore } from './store';
 
 const TOAST_MS = 4000;
@@ -12,7 +12,7 @@ const field =
 
 /** Status chip for a period; opens that period's Reconcile view. */
 export function StatusChip({ store, period }: { store: GameStore; period: number }) {
-  const { game, setReconcilePeriod, setView } = store;
+  const { game, openReconcile } = store;
   if (!game) return null;
   const status = checkPeriod(game, period).status;
   const tone =
@@ -23,7 +23,7 @@ export function StatusChip({ store, period }: { store: GameStore; period: number
     <button
       type="button"
       class={`min-h-11 rounded-lg px-3 text-sm font-semibold ${tone}`}
-      onClick={() => { setReconcilePeriod(period); setView('reconcile'); }}
+      onClick={() => openReconcile(period, 'log')}
     >
       {statusChipText(status)}
     </button>
@@ -33,11 +33,12 @@ export function StatusChip({ store, period }: { store: GameStore; period: number
 const asText = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n));
 
 export function Reconcile({ store }: { store: GameStore }) {
-  const { game, reconcilePeriod, update, undo, toast, clearToast, setView } = store;
+  const { game, reconcilePeriod, reconcileReturn, update, undo, toast, clearToast, setView } = store;
   const period = reconcilePeriod ?? 1;
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
   const [note, setNote] = useState('');
+  const [oppDirty, setOppDirty] = useState(false);
   const [showLog, setShowLog] = useState(true);
   const seeded = useRef<number | null>(null);
 
@@ -72,23 +73,25 @@ export function Reconcile({ store }: { store: GameStore }) {
   // A save that would change nothing is skipped, so repeating it adds no undo step.
   const save = (): boolean => {
     if (invalid) return false;
-    const saved = game.periods.find((p) => p.period === period);
-    const same = saved
-      ? saved.bookUs === bookUs && saved.bookOpp === bookOpp && saved.note === note
-      : bookUs === null && bookOpp === null && note === '';
-    if (!same) {
-      update((g, now) => saveReconcile(g, period, bookUs, bookOpp, note, now), `Saved ${periodLabel(period)} check`);
-    }
+    const draft = { bookUs, bookOpp, oppDirty, note };
+    // Decided against the live game inside update, so a blur followed at once by Save cannot push twice.
+    update(
+      (g, now) => {
+        const rec = reconcileDraftToSave(g.periods.find((p) => p.period === period), draft);
+        return rec ? saveReconcile(g, period, rec.bookUs, rec.bookOpp, rec.note, now) : g;
+      },
+      `Saved ${periodLabel(period)} check`,
+    );
     return true;
   };
   const saveAndClose = () => {
-    if (save()) setView('live');
+    if (save()) setView(reconcileReturn);
   };
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
       <header class="flex shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
-        <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={() => setView('live')}>
+        <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={() => setView(reconcileReturn)}>
           Later
         </button>
         <h1 class="text-xl font-bold">Check {periodLabel(period)}</h1>
@@ -116,7 +119,7 @@ export function Reconcile({ store }: { store: GameStore }) {
             class={field}
             inputMode="numeric"
             value={oppText}
-            onInput={(e) => setOppText(e.currentTarget.value)}
+            onInput={(e) => { setOppText(e.currentTarget.value); setOppDirty(true); }}
             onBlur={save}
           />
         </label>
@@ -182,7 +185,7 @@ export function Reconcile({ store }: { store: GameStore }) {
         </div>
       )}
       <div class="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-slate-700 bg-slate-950 p-2">
-        <button type="button" class="min-h-12 flex-1 rounded-lg border border-slate-400 font-semibold" onClick={() => setView('live')}>
+        <button type="button" class="min-h-12 flex-1 rounded-lg border border-slate-400 font-semibold" onClick={() => setView(reconcileReturn)}>
           Later
         </button>
         <button type="button" class="min-h-12 flex-1 rounded-lg bg-white font-semibold text-slate-900 disabled:opacity-40" disabled={invalid} onClick={saveAndClose}>

@@ -11,7 +11,7 @@ import type { GameStore } from './store';
 const btn = 'min-h-12 w-full rounded-xl px-4 text-lg font-bold';
 
 export function EndGame({ store }: { store: GameStore }) {
-  const { game, update, setView, setReconcilePeriod } = store;
+  const { game, update, setView, openReconcile } = store;
   // Fixed on arrival so a row does not vanish under the scorer's thumb once it gets a note.
   const issuePeriods = useRef<number[] | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
@@ -25,10 +25,7 @@ export function EndGame({ store }: { store: GameStore }) {
     if (text === c.note) return;
     update((g, now) => saveReconcile(g, period, c.bookUs, c.bookOpp, text, now), `Noted ${periodLabel(period)}`);
   };
-  const reopen = (period: number) => {
-    setReconcilePeriod(period);
-    setView('reconcile');
-  };
+  const reopen = (period: number) => openReconcile(period, 'end');
   const exportOne = (kind: 'book' | 'plays') => {
     download(exportFilename(game, kind), kind === 'book' ? bookCsv(game) : playsCsv(game));
     update((g, now) => markExported(g, now), 'Exported');

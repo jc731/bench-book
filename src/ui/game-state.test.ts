@@ -37,4 +37,9 @@ describe('game state transitions', () => {
     const none: GameState = { game: null, stack: [] };
     expect(applyUpdate(none, setOpp('Y'), 'y', now)).toBe(none);
   });
+
+  it('an update that returns the same game pushes no undo step', () => {
+    const s: GameState = { game: base, stack: [] };
+    expect(applyUpdate(s, (g) => g, 'same', now)).toBe(s);
+  });
 });

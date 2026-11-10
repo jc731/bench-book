@@ -1,7 +1,7 @@
 import { derive } from '../core/derive';
 import { hoursUntilPurge } from '../core/storage';
 import type { PeriodStatus } from '../core/reconcile';
-import type { Game } from '../core/types';
+import type { Game, PeriodRecord } from '../core/types';
 
 /** "Book 12 · App 10 — app is 2 short", "... app is 2 over", or "✓ Matches". Null until a book number exists. */
 export function compareText(bookUs: number | null, appUs: number): string | null {
@@ -37,4 +37,24 @@ export function parseScore(text: string): ParsedScore {
 export function notExportedText(g: Game, now: Date): string | null {
   if (!g.endedAt || g.exportedAt) return null;
   return `Not exported — game data clears in ${Math.ceil(hoursUntilPurge(g, now))} h`;
+}
+
+export interface ReconcileDraft {
+  bookUs: number | null;
+  bookOpp: number | null;
+  /** True once the scorer typed in the opponent field; an untouched prefill from taps is not a book number. */
+  oppDirty: boolean;
+  note: string;
+}
+
+/** What to write for this draft, or null when it changes nothing (so no undo step and no toast). */
+export function reconcileDraftToSave(
+  saved: PeriodRecord | undefined,
+  d: ReconcileDraft,
+): { bookUs: number | null; bookOpp: number | null; note: string } | null {
+  const bookOpp = d.oppDirty ? d.bookOpp : (saved?.bookOpp ?? null);
+  const rec = { bookUs: d.bookUs, bookOpp, note: d.note };
+  const before = { bookUs: saved?.bookUs ?? null, bookOpp: saved?.bookOpp ?? null, note: saved?.note ?? '' };
+  const same = rec.bookUs === before.bookUs && rec.bookOpp === before.bookOpp && rec.note === before.note;
+  return same ? null : rec;
 }

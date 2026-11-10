@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { appendEvent, newGame } from '../core/events';
 import { endGame } from '../core/reconcile';
 import type { Game } from '../core/types';
-import { compareText, cumulativeThrough, notExportedText, parseScore, statusChipText } from './reconcile-logic';
+import { compareText, cumulativeThrough, notExportedText, parseScore, reconcileDraftToSave, statusChipText } from './reconcile-logic';
 
 const t0 = new Date('2026-11-10T10:00:00Z');
 const base = (): Game =>
@@ -66,5 +66,29 @@ describe('notExportedText', () => {
     expect(notExportedText(g, later)).toBeNull();
     expect(notExportedText(ended, later)).toBe('Not exported — game data clears in 70 h');
     expect(notExportedText({ ...ended, exportedAt: later.toISOString() }, later)).toBeNull();
+  });
+});
+
+describe('reconcileDraftToSave', () => {
+  const saved = { period: 1, bookUs: 12, bookOpp: null, note: 'n', hadMismatch: true };
+  const draft = { bookUs: 12, bookOpp: null, oppDirty: false, note: 'n' };
+  it('returns null for an identical draft, and for an empty draft with nothing saved', () => {
+    expect(reconcileDraftToSave(saved, draft)).toBeNull();
+    expect(reconcileDraftToSave(undefined, { bookUs: null, bookOpp: null, oppDirty: false, note: '' })).toBeNull();
+  });
+  it('keeps bookOpp null when the opponent field was only prefilled', () => {
+    expect(reconcileDraftToSave(undefined, { bookUs: 12, bookOpp: 9, oppDirty: false, note: '' })).toEqual({
+      bookUs: 12, bookOpp: null, note: '',
+    });
+    expect(reconcileDraftToSave(saved, { ...draft, bookOpp: 9 })).toBeNull();
+  });
+  it('saves an edited opponent number', () => {
+    expect(reconcileDraftToSave(saved, { ...draft, bookOpp: 9, oppDirty: true })).toEqual({
+      bookUs: 12, bookOpp: 9, note: 'n',
+    });
+  });
+  it('saves a changed note and a changed book number', () => {
+    expect(reconcileDraftToSave(saved, { ...draft, note: 'm' })?.note).toBe('m');
+    expect(reconcileDraftToSave(saved, { ...draft, bookUs: 10 })?.bookUs).toBe(10);
   });
 });
