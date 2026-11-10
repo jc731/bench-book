@@ -1,3 +1,33 @@
+import { Setup } from './Setup';
+import { useGameStore } from './store';
+
 export function App() {
-  return <h1 class="text-2xl font-bold">Bench Book</h1>;
+  const store = useGameStore();
+  const { saving, view } = store;
+
+  return (
+    <div class="min-h-screen bg-slate-900 text-white">
+      {!saving && (
+        <div class="bg-amber-400 px-4 py-3 text-center font-semibold text-slate-900" role="alert">
+          Not saving on this device — keep the paper book current.
+        </div>
+      )}
+      {view === 'setup' && <Setup store={store} />}
+      {view !== 'setup' && (
+        <main class="p-4">
+          <h1 class="text-2xl font-bold">Bench Book</h1>
+          <p class="mt-2 text-slate-300">
+            {gameLabel(store.game?.info.opponent)} — the {view} view arrives in a later task.
+          </p>
+          <button class="mt-4 min-h-11 rounded-lg border border-slate-500 px-4" onClick={() => store.setView('setup')}>
+            Back to setup
+          </button>
+        </main>
+      )}
+    </div>
+  );
+}
+
+function gameLabel(opponent?: string): string {
+  return opponent ? `Game vs ${opponent}` : 'No game';
 }
