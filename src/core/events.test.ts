@@ -54,8 +54,8 @@ describe('event log', () => {
 
   test('insertEventBefore and moveFrom throw on an unknown id', () => {
     const g = threeEvents();
-    expect(() => insertEventBefore(g, 'nope', { type: 'FG2', playerId: 'p1' }, t1)).toThrow();
-    expect(() => moveFrom(g, 'nope', 2, t1)).toThrow();
+    expect(() => insertEventBefore(g, 'nope', { type: 'FG2', playerId: 'p1' }, t1)).toThrow(/No event with id/);
+    expect(() => moveFrom(g, 'nope', 2, t1)).toThrow(/No event with id/);
   });
 
   test('appendEvent honors an explicit period', () => {
