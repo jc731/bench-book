@@ -157,21 +157,21 @@ export function Setup({ store }: { store: GameStore }) {
           {roster.map((p, i) => (
             <div class="flex items-center gap-2">
               <input
-                class={`${input} w-16 shrink-0`}
+                class={`${input} w-16! min-w-0 shrink-0`}
                 aria-label={`Player ${i + 1} position`}
                 placeholder="POS"
                 value={p.pos}
                 onInput={(e) => setPlayer(p.id, 'pos', e.currentTarget.value)}
               />
               <input
-                class={input}
+                class={`${input} min-w-0 flex-1`}
                 aria-label={`Player ${i + 1} name`}
                 placeholder="Name"
                 value={p.name}
                 onInput={(e) => setPlayer(p.id, 'name', e.currentTarget.value)}
               />
               <input
-                class={`${input} w-16 shrink-0`}
+                class={`${input} w-[4.5rem]! min-w-0 shrink-0`}
                 aria-label={`Player ${i + 1} number`}
                 placeholder="#"
                 inputMode="numeric"
@@ -180,7 +180,7 @@ export function Setup({ store }: { store: GameStore }) {
               />
               <button
                 type="button"
-                class="min-h-11 min-w-11 shrink-0 rounded-lg border border-slate-500 bg-slate-800 text-xl text-white"
+                class="h-11 w-11 shrink-0 rounded-lg border border-slate-500 bg-slate-800 text-xl text-white"
                 aria-label={`Remove player ${i + 1}`}
                 onClick={() => setRoster((r) => r.filter((x) => x.id !== p.id))}
               >

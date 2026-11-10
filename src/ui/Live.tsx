@@ -68,28 +68,32 @@ export function Live({ store }: { store: GameStore }) {
   const gameEnded = Boolean(game.endedAt);
 
   return (
-    <div class="flex h-dvh flex-col">
+    <div class="flex min-h-0 flex-1 flex-col">
       <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} derived={d} />
-      {banner && (
-        <button
-          type="button"
-          class="min-h-11 shrink-0 bg-amber-400 px-3 text-left text-sm font-semibold text-slate-900"
-          onClick={() => openReconcile(banner.period)}
-        >
-          {banner.text}
-        </button>
-      )}
-      {gameEnded && (
-        <div class="shrink-0 bg-slate-700 px-3 py-2 text-sm font-semibold">
-          Game ended. Entries are still accepted; export from ⋯.
-        </div>
-      )}
-      <div class="min-h-0 flex-1 overflow-y-auto">
+      <div class="h-11 shrink-0">
+        {banner ? (
+          <button
+            type="button"
+            class="h-full w-full bg-amber-400 px-3 text-left text-sm font-semibold text-slate-900"
+            onClick={() => openReconcile(banner.period)}
+          >
+            {banner.text}
+          </button>
+        ) : (
+          gameEnded && (
+            <div class="flex h-full items-center bg-slate-700 px-3 text-sm font-semibold">
+              Game ended. Entries are still accepted; export from ⋯.
+            </div>
+          )
+        )}
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto pb-16">
         <PlayerGrid roster={game.roster} lines={d.players} onPick={setPicked} />
       </div>
 
+      <div class="relative shrink-0">
       {toast && (
-        <div class="flex shrink-0 items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
+        <div class="absolute inset-x-0 bottom-full flex items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
           <span class="truncate font-semibold">{toast.text}</span>
           {toast.canUndo && (
             <button type="button" class="min-h-11 px-3 font-bold text-amber-300" onClick={undo}>
@@ -99,7 +103,7 @@ export function Live({ store }: { store: GameStore }) {
         </div>
       )}
 
-      <nav class="shrink-0 space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-4">
+      <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-4">
         <div class="grid grid-cols-3 gap-2">
           <button type="button" class={bar} onClick={() => setSheet('timeout')}>Timeout</button>
           <button type="button" class={bar} onClick={() => add({ type: 'BENCH_TECH' }, 'Bench T')}>Bench T</button>
@@ -126,6 +130,7 @@ export function Live({ store }: { store: GameStore }) {
           <button type="button" class={bar} aria-label="More" onClick={() => setSheet('menu')}>⋯</button>
         </div>
       </nav>
+      </div>
 
       {picked && (
         <EventSheet player={picked} toast={toast} onPlay={play} onUndo={undo} onClose={() => setPicked(null)} />
@@ -143,8 +148,8 @@ export function Live({ store }: { store: GameStore }) {
       )}
       {sheet === 'endPeriod' && (
         <Sheet title={`End ${periodLabel(period)}`} onClose={() => setSheet(null)}>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" class={opt} onClick={doEndPeriod}>Start OT</button>
+          <div class={`grid gap-2 ${gameEnded ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {!gameEnded && <button type="button" class={opt} onClick={doEndPeriod}>Start OT</button>}
             <button type="button" class={opt} onClick={doEndGame}>End game</button>
           </div>
         </Sheet>

@@ -38,6 +38,9 @@ describe('timeoutsText', () => {
   it('omits OT before overtime', () => {
     expect(timeoutsText(t, 4)).toBe('Full 2/3 · 30 2/2');
   });
+  it('shows OT timeouts from the first overtime period', () => {
+    expect(timeoutsText(t, 5)).toBe('Full 2/3 · 30 2/2 · OT 1/2');
+  });
   it('shows OT timeouts in overtime', () => {
     expect(timeoutsText(t, 6)).toBe('Full 2/3 · 30 2/2 · OT 1/2');
   });
