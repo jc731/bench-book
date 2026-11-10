@@ -57,6 +57,11 @@ export function endGame(g: Game, now: Date): Game {
   return { ...touch(g, now), endedAt: now.toISOString() };
 }
 
+/** Records that a CSV was exported. Never blocks and is safe to repeat; refreshes updatedAt like every edit. */
+export function markExported(g: Game, now: Date): Game {
+  return { ...touch(g, now), exportedAt: now.toISOString() };
+}
+
 export function openIssues(g: Game): PeriodCheck[] {
   const last = g.endedAt ? g.currentPeriod : g.currentPeriod - 1;
   const out: PeriodCheck[] = [];

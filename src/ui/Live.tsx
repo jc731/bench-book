@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { appendEvent } from '../core/events';
-import { exportFilename, playsCsv } from '../core/export-plays';
 import { periodLabel, isOvertime } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal } from '../core/reconcile';
 import type { EventDraft, Player, TimeoutKind } from '../core/types';
-import { download } from './download';
 import { EventSheet, Sheet } from './EventSheet';
 import {
   endPeriodLabel, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutKindText, timeoutLabel,
   type PlayType,
 } from './live-logic';
+import { notExportedText } from './reconcile-logic';
 import { PlayerGrid } from './PlayerGrid';
 import { StatusStrip } from './StatusStrip';
 import type { GameStore } from './store';
@@ -54,18 +53,20 @@ export function Live({ store }: { store: GameStore }) {
   const doEndGame = () => {
     update((g, now) => endGame(g, now), 'End game');
     setSheet(null);
+    setView('end');
   };
   const openReconcile = (p: number) => {
     setReconcilePeriod(p);
     setView('reconcile');
   };
-  const exportCsv = () => {
-    download(exportFilename(game, 'plays'), playsCsv(game));
+  const openEnd = () => {
     setSheet(null);
+    setView('end');
   };
 
   const timeoutKinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
   const gameEnded = Boolean(game.endedAt);
+  const unexported = notExportedText(game, new Date());
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
@@ -80,10 +81,16 @@ export function Live({ store }: { store: GameStore }) {
             {banner.text}
           </button>
         ) : (
-          gameEnded && (
-            <div class="flex h-full items-center bg-slate-700 px-3 text-sm font-semibold">
-              Game ended. Entries are still accepted; export from ⋯.
-            </div>
+          unexported ? (
+            <button type="button" class="h-full w-full bg-amber-400 px-3 text-left text-sm font-semibold text-slate-900" onClick={openEnd}>
+              {unexported}
+            </button>
+          ) : (
+            gameEnded && (
+              <div class="flex h-full items-center bg-slate-700 px-3 text-sm font-semibold">
+                Game ended. Entries are still accepted.
+              </div>
+            )
           )
         )}
       </div>
@@ -156,7 +163,7 @@ export function Live({ store }: { store: GameStore }) {
       )}
       {sheet === 'menu' && (
         <Sheet title="More" onClose={() => setSheet(null)}>
-          <button type="button" class={`${opt} w-full`} onClick={exportCsv}>Export plays CSV</button>
+          <button type="button" class={`${opt} w-full`} onClick={openEnd}>End game / export</button>
         </Sheet>
       )}
     </div>

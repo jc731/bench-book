@@ -26,9 +26,11 @@ interface Props {
   onClose?: () => void;
   /** Slot in each period header, e.g. status chips. */
   headerExtra?: (period: number) => ComponentChildren;
+  /** Draw the toast bar; an embedding view that draws its own passes false. */
+  showToast?: boolean;
 }
 
-export function Log({ store, period, onClose, headerExtra }: Props) {
+export function Log({ store, period, onClose, headerExtra, showToast = true }: Props) {
   const { game, toast, clearToast, update, undo, setView } = store;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('actions');
@@ -109,7 +111,7 @@ export function Log({ store, period, onClose, headerExtra }: Props) {
         ))}
       </div>
 
-      {toast && (
+      {showToast && toast && (
         <div class="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
           <span class="truncate font-semibold">{toast.text}</span>
           {toast.canUndo && (

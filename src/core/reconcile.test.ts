@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { appendEvent, deleteEvent, insertEventBefore, newGame, orderedEvents } from './events';
 import {
-  checkPeriod, endGame, endPeriod, openIssues, oppTotal, saveReconcile,
+  checkPeriod, endGame, endPeriod, markExported, openIssues, oppTotal, saveReconcile,
 } from './reconcile';
 import type { Game, GameInfo, Player } from './types';
 
@@ -221,5 +221,18 @@ describe('oppTotal', () => {
 
   test('no records and no taps is 0', () => {
     expect(oppTotal(newGame(info, roster, t0))).toBe(0);
+  });
+});
+
+describe('markExported', () => {
+  test('stamps exportedAt and updatedAt, leaves everything else, and repeats cleanly', () => {
+    const g = endGame(tenInQ1(), t0);
+    const x = markExported(g, t1);
+    expect(x.exportedAt).toBe(t1.toISOString());
+    expect(x.updatedAt).toBe(t1.toISOString());
+    expect(x.endedAt).toBe(g.endedAt);
+    expect(x.events).toEqual(g.events);
+    const t2 = new Date('2026-11-10T11:00:00Z');
+    expect(markExported(x, t2).exportedAt).toBe(t2.toISOString());
   });
 });

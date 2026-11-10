@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { newGame } from '../core/events';
 import { clearRoster, loadRoster, saveRoster } from '../core/storage';
 import type { GameInfo, Player } from '../core/types';
+import { notExportedText } from './reconcile-logic';
 import { MAX_PLAYERS, validateRoster } from './roster';
 import { getStorage, type GameStore } from './store';
 
@@ -78,6 +79,9 @@ export function Setup({ store }: { store: GameStore }) {
           <p class="mb-4 text-lg">
             A game is in progress (vs {game.info.opponent}). Export it first?
           </p>
+          {notExportedText(game, new Date()) && (
+            <p class="mb-4 font-semibold text-amber-300" role="alert">{notExportedText(game, new Date())}</p>
+          )}
           <div class="flex flex-col gap-3">
             <button class={`${btn} bg-amber-400 text-slate-900`} onClick={() => store.setView('end')}>
               Export

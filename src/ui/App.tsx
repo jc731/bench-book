@@ -1,5 +1,7 @@
+import { EndGame } from './EndGame';
 import { Live } from './Live';
 import { Log } from './Log';
+import { Reconcile, StatusChip } from './Reconcile';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
 
@@ -20,13 +22,18 @@ export function App() {
         </div>
       )}
       {view === 'live' && <Live store={store} />}
-      {view === 'log' && <Log store={store} />}
-      {view !== 'setup' && view !== 'live' && view !== 'log' && (
+      {view === 'log' && (
+        <Log
+          store={store}
+          headerExtra={(p) => (store.game && (p < store.game.currentPeriod || store.game.endedAt) ? <StatusChip store={store} period={p} /> : null)}
+        />
+      )}
+      {view === 'reconcile' && <Reconcile store={store} />}
+      {view === 'end' && <EndGame store={store} />}
+      {view === 'running' && (
         <main class="min-h-0 flex-1 overflow-y-auto p-4">
           <h1 class="text-2xl font-bold">Bench Book</h1>
-          <p class="mt-2 text-slate-300">
-            {gameLabel(store.game?.info.opponent)} — {view === 'reconcile' ? 'Reconcile: coming soon' : `the ${view} view arrives in a later task`}.
-          </p>
+          <p class="mt-2 text-slate-300">The running view arrives in a later task.</p>
           <button class="mt-4 min-h-11 rounded-lg border border-slate-500 px-4" onClick={() => store.setView('live')}>
             Back
           </button>
@@ -34,8 +41,4 @@ export function App() {
       )}
     </div>
   );
-}
-
-function gameLabel(opponent?: string): string {
-  return opponent ? `Game vs ${opponent}` : 'No game';
 }
