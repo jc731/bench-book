@@ -2,6 +2,7 @@ import { EndGame } from './EndGame';
 import { Live } from './Live';
 import { Log } from './Log';
 import { Reconcile, StatusChip } from './Reconcile';
+import { RunningScore } from './RunningScore';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
 import { registerUpdates } from './sw-update';
@@ -33,15 +34,7 @@ export function App() {
       )}
       {view === 'reconcile' && <Reconcile store={store} />}
       {view === 'end' && <EndGame store={store} />}
-      {view === 'running' && (
-        <main class="min-h-0 flex-1 overflow-y-auto p-4">
-          <h1 class="text-2xl font-bold">Bench Book</h1>
-          <p class="mt-2 text-slate-300">The running view arrives in a later task.</p>
-          <button class="mt-4 min-h-11 rounded-lg border border-slate-500 px-4" onClick={() => store.setView('live')}>
-            Back
-          </button>
-        </main>
-      )}
+      {view === 'running' && <RunningScore store={store} />}
     </div>
   );
 }

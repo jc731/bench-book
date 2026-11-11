@@ -159,7 +159,8 @@ export function Live({ store }: { store: GameStore }) {
       )}
       {sheet === 'menu' && (
         <Sheet title="More" onClose={() => setSheet(null)}>
-          <button type="button" class={`${opt} w-full`} onClick={openEnd}>End game / export</button>
+          <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
+          <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>End game / export</button>
         </Sheet>
       )}
     </div>
