@@ -13,12 +13,12 @@ page after the game.
 
 1. **Setup.** Enter the opponent, the date and your roster (position, name, number), then
    tap **Start game**. The roster is saved on the device for next time.
-2. **Live.** Tap a player card, then `+2`, `+3`, `FT ✓`, `FT ✗`, `Foul` or `Tech`. Timeouts,
+2. **Live.** Tap a player card, then `+2`, `+3`, `FT made`, `FT missed`, `Foul` or `Tech foul`. Timeouts,
    bench technicals and **Undo** are on the bottom bar. Every entry shows a toast you can undo.
 3. **Check each quarter.** **End Q1** advances at once. When there is time, tap the banner,
    enter the book's points for the quarter and see whether the app matches. You can leave it
    for later.
-4. **End.** After Q4, choose Start OT or End game. Any quarter not yet checked is listed.
+4. **End.** After Q4, choose Start overtime or End game (no overtime). Any quarter not yet checked is listed.
 5. **Export.** Download the Book CSV (pairs with the paper book page) and the Plays CSV
    (every entry, in order).
 

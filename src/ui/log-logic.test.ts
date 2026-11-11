@@ -3,7 +3,7 @@ import { appendEvent, moveFrom, newGame } from '../core/events';
 import type { EventDraft, Game, GameEvent } from '../core/types';
 import {
   addedLabel, compatibleTypes, draftOf, editLabel, editPatch, eventRowText, groupByPeriod, insertLabel,
-  moveFromCount, moveFromLabel, moveFromTargets, namedEventLabel, playsCount, resumeText,
+  moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, namedEventLabel, playsCount, resumeText,
 } from './log-logic';
 
 const info = { team: 'T', opponent: 'O', date: '2026-11-10', homeAway: 'home' as const, coach: '', scorer: '', timer: '' };
@@ -34,12 +34,12 @@ describe('eventRowText', () => {
   });
   it('drops the name when blank and tolerates an unknown player', () => {
     expect(eventRowText(g, g.events[1])).toBe('#7 · Foul');
-    expect(eventRowText(g, g.events[5])).toBe('#? · FT ✗');
+    expect(eventRowText(g, g.events[5])).toBe('#? · FT missed');
   });
   it('writes non-player events without a player', () => {
     expect(eventRowText(g, g.events[2])).toBe('Opp +3');
     expect(eventRowText(g, g.events[3])).toBe('Timeout (Full)');
-    expect(eventRowText(g, g.events[4])).toBe('Bench T');
+    expect(eventRowText(g, g.events[4])).toBe('Bench tech');
   });
 });
 
@@ -149,6 +149,8 @@ describe('moving', () => {
     expect(playsCount(3)).toBe('3 plays');
     expect(moveFromLabel(5, 2)).toBe('Moved 5 plays to Q2');
     expect(moveFromLabel(1, 6)).toBe('Moved 1 play to OT2');
+    expect(moveFromSubtitle(3, 2)).toBe('This play and the ones after it in Q2');
+    expect(moveFromSubtitle(1, 5)).toBe('Just this play, the last in OT1');
   });
 });
 

@@ -3,7 +3,7 @@ import { appendEvent, newGame } from '../core/events';
 import { endGame, markExported } from '../core/reconcile';
 import type { Game } from '../core/types';
 import {
-  compareText, cumulativeThrough, exportStateText, notExportedText, oppCompareText, oppPlaceholder, parseScore,
+  compareText, cumulativeThrough, exportStateText, issueAction, notExportedText, oppCompareText, oppPlaceholder, parseScore,
   reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 
@@ -125,5 +125,13 @@ describe('reconcileDraftToSave', () => {
   it('saves a changed note and a changed book number', () => {
     expect(reconcileDraftToSave(saved, { ...draft, note: 'm' })?.note).toBe('m');
     expect(reconcileDraftToSave(saved, { ...draft, bookUs: 10 })?.bookUs).toBe(10);
+  });
+});
+
+describe('issueAction', () => {
+  it('offers Check for a quarter never checked, Reopen otherwise', () => {
+    expect(issueAction('pending')).toBe('Check');
+    expect(issueAction('unresolved')).toBe('Reopen');
+    expect(issueAction('noted')).toBe('Reopen');
   });
 });

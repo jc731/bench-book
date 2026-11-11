@@ -4,10 +4,10 @@ import { deleteEvent, editEvent, insertEventBefore, moveFrom } from '../core/eve
 import { periodLabel } from '../core/periods';
 import type { EventType, GameEvent, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
-import { playButtonText, timeoutKindText, type PlayType } from './live-logic';
+import { BENCH_TECH_TEXT, playButtonText, timeoutKindText, type PlayType } from './live-logic';
 import {
   compatibleTypes, draftOf, editLabel, editPatch, eventLabel, eventRowText, groupByPeriod,
-  insertLabel, isPlayType, moveFromCount, moveFromLabel, moveFromTargets, playsCount, timeoutKindsFor,
+  insertLabel, isPlayType, moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, playsCount, timeoutKindsFor,
   type EditDraft,
 } from './log-logic';
 import type { GameStore } from './store';
@@ -127,9 +127,20 @@ export function Log({ store, period, onClose, headerExtra, showToast = true }: P
           <div class="flex flex-col gap-2">
             <button type="button" class={action} onClick={() => { setDraft(draftOf(selected)); setStep('edit'); }}>Edit</button>
             <button type="button" class={action} onClick={() => doDelete(selected)}>Delete</button>
-            <button type="button" class={action} onClick={() => setStep('insertPlayer')}>Insert before</button>
+            <button type="button" class={action} onClick={() => setStep('insertPlayer')}>Add a missed play before this</button>
             {moveFromTargets(game, selected).length > 0 && (
-              <button type="button" class={action} onClick={() => setStep('moveFrom')}>Move this and everything after to…</button>
+              <button
+                type="button"
+                class={`${action} leading-tight`}
+                aria-label="Move to another quarter…"
+                aria-describedby="move-from-subtitle"
+                onClick={() => setStep('moveFrom')}
+              >
+                <span class="block">Move to another quarter…</span>
+                <span id="move-from-subtitle" class="block text-sm font-normal text-slate-300">
+                  {moveFromSubtitle(moveFromCount(game, selected.id), selected.period)}
+                </span>
+              </button>
             )}
           </div>
         </Sheet>
@@ -156,7 +167,7 @@ export function Log({ store, period, onClose, headerExtra, showToast = true }: P
         </Sheet>
       )}
       {selected && step === 'insertPlayer' && (
-        <Sheet title={`Insert before, in ${periodLabel(selected.period)}`} onClose={done}>
+        <Sheet title={`Add a missed play before this, in ${periodLabel(selected.period)}`} onClose={done}>
           <div class="grid max-h-[60dvh] grid-cols-2 gap-2 overflow-y-auto">
             {game.roster.map((p) => (
               <PlayerButton key={p.id} p={p} onClick={() => { setInsertPlayer(p); setStep('insertPlay'); }} />
@@ -196,7 +207,7 @@ function EditSheet({ game, event, draft, setDraft, onSave, onClose }: {
   const types = compatibleTypes(event);
   const kinds = timeoutKindsFor(event);
   const periods = Array.from({ length: game.currentPeriod }, (_, i) => i + 1);
-  const typeText = (t: EventType) => (t === 'BENCH_TECH' ? 'Bench T' : t === 'TIMEOUT' ? 'Timeout' : t === 'OPP_PTS' ? 'Opp' : playButtonText(t as PlayType));
+  const typeText = (t: EventType) => (t === 'BENCH_TECH' ? BENCH_TECH_TEXT : t === 'TIMEOUT' ? 'Timeout' : t === 'OPP_PTS' ? 'Opp' : playButtonText(t as PlayType));
   return (
     <Sheet title="Edit" onClose={onClose}>
       <div class="flex max-h-[70dvh] flex-col gap-3 overflow-y-auto">

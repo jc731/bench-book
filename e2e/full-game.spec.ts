@@ -37,7 +37,7 @@ import { downloadCsv } from './csv';
  *  17 | Q2  | #12 Player Four   Foul                 |  13 |   8 |  2 | P4 4 -> warning
  *  18 | Q2  | #23 Player Five   Tech                 |  13 |   8 |  3 | P5 1 foul, 1 tech
  *  19 | Q2  | #00 Player Two    Foul                 |  13 |   8 |  4 | no bonus chip yet
- *  20 | Q2  | Bench T                                |  13 |   8 |  5 | 5th team foul -> OPP IN BONUS
+ *  20 | Q2  | Bench tech                             |  13 |   8 |  5 | 5th team foul -> bonus pill
  *  21 | Q2  | Opp +2                                 |  13 |  10 |  5 |
  *  22 | Q2  | #00 Player Two    FT made              |  14 |  10 |  5 |
  *  23 | Q2  | #00 Player Two    FT made (same sheet) |  15 |  10 |  5 | Q2 app 3+2+1+1 = 7, opp 2+2 = 4
@@ -53,7 +53,7 @@ import { downloadCsv } from './csv';
  *  31 | Q3  | Opp +2                                 |  22 |  15 |  2 | Q3 app 2+3 = 5, opp 3+2 = 5
  *  32 | Q3* | #0  Player Three  +2   (End Q3 missed) |  24 |  15 |  2 | really Q4
  *  33 | Q3* | Opp +2                 (End Q3 missed) |  24 |  17 |  2 | really Q4
- *     |     | End Q3 (late). Log: "Move this and everything after" from ev 32 -> Q4 (2 plays)
+ *     |     | End Q3 (late). Log: "Move to another quarter…" from ev 32 -> Q4 (2 plays)
  *     |     | Log: edit ev 25 player #4 -> #0 (points unchanged: 24-17, Q4 Fouls 0)
  *     |     | Check Q3: book 7 / 5 + note -> app 2 short, left with a note -> NOTED
  *  34 | Q4  | #31 Player Six    Foul                 |  24 |  17 |  1 |
@@ -68,16 +68,16 @@ import { downloadCsv } from './csv';
  *  43 | Q4  | Opp +3                                 |  28 |  25 |  4 |
  *  44 | Q4  | Opp +3                                 |  28 |  28 |  4 | TIED. Q4 us 2+3+1 = 6,
  *     |     |                                        |     |     |    |   opp 2+3+2+3+3 = 13
- *     |     | End Q4… -> Start OT. Q4 never checked  |     |     |    | PENDING
+ *     |     | End Q4… -> Start overtime; Q4 unchecked|     |     |    | PENDING
  *     |     | OT1 strip: Fouls 4 (from Q4), no chip; Full 2/3 · 30 1/2 · OT 1/1
- *  45 | OT1 | #0  Player Three  Foul                 |  28 |  28 |  5 | 4 + 1 -> OPP IN BONUS
+ *  45 | OT1 | #0  Player Three  Foul                 |  28 |  28 |  5 | 4 + 1 -> bonus pill
  *  46 | OT1 | Timeout OT                             |  28 |  28 |  5 | OT 0/1
  *  47 | OT1 | #0  Player Three  +2                   |  30 |  28 |  5 |
  *  48 | OT1 | Opp +1                                 |  30 |  29 |  5 |
  *  49 | OT1 | #4  Player One    FT made              |  31 |  29 |  5 |
  *  50 | OT1 | #4  Player One    FT made (same sheet) |  32 |  29 |  5 |
  *  51 | OT1 | Opp +2                                 |  32 |  31 |  5 | OT1 us 2+1+1 = 4, opp 1+2 = 3
- *     |     | End OT1… -> End game. Open issues: Q4, OT1. Reopen OT1: book 4 / 3 -> MATCHED
+ *     |     | End OT1… -> End game. Open issues: Q4, OT1. Check OT1: book 4 / 3 -> MATCHED
  *
  * Events left: Q1 12 + Q2 12 + Q3 7 + Q4 13 + OT1 7 = 51 (the undone mis-tap is gone).
  * Final (app): us 8+9+5+6+4 = 32, opp 6+4+5+13+3 = 31.
@@ -127,7 +127,7 @@ type Status = keyof typeof STATUS;
 /** Timeouts left; `ot` only in an OT period (one OT timeout per OT period, so OT1 has 1). */
 interface TimeoutsLeft { full: number; thirty: number; ot?: number }
 const timeoutsText = (t: TimeoutsLeft) =>
-  [`Full ${t.full}/3`, `30 ${t.thirty}/2`, ...(t.ot === undefined ? [] : [`OT ${t.ot}/1`])].join(' · ');
+  `TO left: ${[`Full ${t.full}`, `30s ${t.thirty}`, ...(t.ot === undefined ? [] : [`OT ${t.ot}`])].join(' · ')}`;
 
 function ui(page: Page) {
   const dialog = () => page.getByRole('dialog');
@@ -150,7 +150,7 @@ function ui(page: Page) {
     async fillSetup(opponent: string, team: string) {
       await page.getByLabel('Opponent (required)').fill(opponent);
       await page.getByLabel('Our team (optional)').fill(team);
-      await page.getByLabel('Track opponent score with live taps').check();
+      await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
       for (let i = 0; i < ROSTER.length; i++) {
         if (i > 0) await page.getByRole('button', exact('Add player')).click();
         const n = i + 1;
@@ -162,11 +162,11 @@ function ui(page: Page) {
     startGame: () => page.getByRole('button', exact('Start game')).click(),
     card,
     score: (name: Name, pts: '+2' | '+3') => onPlayer(name, [pts], false),
-    ft: (name: Name, ...made: boolean[]) => onPlayer(name, made.map((m) => (m ? 'FT ✓' : 'FT ✗')), true),
+    ft: (name: Name, ...made: boolean[]) => onPlayer(name, made.map((m) => (m ? 'FT made' : 'FT missed')), true),
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
-    tech: (name: Name) => onPlayer(name, ['Tech'], false),
+    tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
     opp: (n: 1 | 2 | 3) => nav().getByRole('button', exact(`Opp +${n}`)).click(),
-    benchTech: () => nav().getByRole('button', exact('Bench T')).click(),
+    benchTech: () => nav().getByRole('button', exact('Bench tech')).click(),
     undo: () => nav().getByRole('button', exact('Undo')).click(),
     async timeout(kind: 'Full' | '30' | 'OT') {
       await nav().getByRole('button', exact('Timeout')).click();
@@ -175,8 +175,8 @@ function ui(page: Page) {
     },
     /** End Q1–Q3 directly. */
     endPeriod: (label: string) => nav().getByRole('button', exact(`End ${label}`)).click(),
-    /** End Q4 or an OT: the button opens a sheet offering Start OT / End game. */
-    async endPeriodThen(label: string, choice: 'Start OT' | 'End game') {
+    /** End Q4 or an OT: the button opens a sheet offering Start overtime / End game (no overtime). */
+    async endPeriodThen(label: string, choice: 'Start overtime' | 'End game (no overtime)' | 'End game (no more overtime)') {
       await nav().getByRole('button', exact(`End ${label}…`)).click();
       await dialog().getByRole('button', exact(choice)).click();
     },
@@ -209,14 +209,16 @@ function ui(page: Page) {
       scope.getByRole('button', { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }),
     async insertBefore(rowScope: Locator, rowText: string, name: Name, pts: '+2' | '+3') {
       await this.logRow(rowScope, rowText).click();
-      await dialog().getByRole('button', exact('Insert before')).click();
+      await dialog().getByRole('button', exact('Add a missed play before this')).click();
       await dialog().getByRole('button', exact(`#${numberOf(name)} ${name}`)).click();
       await dialog().getByRole('button', exact(pts)).click();
       await expect(dialog()).toHaveCount(0);
     },
-    async moveFrom(rowScope: Locator, rowText: string, toLabel: string, count: number) {
+    async moveFrom(rowScope: Locator, rowScopeLabel: string, rowText: string, toLabel: string, count: number) {
       await this.logRow(rowScope, rowText).click();
-      await dialog().getByRole('button', exact('Move this and everything after to…')).click();
+      const move = dialog().getByRole('button', exact('Move to another quarter…'));
+      await expect(move).toHaveAccessibleDescription(`This play and the ones after it in ${rowScopeLabel}`);
+      await move.click();
       await expect(dialog()).toHaveAccessibleName(`Move ${count} plays to`);
       await dialog().getByRole('button', exact(toLabel)).click();
       await expect(dialog()).toHaveCount(0);
@@ -236,8 +238,10 @@ function ui(page: Page) {
     issues: () => page.getByRole('region', exact('Open issues')),
     issue: (label: string, status: Status) =>
       page.getByRole('region', exact('Open issues')).getByText(`${label} · ${STATUS[status]}`, { exact: true }),
+    /** The open-issue button: Check for a quarter never checked, Reopen for one noted or off. */
     async reopen(label: string, status: Status) {
-      await this.issue(label, status).locator('..').getByRole('button', exact('Reopen')).click();
+      const action = status === 'pending' ? 'Check' : 'Reopen';
+      await this.issue(label, status).locator('..').getByRole('button', exact(action)).click();
     },
     expectFinalScore: (us: number, opp: number) =>
       expect(page.getByTestId('final-score')).toHaveText(`${TEAM} ${us} – ${opp} ${OPPONENT}`),
@@ -255,18 +259,24 @@ function ui(page: Page) {
     /** The status strip: score, period, team fouls, bonus chip, timeouts left. */
     async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {
       const h = strip();
+      // Nothing on the strip may wrap at 390px: it is two lines high in every state.
+      const box = await h.boundingBox();
+      expect(box!.height).toBeLessThanOrEqual(STRIP_MAX_HEIGHT);
       await expect(h.getByLabel(`Score ${s.us} to ${s.opp}`)).toBeVisible();
       await expect(h.getByText(s.period, { exact: true })).toBeVisible();
-      await expect(h.getByText(`Fouls ${s.fouls}`, { exact: true })).toBeVisible();
-      await expect(h.getByText('OPP IN BONUS', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
+      await expect(h.getByText(`Team fouls ${s.fouls}`, { exact: true })).toBeVisible();
+      await expect(h.getByText('Bonus: they shoot FTs', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
       await expect(h.getByText(timeoutsText(s.timeouts), { exact: true })).toBeVisible();
     },
+    /** The Live toast line. */
+    expectToast: (text: string) => expect(page.getByRole('status').locator('span').first()).toHaveText(text),
     /** The 4-foul warning, which shows only as the card's amber border. */
     expectWarning: (name: Name) => expect(card(name)).toHaveClass(/border-amber-400/),
     /** A player card's foul state, through its accessible name (OUT reads ", out"). */
     async expectPlayer(name: Name, points: number, fouls: number, out = false) {
-      const tail = out ? `, ${fouls} fouls, out$` : `, ${fouls} fouls$`;
-      await expect(card(name)).toHaveAccessibleName(new RegExp(`^#${numberOf(name)} ${name}, ${points} points${tail}`));
+      const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
+      const tail = `, ${n(fouls, 'foul')}${out ? ', out' : ''}$`;
+      await expect(card(name)).toHaveAccessibleName(new RegExp(`^#${numberOf(name)} ${name}, ${n(points, 'point')}${tail}`));
     },
   };
 }
@@ -276,6 +286,9 @@ function ui(page: Page) {
 async function expectNoOverflow(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 }
+
+/** Two lines plus padding: score line (text-3xl) and the timeouts line. A wrap adds 20px or more. */
+const STRIP_MAX_HEIGHT = 80; // measured 77 at 390px, with the bonus pill in OT1
 
 const Q3_NOTE = 'Book shows 7, could not find the other 2';
 
@@ -344,6 +357,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.foul('Player Two');
     await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.benchTech();
+    await app.expectToast('Bench tech — bonus');
     await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 2 } });
     await app.opp(2);
     await app.ft('Player Two', true, true);
@@ -368,6 +382,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.score('Player One', '+2'); // wrong player: it was #0 Player Three
     await app.opp(3);
     await app.foul('Player Four');
+    await app.expectToast('#12 Player Four foul — 5th, out');
     await app.expectPlayer('Player Four', 0, 5, true);
     await app.timeout('30');
     await app.tech('Player Five');
@@ -385,7 +400,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
     await app.openLog();
     const q3 = app.logSection('Q3');
-    await app.moveFrom(q3, app.playText('Player Three', '+2'), 'Q4', 2);
+    await app.moveFrom(q3, 'Q3', app.playText('Player Three', '+2'), 'Q4', 2);
     const q4 = app.logSection('Q4');
     await expect(app.logRow(q4, app.playText('Player Three', '+2'))).toBeVisible();
     await expect(app.logRow(q4, app.oppText(2))).toBeVisible();
@@ -406,7 +421,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 1 } });
   });
 
-  await test.step('Q4: ends tied, left unchecked; Start OT', async () => {
+  await test.step('Q4: ends tied, left unchecked; Start overtime', async () => {
     await app.foul('Player Six');
     await app.foul('Player Seven');
     await app.opp(3);
@@ -421,7 +436,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectPlayer('Player One', 2, 2);
     await app.expectPlayer('Player Two', 6, 2);
 
-    await app.endPeriodThen('Q4', 'Start OT');
+    await app.endPeriodThen('Q4', 'Start overtime');
     // OT bonus counting continues from Q4's 4.
     await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 1, ot: 1 } });
     await expect(app.banner('Q4')).toBeVisible();
@@ -452,7 +467,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await expectNoOverflow(page);
     await app.back();
 
-    await app.endPeriodThen('OT1', 'End game');
+    await app.endPeriodThen('OT1', 'End game (no more overtime)');
     await app.expectFinalScore(32, 31);
     await expect(app.issue('Q4', 'pending')).toBeVisible();
     await expect(app.issue('OT1', 'pending')).toBeVisible();

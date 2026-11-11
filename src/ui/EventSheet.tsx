@@ -42,7 +42,8 @@ export function EventSheet({ player, toast, onPlay, onUndo, onClose }: Props) {
     <button
       key={t}
       type="button"
-      class="min-h-14 rounded-xl bg-slate-600 text-2xl font-bold active:bg-slate-500"
+      // Word labels (FT missed, Tech foul) drop to text-xl so they stay one line in a 117px button.
+      class={`min-h-14 rounded-xl bg-slate-600 font-bold active:bg-slate-500 ${t === 'FG2' || t === 'FG3' ? 'text-2xl' : 'text-xl'}`}
       onClick={() => onPlay(t)}
     >
       {playButtonText(t)}

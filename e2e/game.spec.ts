@@ -19,7 +19,7 @@ async function tap(page: Page, who: Locator, ...labels: string[]) {
   await who.click();
   const sheet = page.getByRole('dialog');
   for (const l of labels) await sheet.getByRole('button', { name: l, exact: true }).click();
-  // +2, +3, Foul and Tech close the sheet on their own; FT ✓ and FT ✗ keep it open.
+  // +2, +3, Foul and Tech foul close the sheet on their own; FT made and FT missed keep it open.
   const done = sheet.getByRole('button', { name: 'Done', exact: true });
   if (await done.isVisible()) await done.click();
   await expect(sheet).toHaveCount(0);
@@ -49,7 +49,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
 
   const one = card(page, '4', 'Player One');
   await tap(page, one, '+2');
-  await tap(page, card(page, '00', 'Player Two'), 'FT ✓');
+  await tap(page, card(page, '00', 'Player Two'), 'FT made');
   await expect(score(3, 0)).toBeVisible();
   await expect(one).toHaveClass(/border-slate-600/);
   for (let i = 0; i < 4; i++) await tap(page, one, 'Foul');

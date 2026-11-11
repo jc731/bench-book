@@ -6,8 +6,8 @@ import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core
 import type { EventDraft, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import {
-  endPeriodLabel, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutKindText, timeoutLabel,
-  undoAriaLabel, type PlayType,
+  BENCH_TECH_TEXT, endChoices, endPeriodLabel, foulLabel, mayEndGame, oppLabel, playLabel, reconcileBanner,
+  timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
 import { PlayerGrid } from './PlayerGrid';
@@ -37,9 +37,15 @@ export function Live({ store }: { store: GameStore }) {
   const banner = reconcileBanner(openIssues(game));
 
   const add = (draft: EventDraft, label: string) => update((g, now) => appendEvent(g, draft, now), label);
+  const teamFouls = d.teamFoulsForBonus(period);
   const play = (type: PlayType) => {
     if (!picked) return;
-    add({ type, playerId: picked.id }, playLabel(type, picked.number));
+    const line = d.players.find((l) => l.playerId === picked.id);
+    const label =
+      type === 'FOUL' || type === 'TECH'
+        ? foulLabel(type, { player: { p: picked, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 }, teamFouls })
+        : playLabel(type, picked.number);
+    add({ type, playerId: picked.id }, label);
     if (type !== 'FTM' && type !== 'FTX') setPicked(null);
   };
   const timeout = (kind: TimeoutKind) => {
@@ -56,7 +62,7 @@ export function Live({ store }: { store: GameStore }) {
     setView('end');
   };
   const startOt = () => {
-    update((g, now) => startOvertime(g, now), 'Start OT');
+    update((g, now) => startOvertime(g, now), 'Start overtime');
     setSheet(null);
   };
   const openEnd = () => {
@@ -113,7 +119,9 @@ export function Live({ store }: { store: GameStore }) {
       <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-4">
         <div class="grid grid-cols-3 gap-2">
           <button type="button" class={bar} onClick={() => setSheet('timeout')}>Timeout</button>
-          <button type="button" class={bar} onClick={() => add({ type: 'BENCH_TECH' }, 'Bench T')}>Bench T</button>
+          <button type="button" class={bar} onClick={() => add({ type: 'BENCH_TECH' }, foulLabel('BENCH_TECH', { player: null, teamFouls }))}>
+            {BENCH_TECH_TEXT}
+          </button>
           <button
             type="button"
             class={bar}
@@ -164,8 +172,11 @@ export function Live({ store }: { store: GameStore }) {
       {sheet === 'endPeriod' && (
         <Sheet title={`End ${periodLabel(period)}`} onClose={() => setSheet(null)}>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" class={opt} onClick={startOt}>Start OT</button>
-            <button type="button" class={opt} onClick={doEndGame}>End game</button>
+            <button type="button" class={opt} onClick={startOt}>{endChoices(period).overtime}</button>
+            <button type="button" class={`${opt} leading-tight`} onClick={doEndGame}>
+              <span class="block">{endChoices(period).endGameMain}</span>{' '}
+              <span class="block text-sm font-semibold">{endChoices(period).endGameNote}</span>
+            </button>
           </div>
         </Sheet>
       )}

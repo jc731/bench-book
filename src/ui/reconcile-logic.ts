@@ -23,6 +23,11 @@ export function statusChipText(status: PeriodStatus): string {
   return { pending: 'Not checked', matched: '✓ Matched', fixed: '✓ Fixed', noted: 'Noted', unresolved: 'Mismatch' }[status];
 }
 
+/** The Final screen's button for an open quarter: a quarter never checked is checked, not reopened. */
+export function issueAction(status: PeriodStatus): 'Check' | 'Reopen' {
+  return status === 'pending' ? 'Check' : 'Reopen';
+}
+
 export type ParsedScore = { kind: 'empty' } | { kind: 'ok'; value: number } | { kind: 'invalid' };
 
 /** Empty means not entered; only whole non-negative numbers are accepted. */

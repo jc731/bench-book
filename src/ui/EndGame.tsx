@@ -6,7 +6,7 @@ import { periodLabel } from '../core/periods';
 import { checkPeriod, endGame, isExported, markExported, openIssues, oppTotal, saveReconcile } from '../core/reconcile';
 import type { ExportKind } from '../core/types';
 import { download } from './download';
-import { EXPORT_DESCRIPTION, EXPORT_NAME, exportStateText, statusChipText } from './reconcile-logic';
+import { EXPORT_DESCRIPTION, EXPORT_NAME, exportStateText, issueAction, statusChipText } from './reconcile-logic';
 import type { GameStore } from './store';
 
 const btn = 'min-h-12 w-full rounded-xl px-4 text-lg font-bold';
@@ -84,7 +84,9 @@ export function EndGame({ store }: { store: GameStore }) {
               <div key={p} class="space-y-2 rounded-xl border border-slate-700 bg-slate-800 p-3">
                 <div class="flex items-center justify-between">
                   <span class="font-bold">{periodLabel(p)} · {statusChipText(c.status)}</span>
-                  <button type="button" class="min-h-11 px-3 font-semibold text-amber-300" onClick={() => reopen(p)}>Reopen</button>
+                  <button type="button" class="min-h-11 px-3 font-semibold text-amber-300" onClick={() => reopen(p)}>
+                    {issueAction(c.status)}
+                  </button>
                 </div>
                 <input
                   class="min-h-12 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 text-base"

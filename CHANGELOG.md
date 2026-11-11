@@ -11,6 +11,13 @@ All notable changes to Bench Book are listed here, in the
 - The Final screen tracks the Book CSV and the Plays CSV separately, shows whether each was saved, and says what each file holds. The game counts as exported, for the 72-hour warning and the New game prompt, only once both are saved. Export now sits at the top of the screen, and its toast no longer offers Undo.
 - Reopening the app on a game with plays shows where it left off, for example `Resumed · last: #4 Player One +2`.
 - After a reload the disabled Undo button explains that the history clears on reload and that plays are fixed in the Log.
+- Clearer wording throughout. The status strip labels the score `Us` and `Them`, reads timeouts as `TO left: Full 3 · 30s 2`, shows `Team fouls 4` in amber one foul before the bonus, and the bonus pill reads `Bonus: they shoot FTs`. Player buttons read `FT made`, `FT missed` and `Tech foul`; the bottom bar reads `Bench tech`.
+- The foul that puts a player out names them, for example `#12 Player Four foul — 5th, out`, and the 5th team foul adds `— bonus`.
+- Player cards show points with a unit (`2 pts`), and screen readers hear `1 point` and `1 foul` in the singular.
+- After Q4 the choices read `Start overtime` and `End game (no overtime)`.
+- On the Final screen a quarter that was never checked offers `Check`; `Reopen` is for a quarter already noted or off.
+- In the Log, `Insert before` is now `Add a missed play before this`, and the move action reads `Move to another quarter…` with a line naming the plays it moves.
+- Setup reads `Also keep their score (Opp +1/+2/+3)` for opponent taps, and `Timekeeper` for the timer.
 
 ## [0.1.0] - 2026-11-10
 

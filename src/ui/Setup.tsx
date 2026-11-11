@@ -149,7 +149,7 @@ export function Setup({ store }: { store: GameStore }) {
             ['team', 'Our team'],
             ['coach', 'Coach'],
             ['scorer', 'Scorer'],
-            ['timer', 'Timer'],
+            ['timer', 'Timekeeper'],
           ] as const
         ).map(([k, label]) => (
           <label class="flex flex-col gap-1">
@@ -164,7 +164,7 @@ export function Setup({ store }: { store: GameStore }) {
             checked={track}
             onChange={(e) => setTrack(e.currentTarget.checked)}
           />
-          <span>Track opponent score with live taps</span>
+          <span>Also keep their score (Opp +1/+2/+3)</span>
         </label>
       </section>
 

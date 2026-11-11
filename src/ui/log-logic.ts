@@ -1,7 +1,7 @@
 import { periodLabel } from '../core/periods';
 import { orderedEvents } from '../core/events';
 import type { EventType, Game, GameEvent, TimeoutKind } from '../core/types';
-import { oppLabel, playLabel, timeoutLabel, type PlayType } from './live-logic';
+import { BENCH_TECH_TEXT, oppLabel, playLabel, timeoutLabel, type PlayType } from './live-logic';
 
 export const PLAY_TYPES: PlayType[] = ['FG2', 'FG3', 'FTM', 'FTX', 'FOUL', 'TECH'];
 const TIMEOUT_KINDS: TimeoutKind[] = ['full', 'thirty', 'ot'];
@@ -10,9 +10,9 @@ export function isPlayType(t: EventType): t is PlayType {
   return (PLAY_TYPES as EventType[]).includes(t);
 }
 
-/** Short label, no name: `#4 +2`, `Opp +3`, `Timeout (Full)`, `Bench T`. Used in toasts. */
+/** Short label, no name: `#4 +2`, `Opp +3`, `Timeout (Full)`, `Bench tech`. Used in toasts. */
 export function eventLabel(g: Game, e: GameEvent): string {
-  if (e.type === 'BENCH_TECH') return 'Bench T';
+  if (e.type === 'BENCH_TECH') return BENCH_TECH_TEXT;
   if (e.type === 'TIMEOUT') return timeoutLabel(e.timeoutKind ?? 'full');
   if (e.type === 'OPP_PTS') return oppLabel(e.oppPoints ?? 2);
   const number = g.roster.find((p) => p.id === e.playerId)?.number ?? '?';
@@ -112,6 +112,12 @@ export function moveFromCount(g: Game, fromId: string): number {
 
 export function playsCount(count: number): string {
   return `${count} ${count === 1 ? 'play' : 'plays'}`;
+}
+
+/** The second line of the Log's move action, naming what moves. */
+export function moveFromSubtitle(count: number, period: number): string {
+  const p = periodLabel(period);
+  return count === 1 ? `Just this play, the last in ${p}` : `This play and the ones after it in ${p}`;
 }
 
 export function moveFromLabel(count: number, period: number): string {

@@ -1,5 +1,6 @@
 import type { PlayerLine } from '../core/derive';
 import type { Player } from '../core/types';
+import { countText } from './live-logic';
 
 interface Props {
   roster: Player[];
@@ -16,17 +17,20 @@ export function PlayerGrid({ roster, lines, onPick }: Props) {
         const line = lines[i];
         const state = line?.foulState ?? 'ok';
         const fouls = line?.fouls ?? 0;
+        const points = line?.points ?? 0;
         return (
           <button
             key={p.id}
             type="button"
             class={`relative min-h-[76px] rounded-xl border-2 bg-slate-800 p-2 text-left active:bg-slate-700 ${border[state]}`}
             onClick={() => onPick(p)}
-            aria-label={`#${p.number} ${p.name}, ${line?.points ?? 0} points, ${fouls} fouls${state === 'out' ? ', out' : ''}`}
+            aria-label={`#${p.number} ${p.name}, ${countText(points, 'point', 'points')}, ${countText(fouls, 'foul', 'fouls')}${state === 'out' ? ', out' : ''}`}
           >
             <div class="flex items-baseline justify-between">
               <span class="text-3xl font-bold leading-none">{p.number}</span>
-              <span class="text-lg font-semibold tabular-nums">{line?.points ?? 0}</span>
+              <span class="text-lg font-semibold tabular-nums">
+                {points} <span class="text-sm font-normal text-slate-300">pts</span>
+              </span>
             </div>
             <div class="mt-1 truncate text-sm text-slate-300">{p.name || ' '}</div>
             <div class="mt-1 flex items-center gap-1" aria-hidden="true">
