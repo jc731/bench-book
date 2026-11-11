@@ -46,7 +46,8 @@ Every name here is invented.
 21. #10 makes a two.
 22. They score a two.
 23. The ref calls a foul on #5.
-24. Your coach leans over: the basket you gave #10 a couple of plays ago was actually #7's.
+24. Your coach leans over: the two-pointer you gave #10 earlier this quarter (her only
+    basket of the second quarter) was actually #7's.
 25. The ref calls a foul on #22, her third. That's your team's fifth foul this quarter.
 26. Their shooter goes to the line for two and makes both.
 27. The horn sounds, end of the half. Your book shows 9 for you and 6 for them this

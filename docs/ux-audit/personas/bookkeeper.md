@@ -17,8 +17,8 @@ You are the volunteer keeping the scorebook for your junior high girls' basketba
 
 - **Start each event's work with `Event N:`**, where N is the event's number, before you
   do anything for it. Write the marker even when you decide to skip the event.
-- **Say what you expect before you act.** For example: "I expect to pick the player first,
-  then the kind of basket."
+- **Say what you expect before you act.** For example: "I expect our score to go up by
+  two."
 - **Say what happened after you act**, and whether it is what you expected.
 - **Take a screenshot whenever you are unsure**, and judge by what the screen looks like,
   not only by the names in the page's structure. A volunteer sees icons, colors and layout,

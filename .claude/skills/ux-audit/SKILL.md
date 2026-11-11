@@ -35,6 +35,10 @@ The report is `docs/ux-audit/reports/v<version>.md`. If that file exists, use
 `v<version>-2.md`, then `-3`, and so on. Call the chosen name (without `.md`) `<run>`; its
 screenshots go in `docs/ux-audit/reports/<run>/`.
 
+A **void** run (step 4) does not take that slot. Its report is
+`docs/ux-audit/reports/v<version>-void.md`, or `v<version>-void-2.md`, `-void-3`… if that
+exists; `<run>` is then that name.
+
 ## 2. Build and serve
 
 ```bash
@@ -89,8 +93,10 @@ pnpm ux:stats <transcript.jsonl> http://localhost:4410/
   persona navigated off the app, or the transcript is empty or unreadable; exit 1 means
   the check itself crashed (for example on a malformed tool call), which voids the run too.
   Never treat a non-zero exit as a pass. Write a short report at the chosen path saying
-  the run was void and why (the `reasons`, or the error output), then do step 7, commit
-  that report as in step 8, and stop. Do not write findings from a void run.
+  the run was void and why (the `reasons`, or the error output), at the void path from
+  step 1 (`v<version>-void.md`, not the version's report slot). Then do step 7, commit
+  that report as in step 8 with the message `docs: UX audit <run>`, and stop. Do not
+  write findings from a void run.
 - **Exit 0:** keep the JSON. `perEvent[N].actions` is the number of actions the persona
   spent on event N; `totalActions` is the whole run.
 
@@ -99,8 +105,15 @@ pnpm ux:stats <transcript.jsonl> http://localhost:4410/
 Now, as the controller, use the `ux-browser` tools on **the same browser session** (the
 persona's game is in that browser's storage). Do not navigate away from the app URL.
 
-1. Go to the app's end-of-game and export screen. If the persona never ended the game, end
-   it yourself without changing any entry, and note that in the report.
+1. Go to the app's end-of-game and export screen. If the persona's game is there but was
+   never ended, end it yourself without changing any entry, and note that in the report.
+
+   **If the persona's game is not in the browser** (the app shows a new, empty game, or
+   the browser was closed): do **not** recreate a game, and do not start or end one.
+   Record "export comparison not possible" in the report with the reason. As the fallback
+   source, use any files the persona itself downloaded (under `.playwright-mcp/`, or at
+   the path its tool results reported) and compare those in item 3. If there are none,
+   the report has no export comparison, and says so in the summary.
 2. Download both CSV files. The tool result says where each was saved (under
    `.playwright-mcp/`). Read them.
 3. Compare them with `## Expected end state` in `docs/ux-audit/scenario.md`: the score per
