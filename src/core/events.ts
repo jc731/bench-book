@@ -62,14 +62,14 @@ export function deleteEvent(g: Game, id: string, now: Date): Game {
   return withEvents(g, g.events.filter((e) => e.id !== id), now);
 }
 
-// Sets `period` on fromId and on every event after it (by order) whose period is >= fromId's original period.
+// Sets `period` on fromId and on every later event (by order) in the SAME original period as fromId; plays in other periods stay.
 export function moveFrom(g: Game, fromId: string, period: number, now: Date): Game {
   const from = g.events.find((e) => e.id === fromId);
   if (!from) throw new Error(`No event with id ${fromId}`);
   return withEvents(
     g,
     g.events.map((e) =>
-      e.id === fromId || (e.order > from.order && e.period >= from.period) ? { ...e, period } : e,
+      e.id === fromId || (e.order > from.order && e.period === from.period) ? { ...e, period } : e,
     ),
     now,
   );

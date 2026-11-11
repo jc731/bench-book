@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { appendEvent, newGame } from '../core/events';
+import { appendEvent, moveFrom, newGame } from '../core/events';
 import type { EventDraft, Game, GameEvent } from '../core/types';
 import {
   compatibleTypes, draftOf, editLabel, editPatch, eventRowText, groupByPeriod, insertLabel,
-  moveFromCount, moveFromLabel, moveFromTargets,
+  moveFromCount, moveFromLabel, moveFromTargets, playsCount,
 } from './log-logic';
 
 const info = { team: 'T', opponent: 'O', date: '2026-11-10', homeAway: 'home' as const, coach: '', scorer: '', timer: '' };
@@ -127,11 +127,21 @@ describe('moving', () => {
     expect(moveFromTargets({ ...g, currentPeriod: 2 }, g.events[3])).toEqual([1]);
   });
   it('counts what moveFrom touches', () => {
-    expect(moveFromCount(g, g.events[1].id)).toBe(4); // itself, the next two, and the late Q1 play
+    expect(moveFromCount(g, g.events[1].id)).toBe(3); // itself, the next Q1 play, and the late Q1 play; the Q2 play stays
     expect(moveFromCount(g, g.events[3].id)).toBe(1); // the later Q1 play is an earlier period, so it stays
     expect(moveFromCount(g, 'nope')).toBe(0);
   });
+  it('matches the number of plays whose period actually changes', () => {
+    for (const e of g.events) {
+      const target = e.period === 1 ? 2 : 1;
+      const moved = moveFrom(g, e.id, target, NOW);
+      const changed = moved.events.filter((m, i) => m.period !== g.events[i].period).length;
+      expect(moveFromCount(g, e.id)).toBe(changed);
+    }
+  });
   it('words the count', () => {
+    expect(playsCount(1)).toBe('1 play');
+    expect(playsCount(3)).toBe('3 plays');
     expect(moveFromLabel(5, 2)).toBe('Moved 5 plays to Q2');
     expect(moveFromLabel(1, 6)).toBe('Moved 1 play to OT2');
   });

@@ -7,7 +7,7 @@ import { EventSheet, Sheet } from './EventSheet';
 import { playButtonText, timeoutKindText, type PlayType } from './live-logic';
 import {
   compatibleTypes, draftOf, editLabel, editPatch, eventLabel, eventRowText, groupByPeriod,
-  insertLabel, isPlayType, moveFromCount, moveFromLabel, moveFromTargets, timeoutKindsFor,
+  insertLabel, isPlayType, moveFromCount, moveFromLabel, moveFromTargets, playsCount, timeoutKindsFor,
   type EditDraft,
 } from './log-logic';
 import type { GameStore } from './store';
@@ -145,7 +145,7 @@ export function Log({ store, period, onClose, headerExtra, showToast = true }: P
         />
       )}
       {selected && step === 'moveFrom' && (
-        <Sheet title={`Move ${moveFromCount(game, selected.id)} plays to`} onClose={done}>
+        <Sheet title={`Move ${playsCount(moveFromCount(game, selected.id))} to`} onClose={done}>
           <div class="grid grid-cols-2 gap-2">
             {moveFromTargets(game, selected).map((p) => (
               <button key={p} type="button" class={btn} onClick={() => doMoveFrom(selected, p)}>

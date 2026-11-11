@@ -103,15 +103,19 @@ export function moveFromTargets(g: Game, e: GameEvent): number[] {
   return [e.period - 1, e.period + 1].filter((p) => p >= 1 && p <= g.currentPeriod);
 }
 
-/** How many events `moveFrom` would touch. */
+/** How many events `moveFrom` would touch: the play and every later play in its own period. */
 export function moveFromCount(g: Game, fromId: string): number {
   const from = g.events.find((e) => e.id === fromId);
   if (!from) return 0;
-  return g.events.filter((e) => e.id === fromId || (e.order > from.order && e.period >= from.period)).length;
+  return g.events.filter((e) => e.id === fromId || (e.order > from.order && e.period === from.period)).length;
+}
+
+export function playsCount(count: number): string {
+  return `${count} ${count === 1 ? 'play' : 'plays'}`;
 }
 
 export function moveFromLabel(count: number, period: number): string {
-  return `Moved ${count} ${count === 1 ? 'play' : 'plays'} to ${periodLabel(period)}`;
+  return `Moved ${playsCount(count)} to ${periodLabel(period)}`;
 }
 
 export function insertLabel(type: PlayType, number: string, period: number): string {

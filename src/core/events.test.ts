@@ -107,6 +107,18 @@ describe('event log', () => {
     expect(g5.events.find((e) => e.id === B.id)!.period).toBe(2);
   });
 
+  test('moveFrom moves only later plays of the same period, forward and backward', () => {
+    let g = newGame(info, roster, t0);
+    for (const period of [1, 2, 3]) g = appendEvent(g, { type: 'FG2', playerId: 'p1', period }, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0); // E4: later by order, same period as E1
+    const [E1, E2, E3, E4] = orderedEvents(g);
+    const periods = (x: typeof g) => orderedEvents(x).map((e) => e.period);
+    expect(periods(moveFrom(g, E1.id, 2, t1))).toEqual([2, 2, 3, 2]);
+    expect(periods(moveFrom(g, E2.id, 1, t1))).toEqual([1, 1, 3, 1]);
+    expect(periods(moveFrom(g, E3.id, 2, t1))).toEqual([1, 2, 2, 1]);
+    expect(E4.period).toBe(1);
+  });
+
   test('editEvent changes type and sets editedAt', () => {
     const g = threeEvents();
     const id = g.events[1].id;
