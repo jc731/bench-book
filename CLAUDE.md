@@ -41,6 +41,10 @@ runs as `/ux-audit`.
 - `pnpm test:e2e`: the scripted game in a real browser. Run it for any change to `e2e/` or
   the interface.
 - `pnpm release <patch|minor|major>`: cut a release.
+- `pnpm howto:shots`: refreshes the How-to screenshots, `public/howto/*.png`, from the
+  full-game fixture. `pnpm release` runs it and commits the images, so they stay current.
+  An image made by hand gets a new filename and is referenced from `src/ui/howto-content.ts`;
+  the script writes only its own three filenames, so a release never overwrites it.
 
 ## Style
 

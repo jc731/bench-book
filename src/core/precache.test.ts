@@ -16,4 +16,10 @@ describe('service worker', () => {
       expect(text).toMatch(/url:[`'"]\/[`'"]/);
     },
   );
+  it.skipIf(text === undefined)(
+    'precaches the three How-to screenshots (Workbox skips any file over 2 MiB)',
+    () => {
+      for (const f of ['reading-the-screen', 'mistakes', 'end-of-quarter']) expect(text).toContain(`howto/${f}.png`);
+    },
+  );
 });

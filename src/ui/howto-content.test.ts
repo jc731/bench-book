@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { HOWTO_SECTIONS } from './howto-content';
 import { MARK_LEGEND } from './running-logic';
 
+// The PNGs under public/howto, keyed by their served path (/howto/x.png). A glob rather than
+// node:fs, which this project has no types for.
+const PUBLIC_PNGS = Object.keys(import.meta.glob('../../public/howto/*.png')).map((k) => k.replace('../../public', ''));
+
 const byTitle = (t: string) => HOWTO_SECTIONS.find((s) => s.title === t)!;
 const text = (t: string) => byTitle(t).body.join(' ');
 
@@ -35,5 +39,20 @@ describe('how-to content', () => {
   it('covers the banner and what a reload clears', () => {
     expect(text("If something's wrong")).toMatch(/Not saving/);
     expect(text("If something's wrong")).toMatch(/reload keeps your plays but clears Undo/);
+  });
+  it('shows the three screenshots the release script writes, and no others', () => {
+    const IMAGES: Record<string, string> = {
+      'Reading the screen': '/howto/reading-the-screen.png',
+      Mistakes: '/howto/mistakes.png',
+      'End of quarter': '/howto/end-of-quarter.png',
+    };
+    for (const s of HOWTO_SECTIONS) expect(s.image?.src, s.title).toBe(IMAGES[s.title]);
+  });
+  it('points every image at a PNG under public/, with alt text', () => {
+    for (const s of HOWTO_SECTIONS.filter((x) => x.image)) {
+      expect(s.image!.src).toMatch(/\.png$/);
+      expect(s.image!.alt.length).toBeGreaterThan(0);
+      expect(PUBLIC_PNGS, s.image!.src).toContain(s.image!.src);
+    }
   });
 });

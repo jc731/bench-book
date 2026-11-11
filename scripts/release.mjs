@@ -1,5 +1,6 @@
 // `pnpm release <major|minor|patch>`: the only way versions get bumped.
-// Runs every check, then bumps, moves the changelog, commits and tags. Never pushes.
+// Runs every check, refreshes the How-to screenshots, then bumps, moves the changelog,
+// commits and tags. Never pushes.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { executeRelease, planRelease } from './release-lib.mjs';
@@ -37,12 +38,16 @@ process.exit(
     {
       check: () => pnpm('check'),
       e2e: () => pnpm('test:e2e'),
+      shots: () => pnpm('howto:shots'),
       write: () => {
         pkg.version = plan.next;
         writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`);
         writeFileSync('CHANGELOG.md', plan.newChangelog);
       },
-      commit: () => git('commit', '-m', `Release v${plan.next}`, '--', 'package.json', 'CHANGELOG.md'),
+      commit: () => {
+        git('add', 'public/howto');
+        git('commit', '-m', `Release v${plan.next}`, '--', 'package.json', 'CHANGELOG.md', 'public/howto');
+      },
       tag: () => git('tag', `v${plan.next}`),
     },
     console.log,

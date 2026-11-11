@@ -109,13 +109,13 @@ describe('executeRelease', () => {
       calls.push(name);
       if (name === fail) throw new Error(name);
     };
-    const steps = Object.fromEntries(['check', 'e2e', 'write', 'commit', 'tag'].map((n) => [n, step(n)]));
+    const steps = Object.fromEntries(['check', 'e2e', 'shots', 'write', 'commit', 'tag'].map((n) => [n, step(n)]));
     return { calls, msgs, steps, say: (m) => msgs.push(m) };
   };
   it('runs every step in order and exits 0', () => {
     const t = make();
     expect(executeRelease('0.2.0', t.steps, t.say)).toBe(0);
-    expect(t.calls).toEqual(['check', 'e2e', 'write', 'commit', 'tag']);
+    expect(t.calls).toEqual(['check', 'e2e', 'shots', 'write', 'commit', 'tag']);
     expect(t.msgs).toEqual(['Released v0.2.0. Push when ready: git push && git push --tags']);
   });
   it.each(['check', 'e2e'])('writes nothing when %s fails', (fail) => {
@@ -124,11 +124,17 @@ describe('executeRelease', () => {
     expect(t.calls).not.toContain('write');
     expect(t.calls).not.toContain('commit');
   });
+  it('writes nothing when the screenshots fail, and says how to restore the images', () => {
+    const t = make('shots');
+    expect(executeRelease('0.2.0', t.steps, t.say)).toBe(1);
+    expect(t.calls).toEqual(['check', 'e2e', 'shots']);
+    expect(t.msgs).toEqual(['Screenshots failed; nothing was released. Restore the images with: git checkout -- public/howto']);
+  });
   it('explains how to restore when the commit fails, and does not tag', () => {
     const t = make('commit');
     expect(executeRelease('0.2.0', t.steps, t.say)).toBe(1);
     expect(t.calls).not.toContain('tag');
-    expect(t.msgs[0]).toContain('git checkout -- package.json CHANGELOG.md');
+    expect(t.msgs[0]).toMatch(/git checkout -- package\.json CHANGELOG\.md public\/howto$/);
   });
   it('says how to tag by hand when only the tag fails', () => {
     const t = make('tag');

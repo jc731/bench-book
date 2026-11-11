@@ -18,7 +18,7 @@ export function HowTo({ store }: { store: GameStore }) {
             {s.body.map((p) => (
               <p key={p} class="mt-1 text-slate-200">{p}</p>
             ))}
-            {s.image && <img src={s.image.src} alt={s.image.alt} class="mt-2 w-full rounded-lg border border-slate-700" />}
+            {s.image && <img src={s.image.src} alt={s.image.alt} width="100%" loading="lazy" class="mt-2 w-full rounded-lg border border-slate-700" />}
             {s.id === 'wrong' && <p class="mt-3 text-center text-xs text-slate-400">v{__APP_VERSION__}</p>}
           </section>
         ))}

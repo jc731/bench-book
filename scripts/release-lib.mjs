@@ -67,7 +67,7 @@ export function planRelease({ branch, clean, tags, version, kind, changelog, dat
  * Run the release steps in order, reporting each failure with a recovery hint.
  * Steps are injected so the sequencing is testable without git or pnpm.
  * @param {string} next version being released, e.g. '0.2.0'
- * @param {{ check: () => void, e2e: () => void, write: () => void,
+ * @param {{ check: () => void, e2e: () => void, shots: () => void, write: () => void,
  *   commit: () => void, tag: () => void }} steps
  * @param {(msg: string) => void} say
  * @returns {number} process exit code
@@ -80,11 +80,17 @@ export function executeRelease(next, steps, say) {
     say('Checks failed; nothing was written.');
     return 1;
   }
+  try {
+    steps.shots();
+  } catch {
+    say('Screenshots failed; nothing was released. Restore the images with: git checkout -- public/howto');
+    return 1;
+  }
   steps.write();
   try {
     steps.commit();
   } catch {
-    say('package.json and CHANGELOG.md were written but not committed. Restore with: git checkout -- package.json CHANGELOG.md');
+    say('package.json, CHANGELOG.md and the How-to images were written but not committed. Restore with: git checkout -- package.json CHANGELOG.md public/howto');
     return 1;
   }
   try {
