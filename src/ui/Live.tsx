@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { appendEvent } from '../core/events';
 import { periodLabel, isOvertime } from '../core/periods';
-import { endGame, endPeriod, openIssues, oppTotal } from '../core/reconcile';
+import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
 import type { EventDraft, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import {
@@ -54,6 +54,10 @@ export function Live({ store }: { store: GameStore }) {
     update((g, now) => (g.endedAt ? g : endGame(g, now)), 'End game');
     setSheet(null);
     setView('end');
+  };
+  const startOt = () => {
+    update((g, now) => startOvertime(g, now), 'Start OT');
+    setSheet(null);
   };
   const openEnd = () => {
     setSheet(null);
@@ -151,8 +155,8 @@ export function Live({ store }: { store: GameStore }) {
       )}
       {sheet === 'endPeriod' && (
         <Sheet title={`End ${periodLabel(period)}`} onClose={() => setSheet(null)}>
-          <div class={`grid gap-2 ${gameEnded ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {!gameEnded && <button type="button" class={opt} onClick={doEndPeriod}>Start OT</button>}
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class={opt} onClick={startOt}>Start OT</button>
             <button type="button" class={opt} onClick={doEndGame}>End game</button>
           </div>
         </Sheet>
@@ -161,6 +165,7 @@ export function Live({ store }: { store: GameStore }) {
         <Sheet title="More" onClose={() => setSheet(null)}>
           <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>End game / export</button>
+          <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('setup'); }}>New game</button>
         </Sheet>
       )}
     </div>

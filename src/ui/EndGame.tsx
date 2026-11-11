@@ -50,7 +50,7 @@ export function EndGame({ store }: { store: GameStore }) {
 
       {issuePeriods.current.length > 0 && (
         <section aria-label="Open issues" class="space-y-3">
-          <h2 class="text-lg font-bold">Not checked against the book</h2>
+          <h2 class="text-lg font-bold">Not checked, or doesn't match the book</h2>
           {issuePeriods.current.map((p) => {
             const c = checkPeriod(game, p);
             return (
@@ -70,7 +70,7 @@ export function EndGame({ store }: { store: GameStore }) {
               </div>
             );
           })}
-          <p class="text-sm text-slate-300">Anything still open is exported as unresolved.</p>
+          <p class="text-sm text-slate-300">Anything still open is exported as it shows here: “not checked” as pending, “doesn't match” as unresolved.</p>
         </section>
       )}
 

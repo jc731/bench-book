@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { appendEvent, moveFrom, newGame } from '../core/events';
 import type { EventDraft, Game, GameEvent } from '../core/types';
 import {
-  compatibleTypes, draftOf, editLabel, editPatch, eventRowText, groupByPeriod, insertLabel,
+  addedLabel, compatibleTypes, draftOf, editLabel, editPatch, eventRowText, groupByPeriod, insertLabel,
   moveFromCount, moveFromLabel, moveFromTargets, playsCount,
 } from './log-logic';
 
@@ -104,6 +104,9 @@ describe('editing', () => {
     expect(editLabel(g, e, { period: 2 })).toBe('Moved #4 +2 to Q2');
     expect(editLabel(g, e, { type: 'FOUL', period: 2 })).toBe('Edited #4 +2 → Foul, now in Q2');
     expect(editLabel(g, g.events[2], { oppPoints: 3 })).toBe('Edited Opp +2 → Opp +3');
+  });
+  it('labels an added play with the period', () => {
+    expect(addedLabel('FG2', '4', 2)).toBe('Added #4 +2 to Q2');
   });
   it('labels an insert with the period', () => {
     expect(insertLabel('FOUL', '4', 1)).toBe('Inserted #4 Foul in Q1');

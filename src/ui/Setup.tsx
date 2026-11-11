@@ -24,7 +24,8 @@ function blankPlayer(): Player {
 
 function isIos(): boolean {
   const nav = navigator as Navigator & { standalone?: boolean };
-  return /iPad|iPhone|iPod/.test(nav.userAgent) && !nav.standalone;
+  const ios = /iPad|iPhone|iPod/.test(nav.userAgent) || (/Macintosh/.test(nav.userAgent) && nav.maxTouchPoints > 1);
+  return ios && !nav.standalone;
 }
 
 function UpdateBanner() {

@@ -118,6 +118,10 @@ export function moveFromLabel(count: number, period: number): string {
   return `Moved ${playsCount(count)} to ${periodLabel(period)}`;
 }
 
+export function addedLabel(type: PlayType, number: string, period: number): string {
+  return `Added ${playLabel(type, number)} to ${periodLabel(period)}`;
+}
+
 export function insertLabel(type: PlayType, number: string, period: number): string {
   return `Inserted ${playLabel(type, number)} in ${periodLabel(period)}`;
 }

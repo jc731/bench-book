@@ -129,4 +129,57 @@ test('scripted game reconciles and exports', async ({ page }) => {
   const q2 = block.find((r) => r[0] === 'Q2');
   expect(q2?.[4]).toBe('pending');
   expect(block.find((r) => r[0] === 'Q1')?.[4]).toBe('matched');
+
+  // A second game from the same device: New game -> discard -> roster prefilled -> 0-0.
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'New game' }).click();
+  await expect(page.getByText(/A game is in progress/)).toBeVisible();
+  await page.getByRole('button', { name: 'Discard and start new' }).click();
+  await expect(page.getByLabel('Player 3 name')).toHaveValue('Player Three');
+  await page.getByLabel('Opponent (required)').fill('Second Opp');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await expect(score(0, 0)).toBeVisible();
+});
+
+test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Opponent (required)').fill('First Opp');
+  await page.getByLabel('Player 1 number').fill('4');
+  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await tap(page, card(page, '4', 'Player One'), '+2');
+  await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
+
+  // Cancel returns to Live with the game intact.
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'New game' }).click();
+  await expect(page.getByText(/A game is in progress \(vs First Opp\)/)).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'New game' }).click();
+  await page.getByRole('button', { name: 'Discard and start new' }).click();
+  await expect(page.getByLabel('Player 1 name')).toHaveValue('Player One');
+  await page.getByLabel('Opponent (required)').fill('Second Opp');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible();
+});
+
+test('reconcile can add a play to a period that has none', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Opponent (required)').fill('Add Opp');
+  await page.getByLabel('Player 1 number').fill('4');
+  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await page.getByRole('button', { name: 'Q1 not checked against the book — Check' }).click();
+  await page.getByLabel(/Our points in Q1/).fill('2');
+  await expect(page.getByTestId('compare')).not.toHaveText('✓ Matches');
+  await page.getByRole('button', { name: 'Add play to Q1' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
 });

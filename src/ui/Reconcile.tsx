@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { periodLabel } from '../core/periods';
 import { checkPeriod, saveReconcile } from '../core/reconcile';
+import { appendEvent } from '../core/events';
+import type { Player } from '../core/types';
+import { EventSheet, Sheet } from './EventSheet';
+import { addedLabel } from './log-logic';
+import type { PlayType } from './live-logic';
 import { Log } from './Log';
 import { compareText, cumulativeThrough, parseScore, reconcileDraftToSave, statusChipText } from './reconcile-logic';
 import type { GameStore } from './store';
@@ -40,6 +45,8 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [note, setNote] = useState('');
   const [oppDirty, setOppDirty] = useState(false);
   const [showLog, setShowLog] = useState(true);
+  const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
+  const [addPlayer, setAddPlayer] = useState<Player | null>(null);
   const seeded = useRef<number | null>(null);
 
   // Seed the drafts once per period from the saved record (opponent prefilled from taps when tracked).
@@ -84,6 +91,12 @@ export function Reconcile({ store }: { store: GameStore }) {
     );
     return true;
   };
+  const addPlay = (type: PlayType) => {
+    if (!addPlayer) return;
+    update((g, now) => appendEvent(g, { type, playerId: addPlayer.id, period }, now), addedLabel(type, addPlayer.number, period));
+    if (type !== 'FTM' && type !== 'FTX') closeAdd();
+  };
+  const closeAdd = () => { setAddStep('closed'); setAddPlayer(null); };
   const saveAndClose = () => {
     if (save()) setView(reconcileReturn);
   };
@@ -146,6 +159,13 @@ export function Reconcile({ store }: { store: GameStore }) {
                 {showLog ? 'Hide' : 'Show'}
               </button>
             </div>
+            <button
+              type="button"
+              class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
+              onClick={() => setAddStep('player')}
+            >
+              Add play to {periodLabel(period)}
+            </button>
             {showLog && (
               <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
                 <Log store={store} period={period} onClose={() => setShowLog(false)} showToast={false} />
@@ -175,6 +195,26 @@ export function Reconcile({ store }: { store: GameStore }) {
           </ul>
         </section>
       </div>
+
+      {addStep === 'player' && (
+        <Sheet title={`Add play to ${periodLabel(period)}`} onClose={closeAdd}>
+          <div class="grid max-h-[60dvh] grid-cols-2 gap-2 overflow-y-auto">
+            {game.roster.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                class="min-h-12 min-w-0 truncate rounded-xl bg-slate-600 px-3 text-left text-lg font-bold active:bg-slate-500"
+                onClick={() => { setAddPlayer(p); setAddStep('play'); }}
+              >
+                #{p.number} {p.name}
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+      {addStep === 'play' && addPlayer && (
+        <EventSheet player={addPlayer} toast={toast} onPlay={addPlay} onUndo={undo} onClose={closeAdd} />
+      )}
 
       {toast && (
         <div class="fixed inset-x-0 bottom-16 z-10 flex items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
