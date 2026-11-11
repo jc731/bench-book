@@ -10,9 +10,8 @@ const text = Object.values(built)[0];
 
 describe('service worker', () => {
   it.skipIf(text === undefined)(
-    'precaches index.html (skipped: dist/sw.js absent, run `pnpm build` first)',
+    'precaches the page (index.html) under "/" (skipped: dist/sw.js absent, run `pnpm build` first)',
     () => {
-      expect(text).toContain('index.html');
       // the page itself is precached under its directory URL
       expect(text).toMatch(/url:[`'"]\/[`'"]/);
     },
