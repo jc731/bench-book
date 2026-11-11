@@ -21,8 +21,9 @@ export function App() {
           Not saving on this device — keep the paper book current.
         </div>
       )}
-      {view === 'setup' && (
-        <div class="min-h-0 flex-1 overflow-y-auto">
+      {/* Setup stays mounted (hidden) under the How-to opened from it, so typed fields survive Back. */}
+      {(view === 'setup' || (view === 'howto' && store.howtoReturn === 'setup')) && (
+        <div class={view === 'setup' ? 'min-h-0 flex-1 overflow-y-auto' : 'hidden'}>
           <Setup store={store} />
         </div>
       )}

@@ -105,13 +105,13 @@ import { downloadCsv } from './csv';
  */
 
 const ROSTER = [
-  { pos: 'G', name: 'Player One', number: '4' },
-  { pos: 'F', name: 'Player Two', number: '00' },
-  { pos: 'C', name: 'Player Three', number: '0' },
-  { pos: 'G', name: 'Player Four', number: '12' },
-  { pos: 'F', name: 'Player Five', number: '23' },
-  { pos: 'F', name: 'Player Six', number: '31' },
-  { pos: 'C', name: 'Player Seven', number: '44' },
+  { name: 'Player One', number: '4' },
+  { name: 'Player Two', number: '00' },
+  { name: 'Player Three', number: '0' },
+  { name: 'Player Four', number: '12' },
+  { name: 'Player Five', number: '23' },
+  { name: 'Player Six', number: '31' },
+  { name: 'Player Seven', number: '44' },
 ] as const;
 type Name = (typeof ROSTER)[number]['name'];
 const TEAM = 'Test Home';
@@ -149,12 +149,12 @@ function ui(page: Page) {
     /** Setup: opponent, our team, opponent taps on, and the whole roster. */
     async fillSetup(opponent: string, team: string) {
       await page.getByLabel('Opponent (required)').fill(opponent);
+      await page.getByText('Game details', { exact: true }).click();
       await page.getByLabel('Our team (optional)').fill(team);
       await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
       for (let i = 0; i < ROSTER.length; i++) {
         if (i > 0) await page.getByRole('button', exact('Add player')).click();
         const n = i + 1;
-        await page.getByLabel(`Player ${n} position`).fill(ROSTER[i].pos);
         await page.getByLabel(`Player ${n} name`).fill(ROSTER[i].name);
         await page.getByLabel(`Player ${n} number`).fill(ROSTER[i].number);
       }

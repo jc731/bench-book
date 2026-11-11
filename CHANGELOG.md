@@ -21,6 +21,12 @@ All notable changes to Bench Book are listed here, in the
 - Moving a play to another quarter is in the fix's Quarter group, with "Also move the plays after it" for a missed End Q.
 - "Add a missed play before this" is gone. Add a missed play from the quarter check's "Add play to Q…"; it goes at the end of that quarter.
 - The quarter check always shows its plays on a mismatch; the Hide/Show toggle is gone.
+- Setup starts with the opponent, Home/Away and the roster, plus a "First time here? How to use" link. Date, team, coach, scorer, timekeeper and "Also keep their score" fold into Game details.
+- "Also keep their score" is remembered from the last game.
+- The roster no longer asks for positions; the Book CSV's POS column is left blank.
+- "Clear saved roster" is in Game details and asks first.
+- The iPhone home-screen tip and the version moved to How to use.
+- Starting a new game over an exported one says "Exported ✓" and makes Discard the main button.
 
 ## [0.2.0] - 2026-11-11
 

@@ -18,3 +18,8 @@ export function validateRoster(players: Player[]): string[] {
   if (dupes.size) errors.push(`Duplicate number: ${[...dupes].map((n) => '#' + n).join(', ')}.`);
   return errors;
 }
+
+/** The roster as saved: trimmed, with no position (Setup no longer asks for one). */
+export function cleanRoster(players: Player[]): Player[] {
+  return players.map((p) => ({ ...p, number: p.number.trim(), name: (p.name ?? '').trim(), pos: '' }));
+}

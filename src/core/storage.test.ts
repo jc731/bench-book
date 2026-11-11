@@ -6,7 +6,10 @@ import {
   clearGame,
   clearRoster,
   hoursUntilPurge,
+  PREFS_KEY,
   loadGame,
+  loadPrefs,
+  savePrefs,
   loadRoster,
   migrateGame,
   saveGame,
@@ -239,5 +242,25 @@ describe('migrateGame (per-file export state)', () => {
     const s = new FakeStorage();
     s.data.set(GAME_KEY, JSON.stringify({ ...game(), exportedAt: stamp }));
     expect(loadGame(s, T0)?.exported).toEqual({ book: stamp, plays: stamp });
+  });
+});
+
+describe('prefs', () => {
+  it('defaults to not keeping the opponent score', () => {
+    expect(loadPrefs(new FakeStorage())).toEqual({ trackOpponentTaps: false });
+  });
+  it('round-trips true and then false', () => {
+    const s = new FakeStorage();
+    expect(savePrefs(s, { trackOpponentTaps: true })).toBe(true);
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true });
+    savePrefs(s, { trackOpponentTaps: false });
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
+  });
+  it('falls back to the default on malformed JSON or a wrong type', () => {
+    const s = new FakeStorage();
+    s.setItem(PREFS_KEY, '{nope');
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
+    s.setItem(PREFS_KEY, '{"trackOpponentTaps":"yes"}');
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
   });
 });

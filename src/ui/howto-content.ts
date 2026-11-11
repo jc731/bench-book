@@ -17,7 +17,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'tip-off',
     title: 'Before tip-off',
     body: [
-      'Enter the opponent and your roster, then tap Start; turn on extras such as their points under Game details.',
+      'Enter the opponent and Home or Away, then your roster (number and name), and tap Start. The date, team, coach and extras such as keeping their points are under Game details.',
       'On iPhone, tap Share, then Add to Home Screen: it keeps your roster saved between games.',
     ],
   },

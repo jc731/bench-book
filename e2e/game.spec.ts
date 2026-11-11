@@ -4,9 +4,9 @@ import { downloadCsv } from './csv';
 
 // Invented names only: the roster is personal data about minors.
 const ROSTER = [
-  { pos: 'G', name: 'Player One', number: '4' },
-  { pos: 'F', name: 'Player Two', number: '00' },
-  { pos: 'C', name: 'Player Three', number: '0' },
+  { name: 'Player One', number: '4' },
+  { name: 'Player Two', number: '00' },
+  { name: 'Player Three', number: '0' },
 ];
 
 const noOverflow = (page: Page) =>
@@ -27,14 +27,16 @@ async function tap(page: Page, who: Locator, ...labels: string[]) {
 
 test('scripted game reconciles and exports', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'First time here? How to use' }).click();
   await expect(page.getByText(`v${pkg.version}`)).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'New game' })).toBeVisible();
 
   // Setup
   await page.getByLabel('Opponent (required)').fill('Test Opp');
   for (let i = 0; i < ROSTER.length; i++) {
     if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();
     const n = i + 1;
-    await page.getByLabel(`Player ${n} position`).fill(ROSTER[i].pos);
     await page.getByLabel(`Player ${n} name`).fill(ROSTER[i].name);
     await page.getByLabel(`Player ${n} number`).fill(ROSTER[i].number);
   }
@@ -123,6 +125,8 @@ test('scripted game reconciles and exports', async ({ page }) => {
 test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Opponent (required)').fill('First Opp');
+  await page.getByText('Game details', { exact: true }).click();
+  await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
   await page.getByLabel('Player 1 number').fill('4');
   await page.getByLabel('Player 1 name').fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
@@ -140,10 +144,36 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
   await page.getByRole('button', { name: 'New game' }).click();
   await page.getByRole('button', { name: 'Discard and start new' }).click();
   await expect(page.getByLabel('Player 1 name')).toHaveValue('Player One');
+  // "Also keep their score" is remembered from the first game.
+  await page.getByText('Game details', { exact: true }).click();
+  await expect(page.getByLabel('Also keep their score (Opp +1/+2/+3)')).toBeChecked();
   await page.getByLabel('Opponent (required)').fill('Second Opp');
   await page.getByRole('button', { name: 'Start game' }).click();
   await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
   await expect(page.getByText('Q1', { exact: true })).toBeVisible();
+});
+
+test('Clear saved roster: Cancel keeps it, Clear empties it', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Opponent (required)').fill('Clear Opp');
+  await page.getByLabel('Player 1 number').fill('4');
+  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'New game' }).click();
+  await page.getByRole('button', { name: 'Discard and start new' }).click();
+  await page.getByText('Game details', { exact: true }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Clear the saved roster from this device?' });
+  await page.getByRole('button', { name: 'Clear saved roster' }).click();
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByLabel('Player 1 name')).toHaveValue('Player One');
+
+  await page.getByRole('button', { name: 'Clear saved roster' }).click();
+  await dialog.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByLabel('Player 1 name')).toHaveValue('');
 });
 
 test('reconcile can add a play to a period that has none', async ({ page }) => {
@@ -166,6 +196,7 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   const long = 'Player With A Very Long Nam'; // 27 characters
   await page.goto('/');
   await page.getByLabel('Opponent (required)').fill('Test Opp');
+  await page.getByText('Game details', { exact: true }).click();
   await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
   for (let i = 0; i < 7; i++) {
     if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();

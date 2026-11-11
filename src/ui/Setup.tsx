@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import { newGame } from '../core/events';
-import { clearRoster, loadRoster, saveRoster } from '../core/storage';
+import { clearRoster, loadPrefs, loadRoster, saveRoster, savePrefs } from '../core/storage';
 import type { GameInfo, Player } from '../core/types';
+import { isExported } from '../core/reconcile';
 import { notExportedText } from './reconcile-logic';
-import { MAX_PLAYERS, validateRoster } from './roster';
+import { cleanRoster, MAX_PLAYERS, validateRoster } from './roster';
+import { Sheet } from './EventSheet';
 import { getStorage, type GameStore } from './store';
 import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
 
@@ -20,12 +22,6 @@ function today(): string {
 
 function blankPlayer(): Player {
   return { id: crypto.randomUUID(), number: '', name: '', pos: '' };
-}
-
-function isIos(): boolean {
-  const nav = navigator as Navigator & { standalone?: boolean };
-  const ios = /iPad|iPhone|iPod/.test(nav.userAgent) || (/Macintosh/.test(nav.userAgent) && nav.maxTouchPoints > 1);
-  return ios && !nav.standalone;
 }
 
 function UpdateBanner() {
@@ -55,7 +51,8 @@ export function Setup({ store }: { store: GameStore }) {
     scorer: '',
     timer: '',
   });
-  const [track, setTrack] = useState(false);
+  const [track, setTrack] = useState(() => loadPrefs(storage).trackOpponentTaps);
+  const [clearing, setClearing] = useState(false);
   const [tried, setTried] = useState(false);
   const [confirming, setConfirming] = useState(game !== null);
 
@@ -71,49 +68,54 @@ export function Setup({ store }: { store: GameStore }) {
   const onStart = () => {
     setTried(true);
     if (errors.length) return;
-    const clean = roster.map((p) => ({
-      ...p,
-      number: p.number.trim(),
-      name: (p.name ?? '').trim(),
-      pos: (p.pos ?? '').trim(),
-    }));
+    const clean = cleanRoster(roster);
     saveRoster(storage, clean);
+    savePrefs(storage, { trackOpponentTaps: track });
     store.start({
       ...newGame({ ...info, opponent: info.opponent.trim() }, clean, new Date()),
       trackOpponentTaps: track,
     });
   };
 
+  const discardAndStart = () => {
+    store.discard();
+    setConfirming(false);
+  };
+
   if (game && confirming) {
+    const exported = isExported(game);
+    const warning = notExportedText(game, new Date());
+    const primary = `${btn} bg-amber-400 text-slate-900`;
+    const discard = `${btn} border border-red-400 bg-slate-900 text-red-300`;
     return (
       <main class="mx-auto max-w-xl p-4">
         <h1 class="mb-4 text-2xl font-bold">Bench Book</h1>
         <div class="rounded-xl border border-amber-400 bg-slate-800 p-4">
           <p class="mb-4 text-lg">
-            A game is in progress (vs {game.info.opponent}). Export it first?
+            A game is in progress (vs {game.info.opponent}). {exported ? 'It is exported.' : 'Export it first?'}
           </p>
-          {notExportedText(game, new Date()) && (
-            <p class="mb-4 font-semibold text-amber-300" role="alert">{notExportedText(game, new Date())}</p>
+          {exported ? (
+            <p class="mb-4 font-semibold text-emerald-300">Exported ✓</p>
+          ) : (
+            warning && (
+              <p class="mb-4 font-semibold text-amber-300" role="alert">{warning}</p>
+            )
           )}
           <div class="flex flex-col gap-3">
-            <button class={`${btn} bg-amber-400 text-slate-900`} onClick={() => store.setView('end')}>
-              Export
-            </button>
             <button
-              class={`${btn} border border-red-400 bg-slate-900 text-red-300`}
-              onClick={() => {
-                store.discard();
-                setConfirming(false);
-              }}
+              class={exported ? `${btn} bg-amber-400 text-slate-900` : primary}
+              onClick={exported ? discardAndStart : () => store.setView('end')}
             >
-              Discard and start new
+              {exported ? 'Discard and start new' : 'Export'}
+            </button>
+            <button class={exported ? secondary : discard} onClick={exported ? () => store.setView('end') : discardAndStart}>
+              {exported ? 'Export' : 'Discard and start new'}
             </button>
             <button class={secondary} onClick={() => store.setView('live')}>
               Cancel
             </button>
           </div>
         </div>
-        <p class="mt-6 text-center text-xs text-slate-400">v{__APP_VERSION__}</p>
       </main>
     );
   }
@@ -123,50 +125,32 @@ export function Setup({ store }: { store: GameStore }) {
       <h1 class="mb-4 text-2xl font-bold">New game</h1>
       <UpdateBanner />
 
-      <section class="mb-6 flex flex-col gap-3">
-        <label class="flex flex-col gap-1">
+      <button
+        type="button"
+        class="mb-4 min-h-11 text-left text-base text-amber-300 underline"
+        onClick={() => store.openHowto('setup')}
+      >
+        First time here? How to use
+      </button>
+
+      <div class="mb-6 flex items-end gap-2">
+        <label class="flex min-w-0 flex-1 flex-col gap-1">
           <span class="text-sm text-slate-300">Opponent (required)</span>
           <input class={input} value={info.opponent} onInput={(e) => setField('opponent', e.currentTarget.value)} />
         </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-sm text-slate-300">Date</span>
-          <input type="date" class={input} value={info.date} onInput={(e) => setField('date', e.currentTarget.value)} />
-        </label>
-        <div class="grid grid-cols-2 gap-2" role="group" aria-label="Home or away">
+        <div class="flex shrink-0" role="group" aria-label="Home or away">
           {(['home', 'away'] as const).map((h) => (
             <button
               type="button"
               aria-pressed={info.homeAway === h}
-              class={`${btn} border ${info.homeAway === h ? 'border-amber-400 bg-amber-400 text-slate-900' : 'border-slate-500 bg-slate-800 text-white'}`}
+              class={`min-h-11 border px-3 font-semibold ${h === 'home' ? 'rounded-l-lg' : 'rounded-r-lg border-l-0'} ${info.homeAway === h ? 'border-amber-400 bg-amber-400 text-slate-900' : 'border-slate-500 bg-slate-800 text-white'}`}
               onClick={() => setField('homeAway', h)}
             >
               {h === 'home' ? 'Home' : 'Away'}
             </button>
           ))}
         </div>
-        {(
-          [
-            ['team', 'Our team'],
-            ['coach', 'Coach'],
-            ['scorer', 'Scorer'],
-            ['timer', 'Timekeeper'],
-          ] as const
-        ).map(([k, label]) => (
-          <label class="flex flex-col gap-1">
-            <span class="text-sm text-slate-300">{label} (optional)</span>
-            <input class={input} value={info[k]} onInput={(e) => setField(k, e.currentTarget.value)} />
-          </label>
-        ))}
-        <label class="flex min-h-11 items-center gap-3">
-          <input
-            type="checkbox"
-            class="h-6 w-6 accent-amber-400"
-            checked={track}
-            onChange={(e) => setTrack(e.currentTarget.checked)}
-          />
-          <span>Also keep their score (Opp +1/+2/+3)</span>
-        </label>
-      </section>
+      </div>
 
       <section class="mb-4">
         <h2 class="mb-2 text-lg font-semibold">
@@ -176,11 +160,12 @@ export function Setup({ store }: { store: GameStore }) {
           {roster.map((p, i) => (
             <div class="flex items-center gap-2">
               <input
-                class={`${input} w-16! min-w-0 shrink-0`}
-                aria-label={`Player ${i + 1} position`}
-                placeholder="POS"
-                value={p.pos}
-                onInput={(e) => setPlayer(p.id, 'pos', e.currentTarget.value)}
+                class={`${input} w-[4.5rem]! min-w-0 shrink-0`}
+                aria-label={`Player ${i + 1} number`}
+                placeholder="#"
+                inputMode="numeric"
+                value={p.number}
+                onInput={(e) => setPlayer(p.id, 'number', e.currentTarget.value)}
               />
               <input
                 class={`${input} min-w-0 flex-1`}
@@ -188,14 +173,6 @@ export function Setup({ store }: { store: GameStore }) {
                 placeholder="Name"
                 value={p.name}
                 onInput={(e) => setPlayer(p.id, 'name', e.currentTarget.value)}
-              />
-              <input
-                class={`${input} w-[4.5rem]! min-w-0 shrink-0`}
-                aria-label={`Player ${i + 1} number`}
-                placeholder="#"
-                inputMode="numeric"
-                value={p.number}
-                onInput={(e) => setPlayer(p.id, 'number', e.currentTarget.value)}
               />
               <button
                 type="button"
@@ -208,7 +185,7 @@ export function Setup({ store }: { store: GameStore }) {
             </div>
           ))}
         </div>
-        <div class="mt-3 flex flex-wrap gap-2">
+        <div class="mt-3">
           <button
             type="button"
             class={secondary}
@@ -217,18 +194,43 @@ export function Setup({ store }: { store: GameStore }) {
           >
             Add player
           </button>
-          <button
-            type="button"
-            class={secondary}
-            onClick={() => {
-              clearRoster(storage);
-              setRoster([blankPlayer()]);
-            }}
-          >
+        </div>
+      </section>
+
+      <details class="mb-6 rounded-lg border border-slate-600 bg-slate-800/50 p-3">
+        <summary class="min-h-11 cursor-pointer py-2 font-semibold">Game details</summary>
+        <div class="mt-2 flex flex-col gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="text-sm text-slate-300">Date</span>
+            <input type="date" class={input} value={info.date} onInput={(e) => setField('date', e.currentTarget.value)} />
+          </label>
+          {(
+            [
+              ['team', 'Our team'],
+              ['coach', 'Coach'],
+              ['scorer', 'Scorer'],
+              ['timer', 'Timekeeper'],
+            ] as const
+          ).map(([k, label]) => (
+            <label class="flex flex-col gap-1">
+              <span class="text-sm text-slate-300">{label} (optional)</span>
+              <input class={input} value={info[k]} onInput={(e) => setField(k, e.currentTarget.value)} />
+            </label>
+          ))}
+          <label class="flex min-h-11 items-center gap-3">
+            <input
+              type="checkbox"
+              class="h-6 w-6 accent-amber-400"
+              checked={track}
+              onChange={(e) => setTrack(e.currentTarget.checked)}
+            />
+            <span>Also keep their score (Opp +1/+2/+3)</span>
+          </label>
+          <button type="button" class={`${secondary} self-start`} onClick={() => setClearing(true)}>
             Clear saved roster
           </button>
         </div>
-      </section>
+      </details>
 
       {tried && errors.length > 0 && (
         <ul class="mb-4 rounded-lg border border-red-400 bg-slate-800 p-3 text-red-300" role="alert">
@@ -236,12 +238,6 @@ export function Setup({ store }: { store: GameStore }) {
             <li>{e}</li>
           ))}
         </ul>
-      )}
-
-      {isIos() && (
-        <p class="mb-4 text-sm text-slate-300">
-          Tip: Share → Add to Home Screen keeps your roster saved between games.
-        </p>
       )}
 
       <div class="flex flex-col gap-3">
@@ -254,7 +250,26 @@ export function Setup({ store }: { store: GameStore }) {
           </button>
         )}
       </div>
-      <p class="mt-6 text-center text-xs text-slate-400">v{__APP_VERSION__}</p>
+      {clearing && (
+        <Sheet title="Clear the saved roster from this device?" onClose={() => setClearing(false)}>
+          <div class="flex flex-col gap-3">
+            <button
+              type="button"
+              class={`${btn} border border-red-400 bg-slate-900 text-red-300`}
+              onClick={() => {
+                clearRoster(storage);
+                setRoster([blankPlayer()]);
+                setClearing(false);
+              }}
+            >
+              Clear
+            </button>
+            <button type="button" class={secondary} onClick={() => setClearing(false)}>
+              Cancel
+            </button>
+          </div>
+        </Sheet>
+      )}
     </main>
   );
 }

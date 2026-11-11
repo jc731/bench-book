@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Player } from '../core/types';
-import { validateRoster } from './roster';
+import { cleanRoster, validateRoster } from './roster';
 
 const P = (number: string, i = 0): Player => ({ id: String(i), number, name: `Player ${i}`, pos: '' });
 const many = (n: number) => Array.from({ length: n }, (_, i) => P(String(i + 1), i));
@@ -22,5 +22,13 @@ describe('validateRoster', () => {
   });
   it('rejects zero players', () => {
     expect(validateRoster([])).toEqual(['Add at least one player.']);
+  });
+});
+
+describe('cleanRoster', () => {
+  it('trims number and name and blanks the position', () => {
+    expect(cleanRoster([{ id: 'a', number: ' 4 ', name: ' Player One ', pos: 'G' }])).toEqual([
+      { id: 'a', number: '4', name: 'Player One', pos: '' },
+    ]);
   });
 });

@@ -2,6 +2,7 @@ import type { Game, Player } from './types';
 
 export const GAME_KEY = 'benchbook:game';
 export const ROSTER_KEY = 'benchbook:roster';
+export const PREFS_KEY = 'benchbook:prefs';
 export const GAME_TTL_MS = 72 * 60 * 60 * 1000;
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -95,6 +96,26 @@ export function saveRoster(s: Storage, r: Player[]): boolean {
 
 export function clearRoster(s: Storage): void {
   safeRemove(s, ROSTER_KEY);
+}
+
+export interface Prefs {
+  trackOpponentTaps: boolean;
+}
+
+export function loadPrefs(s: Storage): Prefs {
+  const fallback: Prefs = { trackOpponentTaps: false };
+  const raw = safeRead(s, PREFS_KEY);
+  if (raw === null) return fallback;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown> | null;
+    return typeof parsed?.trackOpponentTaps === 'boolean' ? { trackOpponentTaps: parsed.trackOpponentTaps } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function savePrefs(s: Storage, p: Prefs): boolean {
+  return safeWrite(s, PREFS_KEY, p);
 }
 
 export function hoursUntilPurge(g: Game, now: Date): number {
