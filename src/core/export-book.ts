@@ -27,6 +27,8 @@ export function bookCsv(g: Game): string {
   });
   const opp: Cell[] = played.map((p) => {
     const c = checkPeriod(g, p);
+    // Taps off and nothing entered: a blank, not a 0 nobody counted.
+    if (c.bookOpp === null && !g.trackOpponentTaps) return '';
     return c.bookOpp ?? c.oppTapped;
   });
   rows.push(['Score by period']);

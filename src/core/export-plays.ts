@@ -20,7 +20,7 @@ export function playsCsv(g: Game): string {
   ]];
   let us = 0;
   let opp = 0;
-  for (const e of orderedEvents(g)) {
+  for (const [i, e] of orderedEvents(g).entries()) {
     let points: number | '' = '';
     if (e.type === 'FG2' || e.type === 'FG3' || e.type === 'FTM') {
       points = POINTS[e.type];
@@ -33,7 +33,7 @@ export function playsCsv(g: Game): string {
     }
     const p = e.playerId ? byId.get(e.playerId) : undefined;
     rows.push([
-      e.order, periodLabel(e.period), e.type === 'OPP_PTS' ? 'opp' : 'us', p?.number ?? '',
+      i + 1, periodLabel(e.period), e.type === 'OPP_PTS' ? 'opp' : 'us', p?.number ?? '',
       p?.name ?? '', e.type, points, us, opp, e.enteredAt, e.editedAt ? 'yes' : 'no',
       e.type === 'TIMEOUT' ? (e.timeoutKind ?? '') : '',
     ]);

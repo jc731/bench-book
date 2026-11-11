@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { bookCsv } from './export-book';
 import { exportFilename, playsCsv } from './export-plays';
-import { appendEvent, editEvent, newGame, orderedEvents } from './events';
+import { appendEvent, editEvent, insertEventBefore, newGame, orderedEvents } from './events';
 import { derive } from './derive';
 import { saveReconcile } from './reconcile';
 import type { EventDraft, Game, GameInfo, Player } from './types';
@@ -81,7 +81,7 @@ describe('bookCsv', () => {
   });
 
   test('score by period: book number as-is, app sum starred, opponent uses book else taps', () => {
-    let g = sample(); // app Q1 = 8, opp tap Q1 = 2
+    let g = { ...sample(), trackOpponentTaps: true }; // app Q1 = 8, opp tap Q1 = 2
     g = saveReconcile(g, 1, 8, 5, '', now);
     let rows = parse(bookCsv(g));
     let us = scoreRow(rows, 'Team A');
@@ -96,6 +96,13 @@ describe('bookCsv', () => {
     us = scoreRow(rows, 'Team A');
     expect(us.slice(1, 6)).toEqual(['8', '0', '0', '0', '8']);
     expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['2', '0', '0', '0', '2']);
+  });
+
+  test('with taps off, an opponent period nobody entered prints blank; an entered one still prints', () => {
+    const g = saveReconcile(sample(), 1, 8, null, '', now); // taps off: the Q1 tap of 2 is not a figure anyone counted
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 5)).toEqual(['', '', '', '']);
+    const h = saveReconcile(g, 2, 0, 7, '', now);
+    expect(scoreRow(parse(bookCsv(h)), "St. Mary's").slice(1, 5)).toEqual(['', '7', '', '']);
   });
 
   test('OT columns appear only when currentPeriod > 4', () => {
@@ -154,11 +161,20 @@ describe('playsCsv', () => {
     expect(rows[0]).toEqual(['seq', 'period', 'team', 'number', 'player', 'event', 'points',
       'us_score', 'opp_score', 'entered_at', 'edited', 'detail']);
     expect(rows.length).toBe(1 + orderedEvents(g).length);
+    expect(rows.slice(1).map((r) => r[0])).toEqual(['1', '2', '3', '4', '5']);
     expect(rows.slice(1, 4).map((r) => r[7])).toEqual(['2', '4', '5']);
     expect(rows[1].slice(1, 7)).toEqual(['Q1', 'us', '4', 'Player Four', 'FG2', '2']);
     expect(rows[4].slice(5, 8)).toEqual(['FTX', '0', '5']);
     expect(rows[5].slice(2, 9)).toEqual(['opp', '', '', 'OPP_PTS', '3', '5', '3']);
     expect(rows.map((r) => r[10]).slice(1)).toEqual(['no', 'yes', 'no', 'no', 'no']);
+  });
+
+  test('seq is the row number even when orders are fractional or negative', () => {
+    let g = add(game(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'FG2', playerId: 'p4' });
+    const [a, b] = orderedEvents(g);
+    g = insertEventBefore(g, b.id, { type: 'FOUL', playerId: 'p4' }, now); // order 0.5
+    g = insertEventBefore(g, a.id, { type: 'FOUL', playerId: 'p0' }, now); // order -1
+    expect(parse(playsCsv(g)).slice(1).map((r) => r[0])).toEqual(['1', '2', '3', '4']);
   });
 
   test('TIMEOUT rows carry their kind in detail; others leave it empty', () => {
