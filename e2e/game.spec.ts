@@ -1,0 +1,132 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+
+// Invented names only: the roster is personal data about minors.
+const ROSTER = [
+  { pos: 'G', name: 'Player One', number: '4' },
+  { pos: 'F', name: 'Player Two', number: '00' },
+  { pos: 'C', name: 'Player Three', number: '0' },
+];
+
+const noOverflow = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth <= 390);
+
+const card = (page: Page, number: string, name: string) =>
+  page.getByRole('button', { name: new RegExp(`^#${number} ${name},`) });
+
+async function tap(page: Page, who: Locator, ...labels: string[]) {
+  await who.click();
+  const sheet = page.getByRole('dialog');
+  for (const l of labels) await sheet.getByRole('button', { name: l, exact: true }).click();
+  // +2, +3, Foul and Tech close the sheet on their own; FT ✓ and FT ✗ keep it open.
+  const done = sheet.getByRole('button', { name: 'Done', exact: true });
+  if (await done.isVisible()) await done.click();
+  await expect(sheet).toHaveCount(0);
+}
+
+/** Minimal RFC 4180 parser: quoted cells, doubled quotes, CRLF. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let quoted = false;
+  const s = text.replace(/^﻿/, '');
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quoted) {
+      if (c === '"' && s[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && s[i + 1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+test('scripted game reconciles and exports', async ({ page }) => {
+  await page.goto('/');
+
+  // Setup
+  await page.getByLabel('Opponent (required)').fill('Test Opp');
+  for (let i = 0; i < ROSTER.length; i++) {
+    if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();
+    const n = i + 1;
+    await page.getByLabel(`Player ${n} position`).fill(ROSTER[i].pos);
+    await page.getByLabel(`Player ${n} name`).fill(ROSTER[i].name);
+    await page.getByLabel(`Player ${n} number`).fill(ROSTER[i].number);
+  }
+  expect(await noOverflow(page)).toBe(true);
+  await page.getByRole('button', { name: 'Start game' }).click();
+
+  // Live, Q1
+  const score = (us: number, opp: number) => page.getByLabel(`Score ${us} to ${opp}`);
+  await expect(score(0, 0)).toBeVisible();
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible();
+  expect(await noOverflow(page)).toBe(true);
+
+  const one = card(page, '4', 'Player One');
+  await tap(page, one, '+2');
+  await tap(page, card(page, '00', 'Player Two'), 'FT ✓');
+  await expect(score(3, 0)).toBeVisible();
+  await expect(one).toHaveClass(/border-slate-600/);
+  for (let i = 0; i < 4; i++) await tap(page, one, 'Foul');
+  await expect(one).toHaveAccessibleName(/4 fouls/);
+  await expect(one).toHaveClass(/border-amber-400/);
+  await expect(one).not.toHaveClass(/border-red-500/);
+
+  // End Q1, reconcile 3 / 5
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await expect(page.getByText('Q2', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Q1 not checked against the book — Check' }).click();
+  await page.getByLabel(/Our points in Q1/).fill('3');
+  await page.getByLabel(/Opponent points in Q1/).fill('5');
+  await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Q1 not checked/ })).toHaveCount(0);
+
+  // The book's opponent figure (5) now counts toward the opponent total.
+  // Q2: score, end, leave unchecked
+  await tap(page, card(page, '0', 'Player Three'), '+3');
+  await expect(score(6, 5)).toBeVisible();
+  await page.getByRole('button', { name: 'End Q2', exact: true }).click();
+  await expect(page.getByText('Q3', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Q2 not checked against the book — Check' })).toBeVisible();
+
+  // Q3: add then undo
+  await tap(page, one, '+2');
+  await expect(score(8, 5)).toBeVisible();
+  await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(score(6, 5)).toBeVisible();
+
+  // Reload: state persisted
+  await page.reload();
+  await expect(score(6, 5)).toBeVisible();
+  await expect(page.getByText('Q3', { exact: true })).toBeVisible();
+
+  // End game / export
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'End game / export' }).click();
+  const issues = page.getByRole('region', { name: 'Open issues' });
+  await expect(issues).toContainText('Q2');
+  await expect(issues).not.toContainText('Q1');
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Book CSV' }).click(),
+  ]);
+  const stream = await download.createReadStream();
+  let text = '';
+  for await (const chunk of stream) text += chunk;
+  const rows = parseCsv(text);
+  expect(rows.some((r) => r.includes('#00'))).toBe(true);
+  const start = rows.findIndex((r) => r[0] === 'Reconcile');
+  expect(start).toBeGreaterThan(-1);
+  const block = rows.slice(start + 2);
+  const q2 = block.find((r) => r[0] === 'Q2');
+  expect(q2?.[4]).toBe('pending');
+  expect(block.find((r) => r[0] === 'Q1')?.[4]).toBe('matched');
+});
