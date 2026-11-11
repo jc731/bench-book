@@ -25,9 +25,9 @@ export function bumpVersion(version, kind) {
  */
 export function moveUnreleased(changelog, version, date) {
   const lines = changelog.split('\n');
-  const start = lines.indexOf('## [Unreleased]');
+  const start = lines.findIndex((l) => l.replace(/\r$/, '') === '## [Unreleased]');
   if (start === -1) throw new Error('No ## [Unreleased] heading');
-  let end = lines.findIndex((l, i) => i > start && l.startsWith('## ['));
+  let end = lines.findIndex((l, i) => i > start && l.replace(/\r$/, '').startsWith('## ['));
   if (end === -1) end = lines.length;
   const body = lines.slice(start + 1, end);
   while (body.length && body[0].trim() === '') body.shift();
@@ -61,4 +61,38 @@ export function planRelease({ branch, clean, tags, version, kind, changelog, dat
   }
   if (tags.includes(`v${next}`)) return { ok: false, reason: `tag v${next} exists` };
   return { ok: true, next, newChangelog };
+}
+
+/**
+ * Run the release steps in order, reporting each failure with a recovery hint.
+ * Steps are injected so the sequencing is testable without git or pnpm.
+ * @param {string} next version being released, e.g. '0.2.0'
+ * @param {{ check: () => void, e2e: () => void, write: () => void,
+ *   commit: () => void, tag: () => void }} steps
+ * @param {(msg: string) => void} say
+ * @returns {number} process exit code
+ */
+export function executeRelease(next, steps, say) {
+  try {
+    steps.check();
+    steps.e2e();
+  } catch {
+    say('Checks failed; nothing was written.');
+    return 1;
+  }
+  steps.write();
+  try {
+    steps.commit();
+  } catch {
+    say('package.json and CHANGELOG.md were written but not committed. Restore with: git checkout -- package.json CHANGELOG.md');
+    return 1;
+  }
+  try {
+    steps.tag();
+  } catch {
+    say(`Committed Release v${next} but tagging failed; run: git tag v${next}`);
+    return 1;
+  }
+  say(`Released v${next}. Push when ready: git push && git push --tags`);
+  return 0;
 }

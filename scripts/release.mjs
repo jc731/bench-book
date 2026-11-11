@@ -2,7 +2,7 @@
 // Runs every check, then bumps, moves the changelog, commits and tags. Never pushes.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { planRelease } from './release-lib.mjs';
+import { executeRelease, planRelease } from './release-lib.mjs';
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const pnpm = (...args) => execFileSync('pnpm', args, { stdio: 'inherit' });
@@ -31,17 +31,20 @@ if (!plan.ok) {
   process.exit(1);
 }
 
-try {
-  pnpm('check');
-  pnpm('test:e2e');
-} catch {
-  console.error('Checks failed; nothing was written.');
-  process.exit(1);
-}
-
-pkg.version = plan.next;
-writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`);
-writeFileSync('CHANGELOG.md', plan.newChangelog);
-git('commit', '-am', `Release v${plan.next}`);
-git('tag', `v${plan.next}`);
-console.log(`Released v${plan.next}. Push when ready: git push && git push --tags`);
+process.exit(
+  executeRelease(
+    plan.next,
+    {
+      check: () => pnpm('check'),
+      e2e: () => pnpm('test:e2e'),
+      write: () => {
+        pkg.version = plan.next;
+        writeFileSync('package.json', `${JSON.stringify(pkg, null, 2)}\n`);
+        writeFileSync('CHANGELOG.md', plan.newChangelog);
+      },
+      commit: () => git('commit', '-m', `Release v${plan.next}`, '--', 'package.json', 'CHANGELOG.md'),
+      tag: () => git('tag', `v${plan.next}`),
+    },
+    console.log,
+  ),
+);
