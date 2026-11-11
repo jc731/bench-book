@@ -81,9 +81,13 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(score(6, 5)).toBeVisible();
 
-  // Reload: state persisted
+  // Reload: state persisted, with a one-time note of where it left off. The undo history is gone.
   await page.reload();
   await expect(score(6, 5)).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText('Resumed · last: #0 Player Three +3');
+  await expect(
+    page.getByRole('navigation').getByRole('button', { name: 'Undo (history clears when the app reloads — fix plays in Log)' }),
+  ).toBeDisabled();
   await expect(page.getByText('Q3', { exact: true })).toBeVisible();
 
   // End game / export

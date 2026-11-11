@@ -1,7 +1,7 @@
 import { derive } from '../core/derive';
 import { hoursUntilPurge } from '../core/storage';
-import type { PeriodStatus } from '../core/reconcile';
-import type { Game, PeriodRecord } from '../core/types';
+import { isExported, type PeriodStatus } from '../core/reconcile';
+import type { ExportKind, Game, PeriodRecord } from '../core/types';
 
 /** "Book 12 · App 10 — app is 2 short", "... app is 2 over", or "✓ Matches". Null until a book number exists. */
 export function compareText(bookUs: number | null, appUs: number): string | null {
@@ -33,17 +33,43 @@ export function parseScore(text: string): ParsedScore {
   return { kind: 'ok', value: Number(t) };
 }
 
-/** The warning shown on Live and Setup once the game ended but nothing was exported. */
+/**
+ * The opponent half of the check. A blank box is not a book number, so it is never compared and
+ * never reads as a match. Null when there is nothing to say (taps off and the box blank).
+ */
+export function oppCompareText(bookOpp: number | null, oppTapped: number, tracking: boolean): string | null {
+  if (bookOpp === null) return tracking ? 'Opponent not compared (box blank)' : null;
+  if (!tracking) return `Opponent ${bookOpp} from the book (no taps to compare)`;
+  if (bookOpp === oppTapped) return `Opponent: book ${bookOpp} · taps ${oppTapped} ✓`;
+  return `Opponent: book ${bookOpp} · taps ${oppTapped} — taps are ${Math.abs(bookOpp - oppTapped)} ${bookOpp > oppTapped ? 'short' : 'over'}`;
+}
+
+/** Placeholder for the opponent box: the tap total as a hint, never as a value. */
+export function oppPlaceholder(oppTapped: number, tracking: boolean): string {
+  return tracking ? `${oppTapped} from taps` : '';
+}
+
+export const EXPORT_NAME: Record<ExportKind, string> = { book: 'Book CSV', plays: 'Plays CSV' };
+export const EXPORT_DESCRIPTION: Record<ExportKind, string> = {
+  book: 'Box score: points, fouls, timeouts by quarter',
+  plays: 'Every play in order',
+};
+
+/** `Book CSV ✓ saved` or `Plays CSV — not saved yet`. */
+export function exportStateText(g: Game, kind: ExportKind): string {
+  return g.exported?.[kind] ? `${EXPORT_NAME[kind]} ✓ saved` : `${EXPORT_NAME[kind]} — not saved yet`;
+}
+
+/** The warning shown on Live and Setup once the game ended but not both files were exported. */
 export function notExportedText(g: Game, now: Date): string | null {
-  if (!g.endedAt || g.exportedAt) return null;
+  if (!g.endedAt || isExported(g)) return null;
   return `Not exported — game data clears in ${Math.ceil(hoursUntilPurge(g, now))} h`;
 }
 
 export interface ReconcileDraft {
   bookUs: number | null;
+  /** Only what the scorer typed; the box is never prefilled, so blank means no book number. */
   bookOpp: number | null;
-  /** True once the scorer typed in the opponent field; an untouched prefill from taps is not a book number. */
-  oppDirty: boolean;
   note: string;
 }
 
@@ -52,8 +78,7 @@ export function reconcileDraftToSave(
   saved: PeriodRecord | undefined,
   d: ReconcileDraft,
 ): { bookUs: number | null; bookOpp: number | null; note: string } | null {
-  const bookOpp = d.oppDirty ? d.bookOpp : (saved?.bookOpp ?? null);
-  const rec = { bookUs: d.bookUs, bookOpp, note: d.note };
+  const rec = { bookUs: d.bookUs, bookOpp: d.bookOpp, note: d.note };
   const before = { bookUs: saved?.bookUs ?? null, bookOpp: saved?.bookOpp ?? null, note: saved?.note ?? '' };
   const same = rec.bookUs === before.bookUs && rec.bookOpp === before.bookOpp && rec.note === before.note;
   return same ? null : rec;

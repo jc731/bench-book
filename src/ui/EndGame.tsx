@@ -3,9 +3,10 @@ import { derive } from '../core/derive';
 import { exportFilename, playsCsv } from '../core/export-plays';
 import { bookCsv } from '../core/export-book';
 import { periodLabel } from '../core/periods';
-import { checkPeriod, endGame, markExported, openIssues, oppTotal, saveReconcile } from '../core/reconcile';
+import { checkPeriod, endGame, isExported, markExported, openIssues, oppTotal, saveReconcile } from '../core/reconcile';
+import type { ExportKind } from '../core/types';
 import { download } from './download';
-import { statusChipText } from './reconcile-logic';
+import { EXPORT_DESCRIPTION, EXPORT_NAME, exportStateText, statusChipText } from './reconcile-logic';
 import type { GameStore } from './store';
 
 const btn = 'min-h-12 w-full rounded-xl px-4 text-lg font-bold';
@@ -26,9 +27,10 @@ export function EndGame({ store }: { store: GameStore }) {
     update((g, now) => saveReconcile(g, period, c.bookUs, c.bookOpp, text, now), `Noted ${periodLabel(period)}`);
   };
   const reopen = (period: number) => openReconcile(period, 'end');
-  const exportOne = (kind: 'book' | 'plays') => {
+  const exportOne = (kind: ExportKind) => {
     download(exportFilename(game, kind), kind === 'book' ? bookCsv(game) : playsCsv(game));
-    update((g, now) => markExported(g, now), 'Exported');
+    // A saved file is a fact, not an edit: no undo step.
+    update((g, now) => markExported(g, kind, now), `Exported ${EXPORT_NAME[kind]}`, { undoable: false });
   };
   const finish = () => {
     if (!game.endedAt) update((g, now) => endGame(g, now), 'End game');
@@ -47,6 +49,31 @@ export function EndGame({ store }: { store: GameStore }) {
       <p class="text-3xl font-bold" data-testid="final-score">
         {game.info.team || 'Us'} {d.usTotal} – {oppTotal(game)} {game.info.opponent}
       </p>
+
+      <section class="space-y-3" aria-label="Export">
+        {(['book', 'plays'] as const).map((kind) => (
+          <div key={kind} class="space-y-1">
+            <button
+              type="button"
+              class={`${btn} ${kind === 'book' ? 'bg-white text-slate-900' : 'bg-slate-600'}`}
+              aria-describedby={`export-${kind}`}
+              onClick={() => exportOne(kind)}
+            >
+              {EXPORT_NAME[kind]}
+            </button>
+            <p id={`export-${kind}`} class="text-sm text-slate-300">{EXPORT_DESCRIPTION[kind]}</p>
+            <p
+              class={`text-sm font-semibold ${game.exported?.[kind] ? 'text-emerald-300' : 'text-amber-300'}`}
+              data-testid={`export-state-${kind}`}
+            >
+              {exportStateText(game, kind)}
+            </p>
+          </div>
+        ))}
+        <p class="text-sm text-slate-300">
+          {isExported(game) ? 'Exported.' : 'Not exported yet.'} The paper book stays official.
+        </p>
+      </section>
 
       {issuePeriods.current.length > 0 && (
         <section aria-label="Open issues" class="space-y-3">
@@ -74,13 +101,6 @@ export function EndGame({ store }: { store: GameStore }) {
         </section>
       )}
 
-      <section class="space-y-2" aria-label="Export">
-        <button type="button" class={`${btn} bg-white text-slate-900`} onClick={() => exportOne('book')}>Book CSV</button>
-        <button type="button" class={`${btn} bg-slate-600`} onClick={() => exportOne('plays')}>Plays CSV</button>
-        <p class="text-sm text-slate-300">
-          {game.exportedAt ? 'Exported.' : 'Not exported yet.'} The paper book stays official.
-        </p>
-      </section>
 
       <button type="button" class={`${btn} border border-slate-400`} onClick={finish}>
         {game.endedAt ? 'Done' : 'Finish game'}

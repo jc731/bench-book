@@ -31,6 +31,19 @@ function safeWrite(s: Storage, key: string, value: unknown): boolean {
   }
 }
 
+/**
+ * Brings a stored game up to the current shape. Games saved before per-file export tracking carry
+ * a single `exportedAt`, which was set by either button; it is read as both files saved, since the
+ * old screen called that game exported.
+ */
+export function migrateGame(g: Game): Game {
+  const legacy = g as Game & { exportedAt?: unknown };
+  if (legacy.exportedAt === undefined) return g;
+  const { exportedAt, ...rest } = legacy;
+  if (typeof exportedAt !== 'string' || rest.exported) return rest;
+  return { ...rest, exported: { book: exportedAt, plays: exportedAt } };
+}
+
 export function loadGame(s: Storage, now: Date): Game | null {
   const raw = safeRead(s, GAME_KEY);
   if (raw === null) return null;
@@ -48,7 +61,7 @@ export function loadGame(s: Storage, now: Date): Game | null {
     safeRemove(s, GAME_KEY);
     return null;
   }
-  return game;
+  return migrateGame(game);
 }
 
 export function saveGame(s: Storage, g: Game): boolean {

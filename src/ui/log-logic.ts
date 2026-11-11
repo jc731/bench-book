@@ -125,3 +125,19 @@ export function addedLabel(type: PlayType, number: string, period: number): stri
 export function insertLabel(type: PlayType, number: string, period: number): string {
   return `Inserted ${playLabel(type, number)} in ${periodLabel(period)}`;
 }
+
+/** A play as the scorer names it: `#3 Player One +2`, `Opp +3`, `Timeout (Full)`. The name is dropped when blank. */
+export function namedEventLabel(g: Game, e: GameEvent): string {
+  if (!isPlayType(e.type)) return eventLabel(g, e);
+  const p = g.roster.find((x) => x.id === e.playerId);
+  const who = p ? `#${p.number} ${p.name}`.trim() : '#?';
+  return `${who} ${eventLabel(g, e).replace(/^#\S+ /, '')}`;
+}
+
+/** The toast on reopening a saved game: `Resumed · last: #3 Player One +2`, or null when it has no plays. */
+export function resumeText(g: Game): string | null {
+  if (g.events.length === 0) return null;
+  // The most recently entered play, which is where the scorer left off (an insert may sort earlier).
+  const last = g.events.reduce((a, b) => (b.enteredAt > a.enteredAt || (b.enteredAt === a.enteredAt && b.order > a.order) ? b : a));
+  return `Resumed · last: ${namedEventLabel(g, last)}`;
+}

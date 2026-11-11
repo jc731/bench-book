@@ -56,8 +56,12 @@ export interface Game {
   createdAt: string;
   updatedAt: string;
   endedAt?: string;
-  exportedAt?: string;
+  /** When each CSV was last downloaded; the game counts as exported only when both were. */
+  exported?: ExportState;
 }
+
+export type ExportKind = 'book' | 'plays';
+export type ExportState = Partial<Record<ExportKind, string>>;
 
 export type EventDraft = Omit<GameEvent, 'id' | 'order' | 'enteredAt' | 'editedAt' | 'period'> & {
   period?: number;

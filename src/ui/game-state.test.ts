@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGame } from '../core/events';
+import { markExported } from '../core/reconcile';
 import type { Game, GameInfo } from '../core/types';
 import { applyUndo, applyUpdate, type GameState } from './game-state';
 
@@ -41,5 +42,23 @@ describe('game state transitions', () => {
   it('an update that returns the same game pushes no undo step', () => {
     const s: GameState = { game: base, stack: [] };
     expect(applyUpdate(s, (g) => g, 'same', now)).toBe(s);
+  });
+});
+
+describe('export marks', () => {
+  it('a non-undoable update adds no undo step', () => {
+    let s: GameState = { game: base, stack: [] };
+    s = applyUpdate(s, (g, t) => markExported(g, 'book', t), 'Exported Book CSV', now, false);
+    expect(s.game?.exported?.book).toBe(now.toISOString());
+    expect(s.stack).toHaveLength(0);
+  });
+  it('undoing an edit made before an export keeps the export marks', () => {
+    let s: GameState = { game: base, stack: [] };
+    s = applyUpdate(s, setOpp('X'), 'x', now);
+    s = applyUpdate(s, (g, t) => markExported(g, 'plays', t), 'Exported Plays CSV', now, false);
+    const u = applyUndo(s);
+    expect(u.label).toBe('x');
+    expect(u.state.game?.info.opponent).toBe('Test');
+    expect(u.state.game?.exported).toEqual({ plays: now.toISOString() });
   });
 });

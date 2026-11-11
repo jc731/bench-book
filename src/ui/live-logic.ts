@@ -76,3 +76,10 @@ export function reconcileBanner(issues: PeriodCheck[]): Banner | null {
       : `${label} not checked against the book — Check`;
   return { period: oldest.period, text };
 }
+
+export const UNDO_CLEARED_LABEL = 'Undo (history clears when the app reloads — fix plays in Log)';
+
+/** The Undo button's accessible name when it says more than its text: disabled with plays on the board. */
+export function undoAriaLabel(canUndo: boolean, hasEvents: boolean): string | undefined {
+  return !canUndo && hasEvents ? UNDO_CLEARED_LABEL : undefined;
+}

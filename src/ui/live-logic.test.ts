@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  endPeriodLabel, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
+  UNDO_CLEARED_LABEL, endPeriodLabel, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
+  undoAriaLabel,
 } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
@@ -59,5 +60,14 @@ describe('reconcileBanner', () => {
   });
   it('words an unresolved mismatch differently and labels overtime', () => {
     expect(reconcileBanner([issue(5, 'unresolved')])?.text).toBe("OT1 doesn't match the book — Check");
+  });
+});
+
+describe('undoAriaLabel', () => {
+  it('explains a disabled Undo only when there are plays it cannot reach', () => {
+    expect(undoAriaLabel(false, true)).toBe(UNDO_CLEARED_LABEL);
+    expect(UNDO_CLEARED_LABEL).toBe('Undo (history clears when the app reloads — fix plays in Log)');
+    expect(undoAriaLabel(true, true)).toBeUndefined();
+    expect(undoAriaLabel(false, false)).toBeUndefined();
   });
 });

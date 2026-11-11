@@ -7,7 +7,7 @@ import type { EventDraft, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import {
   endPeriodLabel, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutKindText, timeoutLabel,
-  type PlayType,
+  undoAriaLabel, type PlayType,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
 import { PlayerGrid } from './PlayerGrid';
@@ -114,7 +114,15 @@ export function Live({ store }: { store: GameStore }) {
         <div class="grid grid-cols-3 gap-2">
           <button type="button" class={bar} onClick={() => setSheet('timeout')}>Timeout</button>
           <button type="button" class={bar} onClick={() => add({ type: 'BENCH_TECH' }, 'Bench T')}>Bench T</button>
-          <button type="button" class={bar} disabled={!canUndo} onClick={undo}>Undo</button>
+          <button
+            type="button"
+            class={bar}
+            disabled={!canUndo}
+            aria-label={undoAriaLabel(canUndo, game.events.length > 0)}
+            onClick={undo}
+          >
+            Undo
+          </button>
         </div>
         {game.trackOpponentTaps && (
           <div class="grid grid-cols-3 gap-2">

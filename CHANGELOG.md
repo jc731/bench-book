@@ -7,6 +7,10 @@ All notable changes to Bench Book are listed here, in the
 
 - The Setup screen shows the app version.
 - A play added to an earlier quarter (from the quarter check) now sorts with that quarter, so the running score and the Plays CSV's running totals stay right. Changing a play's quarter in the Log moves it to the end of its new quarter.
+- The quarter check no longer fills in the opponent's score from the taps. The tap total shows only as a hint in the empty box, a blank box is never saved or compared as a book number, and the check says when the opponent was not compared.
+- The Final screen tracks the Book CSV and the Plays CSV separately, shows whether each was saved, and says what each file holds. The game counts as exported, for the 72-hour warning and the New game prompt, only once both are saved. Export now sits at the top of the screen, and its toast no longer offers Undo.
+- Reopening the app on a game with plays shows where it left off, for example `Resumed · last: #4 Player One +2`.
+- After a reload the disabled Undo button explains that the history clears on reload and that plays are fixed in the Log.
 
 ## [0.1.0] - 2026-11-10
 

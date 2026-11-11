@@ -8,6 +8,7 @@ import {
   hoursUntilPurge,
   loadGame,
   loadRoster,
+  migrateGame,
   saveGame,
   saveRoster,
 } from './storage';
@@ -211,5 +212,32 @@ describe('hoursUntilPurge', () => {
   it('clamps at 0 once past the TTL', () => {
     expect(hoursUntilPurge(game(), at(72 * HOUR))).toBe(0);
     expect(hoursUntilPurge(game(), at(100 * HOUR))).toBe(0);
+  });
+});
+
+describe('migrateGame (per-file export state)', () => {
+  const stamp = '2026-11-10T13:00:00.000Z';
+  it('reads the old single exportedAt as both files saved, and drops it', () => {
+    const old = { ...game(), exportedAt: stamp } as Game;
+    const m = migrateGame(old);
+    expect(m.exported).toEqual({ book: stamp, plays: stamp });
+    expect('exportedAt' in m).toBe(false);
+  });
+  it('leaves a game without the old flag untouched', () => {
+    const g = { ...game(), exported: { book: stamp } };
+    expect(migrateGame(g)).toBe(g);
+    expect(migrateGame(game()).exported).toBeUndefined();
+  });
+  it('keeps the new state when both shapes are present, and ignores a malformed old flag', () => {
+    const both = { ...game(), exported: { plays: stamp }, exportedAt: stamp } as Game;
+    expect(migrateGame(both).exported).toEqual({ plays: stamp });
+    const bad = { ...game(), exportedAt: 42 } as unknown as Game;
+    expect(migrateGame(bad).exported).toBeUndefined();
+    expect('exportedAt' in migrateGame(bad)).toBe(false);
+  });
+  it('is applied by loadGame', () => {
+    const s = new FakeStorage();
+    s.data.set(GAME_KEY, JSON.stringify({ ...game(), exportedAt: stamp }));
+    expect(loadGame(s, T0)?.exported).toEqual({ book: stamp, plays: stamp });
   });
 });

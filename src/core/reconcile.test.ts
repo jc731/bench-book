@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { appendEvent, deleteEvent, insertEventBefore, newGame, orderedEvents } from './events';
 import {
-  checkPeriod, endGame, endPeriod, markExported, openIssues, oppTotal, saveReconcile, startOvertime,
+  checkPeriod, endGame, endPeriod, isExported, markExported, openIssues, oppTotal, saveReconcile, startOvertime,
 } from './reconcile';
 import type { Game, GameInfo, Player } from './types';
 
@@ -235,14 +235,25 @@ describe('oppTotal', () => {
 });
 
 describe('markExported', () => {
-  test('stamps exportedAt and updatedAt, leaves everything else, and repeats cleanly', () => {
+  test('stamps one file and updatedAt, leaves everything else, and repeats cleanly', () => {
     const g = endGame(tenInQ1(), t0);
-    const x = markExported(g, t1);
-    expect(x.exportedAt).toBe(t1.toISOString());
+    const x = markExported(g, 'book', t1);
+    expect(x.exported).toEqual({ book: t1.toISOString() });
     expect(x.updatedAt).toBe(t1.toISOString());
     expect(x.endedAt).toBe(g.endedAt);
     expect(x.events).toEqual(g.events);
     const t2 = new Date('2026-11-10T11:00:00Z');
-    expect(markExported(x, t2).exportedAt).toBe(t2.toISOString());
+    expect(markExported(x, 'book', t2).exported).toEqual({ book: t2.toISOString() });
+  });
+
+  test('the game is exported only once both files are saved, in either order', () => {
+    const g = endGame(tenInQ1(), t0);
+    expect(isExported(g)).toBe(false);
+    expect(isExported(markExported(g, 'book', t1))).toBe(false);
+    expect(isExported(markExported(g, 'plays', t1))).toBe(false);
+    expect(isExported(markExported(markExported(g, 'plays', t1), 'book', t1))).toBe(true);
+    expect(markExported(markExported(g, 'plays', t0), 'book', t1).exported).toEqual({
+      plays: t0.toISOString(), book: t1.toISOString(),
+    });
   });
 });

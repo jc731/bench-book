@@ -242,6 +242,15 @@ function ui(page: Page) {
     expectFinalScore: (us: number, opp: number) =>
       expect(page.getByTestId('final-score')).toHaveText(`${TEAM} ${us} – ${opp} ${OPPONENT}`),
     exportButton: (which: 'Book CSV' | 'Plays CSV') => page.getByRole('button', exact(which)),
+    /** Each file's saved state on the Final screen. */
+    async expectExportState(book: boolean, plays: boolean) {
+      await expect(page.getByTestId('export-state-book')).toHaveText(book ? 'Book CSV ✓ saved' : 'Book CSV — not saved yet');
+      await expect(page.getByTestId('export-state-plays')).toHaveText(plays ? 'Plays CSV ✓ saved' : 'Plays CSV — not saved yet');
+      await expect(page.getByRole('region', exact('Export'))).toContainText(book && plays ? 'Exported.' : 'Not exported yet.');
+    },
+    /** The opponent box starts blank, with the tap total only as a hint. */
+    expectOppHint: (label: string, taps: number) =>
+      expect(page.getByLabel(new RegExp(`Opponent points in ${label}`))).toHaveAttribute('placeholder', `${taps} from taps`),
 
     /** The status strip: score, period, team fouls, bonus chip, timeouts left. */
     async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {
@@ -311,7 +320,10 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.endPeriod('Q1');
     await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await expect(app.banner('Q1')).toBeVisible();
-    await app.checkQuarter('Q1', 8, 6);
+    await app.banner('Q1').click();
+    await expect(page.getByLabel(/Opponent points in Q1/)).toHaveValue('');
+    await app.expectOppHint('Q1', 6);
+    await app.fillCheck('Q1', 8, 6);
     await app.expectMatches();
     await expectNoOverflow(page);
     await app.saveCheck();
@@ -459,7 +471,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
   });
 
   await test.step('Book CSV', async () => {
+    await app.expectExportState(false, false);
     const rows = await downloadCsv(page, app.exportButton('Book CSV'));
+    await app.expectExportState(true, false);
     const at = (first: string) => rows.findIndex((r) => r[0] === first);
 
     const score = at('Score by period');
@@ -522,6 +536,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
   await test.step('Plays CSV', async () => {
     const [header, ...plays] = await downloadCsv(page, app.exportButton('Plays CSV'));
+    await app.expectExportState(true, true);
     const c = (name: string) => header.indexOf(name);
     expect(plays).toHaveLength(51);
 

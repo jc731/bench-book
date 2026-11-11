@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { appendEvent, newGame } from '../core/events';
-import { endGame } from '../core/reconcile';
+import { endGame, markExported } from '../core/reconcile';
 import type { Game } from '../core/types';
-import { compareText, cumulativeThrough, notExportedText, parseScore, reconcileDraftToSave, statusChipText } from './reconcile-logic';
+import {
+  compareText, cumulativeThrough, exportStateText, notExportedText, oppCompareText, oppPlaceholder, parseScore,
+  reconcileDraftToSave, statusChipText,
+} from './reconcile-logic';
 
 const t0 = new Date('2026-11-10T10:00:00Z');
 const base = (): Game =>
@@ -65,25 +68,57 @@ describe('notExportedText', () => {
     const later = new Date(t0.getTime() + 2.5 * 3600_000);
     expect(notExportedText(g, later)).toBeNull();
     expect(notExportedText(ended, later)).toBe('Not exported — game data clears in 70 h');
-    expect(notExportedText({ ...ended, exportedAt: later.toISOString() }, later)).toBeNull();
+    expect(notExportedText(markExported(markExported(ended, 'book', later), 'plays', later), later)).toBeNull();
+  });
+  it('still warns when only one file was saved', () => {
+    const ended = endGame(base(), t0);
+    const later = new Date(t0.getTime() + 2.5 * 3600_000);
+    expect(notExportedText(markExported(ended, 'book', later), later)).toMatch(/^Not exported/);
+    expect(notExportedText(markExported(ended, 'plays', later), later)).toMatch(/^Not exported/);
+  });
+});
+
+describe('exportStateText', () => {
+  it('shows each file on its own', () => {
+    const g = markExported(base(), 'book', t0);
+    expect(exportStateText(g, 'book')).toBe('Book CSV ✓ saved');
+    expect(exportStateText(g, 'plays')).toBe('Plays CSV — not saved yet');
+  });
+});
+
+describe('opponent check', () => {
+  it('never compares, and never says it matches, a blank opponent box', () => {
+    expect(oppCompareText(null, 6, true)).toBe('Opponent not compared (box blank)');
+    expect(oppCompareText(null, 0, true)).not.toMatch(/match|✓/i);
+    expect(oppCompareText(null, 0, false)).toBeNull();
+  });
+  it('compares a typed number with the taps', () => {
+    expect(oppCompareText(6, 6, true)).toBe('Opponent: book 6 · taps 6 ✓');
+    expect(oppCompareText(6, 4, true)).toBe('Opponent: book 6 · taps 4 — taps are 2 short');
+    expect(oppCompareText(3, 4, true)).toBe('Opponent: book 3 · taps 4 — taps are 1 over');
+    expect(oppCompareText(6, 0, false)).toBe('Opponent 6 from the book (no taps to compare)');
+  });
+  it('shows the tap total only as a placeholder', () => {
+    expect(oppPlaceholder(3, true)).toBe('3 from taps');
+    expect(oppPlaceholder(3, false)).toBe('');
   });
 });
 
 describe('reconcileDraftToSave', () => {
   const saved = { period: 1, bookUs: 12, bookOpp: null, note: 'n', hadMismatch: true };
-  const draft = { bookUs: 12, bookOpp: null, oppDirty: false, note: 'n' };
+  const draft = { bookUs: 12, bookOpp: null, note: 'n' };
   it('returns null for an identical draft, and for an empty draft with nothing saved', () => {
     expect(reconcileDraftToSave(saved, draft)).toBeNull();
-    expect(reconcileDraftToSave(undefined, { bookUs: null, bookOpp: null, oppDirty: false, note: '' })).toBeNull();
+    expect(reconcileDraftToSave(undefined, { bookUs: null, bookOpp: null, note: '' })).toBeNull();
   });
-  it('keeps bookOpp null when the opponent field was only prefilled', () => {
-    expect(reconcileDraftToSave(undefined, { bookUs: 12, bookOpp: 9, oppDirty: false, note: '' })).toEqual({
+  it('saves a blank opponent box as no book number', () => {
+    expect(reconcileDraftToSave(undefined, { bookUs: 12, bookOpp: null, note: '' })).toEqual({
       bookUs: 12, bookOpp: null, note: '',
     });
-    expect(reconcileDraftToSave(saved, { ...draft, bookOpp: 9 })).toBeNull();
+    expect(reconcileDraftToSave({ ...saved, bookOpp: 9 }, draft)?.bookOpp).toBeNull();
   });
-  it('saves an edited opponent number', () => {
-    expect(reconcileDraftToSave(saved, { ...draft, bookOpp: 9, oppDirty: true })).toEqual({
+  it('saves a typed opponent number', () => {
+    expect(reconcileDraftToSave(saved, { ...draft, bookOpp: 9 })).toEqual({
       bookUs: 12, bookOpp: 9, note: 'n',
     });
   });

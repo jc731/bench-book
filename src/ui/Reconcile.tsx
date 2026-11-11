@@ -8,12 +8,14 @@ import { EventSheet, Sheet } from './EventSheet';
 import { addedLabel } from './log-logic';
 import type { PlayType } from './live-logic';
 import { Log } from './Log';
-import { compareText, cumulativeThrough, parseScore, reconcileDraftToSave, statusChipText } from './reconcile-logic';
+import {
+  compareText, cumulativeThrough, oppCompareText, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+} from './reconcile-logic';
 import type { GameStore } from './store';
 
 const TOAST_MS = 4000;
 const field =
-  'min-h-12 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-xl text-white focus:border-amber-400 focus:outline-none';
+  'min-h-12 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-xl text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none';
 
 /** Status chip for a period; opens that period's Reconcile view. */
 export function StatusChip({ store, period }: { store: GameStore; period: number }) {
@@ -43,19 +45,19 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
   const [note, setNote] = useState('');
-  const [oppDirty, setOppDirty] = useState(false);
   const [showLog, setShowLog] = useState(true);
   const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
   const [addPlayer, setAddPlayer] = useState<Player | null>(null);
   const seeded = useRef<number | null>(null);
 
-  // Seed the drafts once per period from the saved record (opponent prefilled from taps when tracked).
+  // Seed the drafts once per period from the saved record. The opponent box is never prefilled
+  // from taps: a number in it must be one the scorer read off the book.
   if (game && seeded.current !== period) {
     seeded.current = period;
     const c = checkPeriod(game, period);
     setUsText(asText(c.bookUs));
     setNote(c.note);
-    setOppText(asText(c.bookOpp ?? (game.trackOpponentTaps && c.oppTapped > 0 ? c.oppTapped : null)));
+    setOppText(asText(c.bookOpp));
   }
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   const bookUs = us.kind === 'ok' ? us.value : null;
   const bookOpp = opp.kind === 'ok' ? opp.value : null;
   const live = compareText(bookUs, c.appUs);
+  const oppLive = live || bookOpp !== null ? oppCompareText(bookOpp, c.oppTapped, game.trackOpponentTaps) : null;
   const mismatch = bookUs !== null && bookUs !== c.appUs;
   const byId = new Map(game.roster.map((p) => [p.id, p]));
 
@@ -80,7 +83,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   // A save that would change nothing is skipped, so repeating it adds no undo step.
   const save = (): boolean => {
     if (invalid) return false;
-    const draft = { bookUs, bookOpp, oppDirty, note };
+    const draft = { bookUs, bookOpp, note };
     // Decided against the live game inside update, so a blur followed at once by Save cannot push twice.
     update(
       (g, now) => {
@@ -131,8 +134,9 @@ export function Reconcile({ store }: { store: GameStore }) {
           <input
             class={field}
             inputMode="numeric"
+            placeholder={oppPlaceholder(c.oppTapped, game.trackOpponentTaps)}
             value={oppText}
-            onInput={(e) => { setOppText(e.currentTarget.value); setOppDirty(true); }}
+            onInput={(e) => setOppText(e.currentTarget.value)}
             onBlur={save}
           />
         </label>
@@ -147,6 +151,7 @@ export function Reconcile({ store }: { store: GameStore }) {
             {live}
           </p>
         )}
+        {oppLive && <p class="text-slate-300" data-testid="compare-opp">{oppLive}</p>}
         <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={save}>
           Check
         </button>

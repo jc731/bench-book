@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
 import { applyUndo, applyUpdate, type GameState } from './game-state';
+import { resumeText } from './log-logic';
 
 export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end';
 export type Toast = { text: string; canUndo: boolean };
@@ -42,7 +43,11 @@ export function useGameStore() {
   const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
   const [reconcilePeriod, setReconcilePeriod] = useState<number | null>(null);
   const [reconcileReturn, setReconcileReturn] = useState<View>('live');
-  const [toast, setToast] = useState<Toast | null>(null);
+  // Opening on a saved game with plays says where it left off, once.
+  const [toast, setToast] = useState<Toast | null>(() => {
+    const text = state.current.game ? resumeText(state.current.game) : null;
+    return text ? { text, canUndo: false } : null;
+  });
   const persistAsked = useRef(false);
 
   // The ref is the source of truth; state only mirrors it for rendering.
@@ -55,13 +60,15 @@ export function useGameStore() {
     [storage, persistent],
   );
 
+  /** `undoable: false` is for facts, not edits (a file was saved): no undo step and no Undo on the toast. */
   const update = useCallback(
-    (fn: (g: Game, now: Date) => Game, label: string) => {
+    (fn: (g: Game, now: Date) => Game, label: string, opts: { undoable?: boolean } = {}) => {
       if (!state.current.game) return;
-      const next = applyUpdate(state.current, fn, label, new Date());
+      const undoable = opts.undoable ?? true;
+      const next = applyUpdate(state.current, fn, label, new Date(), undoable);
       if (next === state.current) return; // no change, so no toast either
       commit(next);
-      setToast({ text: label, canUndo: true });
+      setToast({ text: label, canUndo: undoable });
     },
     [commit],
   );

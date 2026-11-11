@@ -1,5 +1,5 @@
 import { derive } from './derive';
-import type { Game, PeriodRecord } from './types';
+import type { ExportKind, Game, PeriodRecord } from './types';
 
 export type PeriodStatus = 'pending' | 'matched' | 'fixed' | 'noted' | 'unresolved';
 
@@ -63,9 +63,14 @@ export function endGame(g: Game, now: Date): Game {
   return { ...touch(g, now), endedAt: now.toISOString() };
 }
 
-/** Records that a CSV was exported. Never blocks and is safe to repeat; refreshes updatedAt like every edit. */
-export function markExported(g: Game, now: Date): Game {
-  return { ...touch(g, now), exportedAt: now.toISOString() };
+/** Records that one CSV was exported. Never blocks and is safe to repeat; refreshes updatedAt like every edit. */
+export function markExported(g: Game, kind: ExportKind, now: Date): Game {
+  return { ...touch(g, now), exported: { ...g.exported, [kind]: now.toISOString() } };
+}
+
+/** Exported means both files were saved: the Book CSV alone loses the plays, the Plays CSV alone the checks. */
+export function isExported(g: Game): boolean {
+  return Boolean(g.exported?.book && g.exported?.plays);
 }
 
 export function openIssues(g: Game): PeriodCheck[] {
