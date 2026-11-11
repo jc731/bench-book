@@ -28,9 +28,11 @@ interface Props {
   headerExtra?: (period: number) => ComponentChildren;
   /** Draw the toast bar; an embedding view that draws its own passes false. */
   showToast?: boolean;
+  /** Inside another screen (the quarter check): no header and no Back of its own. */
+  embedded?: boolean;
 }
 
-export function Log({ store, period, onClose, headerExtra, showToast = true }: Props) {
+export function Log({ store, period, onClose, headerExtra, showToast = true, embedded = false }: Props) {
   const { game, toast, clearToast, update, undo, setView } = store;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('actions');
@@ -77,12 +79,14 @@ export function Log({ store, period, onClose, headerExtra, showToast = true }: P
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
-      <header class="flex shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
-        <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={close}>
-          Back
-        </button>
-        <h1 class="text-xl font-bold">Log{period !== undefined && ` · ${periodLabel(period)}`}</h1>
-      </header>
+      {!embedded && (
+        <header class="flex shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
+          <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={close}>
+            Back
+          </button>
+          <h1 class="text-xl font-bold">Log{period !== undefined && ` · ${periodLabel(period)}`}</h1>
+        </header>
+      )}
       <div class="min-h-0 flex-1 overflow-y-auto pb-20">
         {groups.length === 0 && <p class="p-4 text-slate-300">No plays yet.</p>}
         {groups.map((grp) => (

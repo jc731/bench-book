@@ -46,14 +46,19 @@ export function startOvertime(g: Game, now: Date): Game {
   return endPeriod(open, now);
 }
 
+/**
+ * `sawMismatch` says the book number disagreed with the app at some point before this save (the
+ * check screen fixed the plays first), so a period that matches now still reads "fixed".
+ */
 export function saveReconcile(
   g: Game, period: number, bookUs: number | null, bookOpp: number | null, note: string, now: Date,
+  sawMismatch = false,
 ): Game {
   const appUs = derive(g).usByPeriod[period] ?? 0;
   const prev = g.periods.find((p) => p.period === period);
   const rec: PeriodRecord = {
     period, bookUs, bookOpp, note,
-    hadMismatch: (prev?.hadMismatch ?? false) || (bookUs !== null && bookUs !== appUs),
+    hadMismatch: (prev?.hadMismatch ?? false) || sawMismatch || (bookUs !== null && bookUs !== appUs),
   };
   const periods = prev ? g.periods.map((p) => (p === prev ? rec : p)) : [...g.periods, rec];
   return { ...touch(g, now), periods };

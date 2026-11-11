@@ -3,7 +3,7 @@ import { appendEvent, newGame } from '../core/events';
 import { endGame, markExported } from '../core/reconcile';
 import type { Game } from '../core/types';
 import {
-  compareText, cumulativeThrough, exportStateText, issueAction, notExportedText, oppCompareText, oppPlaceholder, parseScore,
+  MISMATCH_HINT, appHasText, compareText, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, oppCompareText, oppPlaceholder, parseScore,
   reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 
@@ -133,5 +133,32 @@ describe('issueAction', () => {
     expect(issueAction('pending')).toBe('Check');
     expect(issueAction('unresolved')).toBe('Reopen');
     expect(issueAction('noted')).toBe('Reopen');
+  });
+});
+
+describe('check screen text', () => {
+  const twoQuarters = (track: boolean): Game => {
+    let g = { ...base(), trackOpponentTaps: track, currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0);
+    g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 3, period: 1 }, t0);
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1', period: 2 }, t0);
+    g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 2, period: 2 }, t0);
+    return g;
+  };
+  it('puts the quarter first, then the game score through it', () => {
+    expect(appHasText(twoQuarters(true), 2)).toBe('App has Q2: Us 3 · Them 2 (game 5–5)');
+    expect(appHasText(twoQuarters(true), 1)).toBe('App has Q1: Us 2 · Them 3 (game 2–3)');
+  });
+  it('leaves Them out when opponent taps are off', () => {
+    expect(appHasText(twoQuarters(false), 2)).toBe('App has Q2: Us 3 (game 5)');
+  });
+  it('words the mismatch hint', () => {
+    expect(MISMATCH_HINT).toBe('Add the missing play, fix one below, or write a note and Save.');
+  });
+  it('sees a mismatch only against the app as it stood when the check opened', () => {
+    expect(sawMismatch(9, 7)).toBe(true);
+    expect(sawMismatch(7, 7)).toBe(false);
+    expect(sawMismatch(null, 7)).toBe(false);
+    expect(sawMismatch(9, null)).toBe(false);
   });
 });

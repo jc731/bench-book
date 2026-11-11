@@ -9,7 +9,7 @@ import { addedLabel } from './log-logic';
 import type { PlayType } from './live-logic';
 import { Log } from './Log';
 import {
-  compareText, cumulativeThrough, oppCompareText, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, compareText, oppCompareText, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -49,12 +49,16 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
   const [addPlayer, setAddPlayer] = useState<Player | null>(null);
   const seeded = useRef<number | null>(null);
+  // The app's count when the check opened: a book number that disagreed with it was a mismatch,
+  // even if the plays were fixed on this screen before Save.
+  const appAtOpen = useRef<number | null>(null);
 
   // Seed the drafts once per period from the saved record. The opponent box is never prefilled
   // from taps: a number in it must be one the scorer read off the book.
   if (game && seeded.current !== period) {
     seeded.current = period;
     const c = checkPeriod(game, period);
+    appAtOpen.current = c.appUs;
     setUsText(asText(c.bookUs));
     setNote(c.note);
     setOppText(asText(c.bookOpp));
@@ -79,16 +83,16 @@ export function Reconcile({ store }: { store: GameStore }) {
   const mismatch = bookUs !== null && bookUs !== c.appUs;
   const byId = new Map(game.roster.map((p) => [p.id, p]));
 
-  // Saves as soon as a book number is entered, so a mismatch is remembered and a later fix reads "fixed".
-  // A save that would change nothing is skipped, so repeating it adds no undo step.
+  // Only Save saves; the comparison above it is live. A save that would change nothing is skipped,
+  // so repeating it adds no undo step.
   const save = (): boolean => {
     if (invalid) return false;
     const draft = { bookUs, bookOpp, note };
-    // Decided against the live game inside update, so a blur followed at once by Save cannot push twice.
+    const saw = sawMismatch(bookUs, appAtOpen.current);
     update(
       (g, now) => {
         const rec = reconcileDraftToSave(g.periods.find((p) => p.period === period), draft);
-        return rec ? saveReconcile(g, period, rec.bookUs, rec.bookOpp, rec.note, now) : g;
+        return rec ? saveReconcile(g, period, rec.bookUs, rec.bookOpp, rec.note, now, saw) : g;
       },
       `Saved ${periodLabel(period)} check`,
     );
@@ -106,18 +110,13 @@ export function Reconcile({ store }: { store: GameStore }) {
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
-      <header class="flex shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
-        <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={() => setView(reconcileReturn)}>
-          Later
-        </button>
+      <header class="flex min-h-15 shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
         <h1 class="text-xl font-bold">Check {periodLabel(period)}</h1>
         <span class="ml-auto rounded bg-slate-700 px-2 py-1 text-sm font-semibold">{statusChipText(c.status)}</span>
       </header>
 
       <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 pb-24">
-        <p class="text-slate-300">
-          Running score through {periodLabel(period)}: <span class="font-bold text-white">App {cumulativeThrough(game, period)}</span>
-        </p>
+        <p class="font-semibold text-white" data-testid="app-has">{appHasText(game, period)}</p>
 
         <label class="flex flex-col gap-1">
           <span class="text-sm text-slate-300">Our points in {periodLabel(period)} (book's Score by Qtr box)</span>
@@ -126,7 +125,6 @@ export function Reconcile({ store }: { store: GameStore }) {
             inputMode="numeric"
             value={usText}
             onInput={(e) => setUsText(e.currentTarget.value)}
-            onBlur={save}
           />
         </label>
         <label class="flex flex-col gap-1">
@@ -137,24 +135,17 @@ export function Reconcile({ store }: { store: GameStore }) {
             placeholder={oppPlaceholder(c.oppTapped, game.trackOpponentTaps)}
             value={oppText}
             onInput={(e) => setOppText(e.currentTarget.value)}
-            onBlur={save}
           />
         </label>
         {invalid && <p class="font-semibold text-red-300" role="alert">Whole numbers only, no minus sign.</p>}
 
         {live && (
-          <p
-            class={`rounded-lg px-3 py-3 text-lg font-bold ${mismatch ? 'bg-amber-400 text-slate-900' : 'bg-emerald-800'}`}
-            role="status"
-            data-testid="compare"
-          >
-            {live}
-          </p>
+          <div class={`rounded-lg px-3 py-3 ${mismatch ? 'bg-amber-400 text-slate-900' : 'bg-emerald-800'}`}>
+            <p class="text-lg font-bold" role="status" data-testid="compare">{live}</p>
+            {mismatch && <p class="mt-1 text-sm font-semibold" data-testid="compare-hint">{MISMATCH_HINT}</p>}
+          </div>
         )}
         {oppLive && <p class="text-slate-300" data-testid="compare-opp">{oppLive}</p>}
-        <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={save}>
-          Check
-        </button>
 
         {mismatch && (
           <section aria-label="Plays to fix">
@@ -173,7 +164,7 @@ export function Reconcile({ store }: { store: GameStore }) {
             </button>
             {showLog && (
               <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
-                <Log store={store} period={period} onClose={() => setShowLog(false)} showToast={false} />
+                <Log store={store} period={period} showToast={false} embedded />
               </div>
             )}
           </section>
@@ -181,7 +172,7 @@ export function Reconcile({ store }: { store: GameStore }) {
 
         <label class="flex flex-col gap-1">
           <span class="text-sm text-slate-300">Note</span>
-          <textarea class={`${field} text-base`} rows={2} value={note} onInput={(e) => setNote(e.currentTarget.value)} onBlur={save} />
+          <textarea class={`${field} text-base`} rows={2} value={note} onInput={(e) => setNote(e.currentTarget.value)} />
         </label>
 
         <section aria-label="Fouls">

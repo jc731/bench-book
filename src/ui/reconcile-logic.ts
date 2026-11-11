@@ -1,4 +1,5 @@
 import { derive } from '../core/derive';
+import { periodLabel } from '../core/periods';
 import { hoursUntilPurge } from '../core/storage';
 import { isExported, type PeriodStatus } from '../core/reconcile';
 import type { ExportKind, Game, PeriodRecord } from '../core/types';
@@ -9,6 +10,28 @@ export function compareText(bookUs: number | null, appUs: number): string | null
   if (bookUs === appUs) return '✓ Matches';
   const gap = Math.abs(bookUs - appUs);
   return `Book ${bookUs} · App ${appUs} — app is ${gap} ${bookUs > appUs ? 'short' : 'over'}`;
+}
+
+export const MISMATCH_HINT = 'Add the missing play, fix one below, or write a note and Save.';
+
+/**
+ * The check screen's top line, quarter first: `App has Q2: Us 8 · Them 6 (game 18–12)`.
+ * Them is the opponent taps, so it is left out when taps are off.
+ */
+export function appHasText(g: Game, period: number): string {
+  const d = derive(g);
+  const label = periodLabel(period);
+  const us = d.usByPeriod[period] ?? 0;
+  const usGame = cumulativeThrough(g, period);
+  if (!g.trackOpponentTaps) return `App has ${label}: Us ${us} (game ${usGame})`;
+  let oppGame = 0;
+  for (const [p, pts] of Object.entries(d.oppByPeriod)) if (Number(p) <= period) oppGame += pts;
+  return `App has ${label}: Us ${us} · Them ${d.oppByPeriod[period] ?? 0} (game ${usGame}–${oppGame})`;
+}
+
+/** Whether the book number disagreed with the app as it stood when the check opened. */
+export function sawMismatch(bookUs: number | null, appUsAtOpen: number | null): boolean {
+  return bookUs !== null && appUsAtOpen !== null && bookUs !== appUsAtOpen;
 }
 
 /** Our points from the opening tip through the end of `period`. */

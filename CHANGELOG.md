@@ -18,6 +18,9 @@ All notable changes to Bench Book are listed here, in the
 - On the Final screen a quarter that was never checked offers `Check`; `Reopen` is for a quarter already noted or off.
 - In the Log, `Insert before` is now `Add a missed play before this`, and the move action reads `Move to another quarter…` with a line naming the plays it moves.
 - Setup reads `Also keep their score (Opp +1/+2/+3)` for opponent taps, and `Timekeeper` for the timer.
+- The quarter check has one way out: `Later` or `Save` at the bottom. The header Later and the Check button are gone, and the comparison updates as you type. Leaving a field no longer saves; only Save does, and its toast keeps Undo.
+- The check's top line puts the quarter first, for example `App has Q2: Us 8 · Them 6 (game 18–12)`, and a mismatch adds `Add the missing play, fix one below, or write a note and Save.`
+- The plays list inside the check no longer has its own header and Back button.
 
 ## [0.1.0] - 2026-11-10
 

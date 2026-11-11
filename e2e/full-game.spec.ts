@@ -181,13 +181,20 @@ function ui(page: Page) {
       await dialog().getByRole('button', exact(choice)).click();
     },
     banner: (label: string) => page.getByRole('button', exact(`${label} not checked against the book — Check`)),
-    /** On the Check view: type the book's numbers (and a note) and press Check. */
+    /** On the Check view: type the book's numbers (and a note); the comparison updates as you type. */
     async fillCheck(label: string, us: number, opp: number, note?: string) {
       await page.getByLabel(new RegExp(`Our points in ${label}`)).fill(String(us));
       await page.getByLabel(new RegExp(`Opponent points in ${label}`)).fill(String(opp));
       if (note !== undefined) await page.getByLabel('Note', { exact: true }).fill(note);
-      await page.getByRole('button', exact('Check')).click();
+      // Leaving a field saves nothing: only Save does.
+      await page.getByLabel(new RegExp(`Our points in ${label}`)).focus();
+      await expect(page.getByText(`Saved ${label} check`, { exact: true })).toHaveCount(0);
     },
+    /** The check's top line, quarter first. */
+    expectAppHas: (label: string, us: number, them: number, gameUs: number, gameThem: number) =>
+      expect(page.getByTestId('app-has')).toHaveText(`App has ${label}: Us ${us} · Them ${them} (game ${gameUs}–${gameThem})`),
+    expectMismatchHint: () =>
+      expect(page.getByTestId('compare-hint')).toHaveText('Add the missing play, fix one below, or write a note and Save.'),
     expectMatches: () => expect(page.getByTestId('compare')).toHaveText('✓ Matches'),
     expectShort: (book: number, app: number) =>
       expect(page.getByTestId('compare')).toHaveText(`Book ${book} · App ${app} — app is ${book - app} short`),
@@ -270,6 +277,8 @@ function ui(page: Page) {
     },
     /** The Live toast line. */
     expectToast: (text: string) => expect(page.getByRole('status').locator('span').first()).toHaveText(text),
+    /** The toast offers Undo (the check's Save does; an export does not). */
+    expectToastUndo: () => expect(page.getByRole('status').getByRole('button', exact('Undo'))).toBeVisible(),
     /** The 4-foul warning, which shows only as the card's amber border. */
     expectWarning: (name: Name) => expect(card(name)).toHaveClass(/border-amber-400/),
     /** A player card's foul state, through its accessible name (OUT reads ", out"). */
@@ -368,12 +377,17 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectStrip({ us: 15, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
 
     // The book says 9; the app has 7. A +2 by #31 was missed before #44's +2.
-    await app.checkQuarter('Q2', 9, 4);
+    await app.banner('Q2').click();
+    await app.expectAppHas('Q2', 7, 4, 15, 10);
+    await app.fillCheck('Q2', 9, 4);
     await app.expectShort(9, 7);
+    await app.expectMismatchHint();
     await expectNoOverflow(page);
     await app.insertBefore(app.fixRegion(), app.playText('Player Seven', '+2'), 'Player Six', '+2');
     await app.expectMatches();
     await app.saveCheck();
+    await app.expectToast('Saved Q2 check');
+    await app.expectToastUndo();
     await app.expectStrip({ us: 17, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.expectPlayer('Player Six', 5, 0);
   });

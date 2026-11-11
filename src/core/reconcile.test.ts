@@ -64,6 +64,12 @@ describe('checkPeriod', () => {
     expect(checkPeriod(g, 1).status).toBe('fixed');
   });
 
+  test('a mismatch seen before the fix makes a matching save read fixed', () => {
+    const g = saveReconcile(tenInQ1(), 1, 10, null, '', t1, true);
+    expect(g.periods[0].hadMismatch).toBe(true);
+    expect(checkPeriod(g, 1).status).toBe('fixed');
+  });
+
   test('matched on first save never sets hadMismatch', () => {
     const g = saveReconcile(tenInQ1(), 1, 10, null, '', t1);
     expect(g.periods[0].hadMismatch).toBe(false);
