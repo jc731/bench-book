@@ -85,7 +85,7 @@ import { downloadCsv } from './csv';
  * Book CSV, Score by period (book number where typed, else app sum marked *):
  *            Q1  Q2  Q3  Q4  OT1  Total
  *   us        8   9   7  6*    4   34*    (8+9+7+6+4 = 34; Q3 is the book's 7, not the app's 5)
- *   opp       6   4   5  13    3   31     (Q4 from taps)
+ *   opp       6   4   5 13*    3  31*     (Q4 from taps, starred)
  * Team fouls per period (raw): Q1 3, Q2 5, Q3 2, Q4 4, OT1 1 = 15 = 14 player fouls + 1 bench T.
  * Timeouts used: Full 1 of 3, 30 1 of 2, OT 1 of 1.
  * Reconcile: Q1 matched (8/8/0) · Q2 fixed (9/9/0) · Q3 noted (7/5/2) · Q4 pending (–/6/–)
@@ -186,9 +186,13 @@ function ui(page: Page) {
       await page.getByLabel(new RegExp(`Our points in ${label}`)).fill(String(us));
       await page.getByLabel(new RegExp(`Opponent points in ${label}`)).fill(String(opp));
       if (note !== undefined) await page.getByLabel('Note', { exact: true }).fill(note);
-      // Leaving a field saves nothing: only Save does.
+      // Leaving a field saves nothing: only Save does. Every field above was left at least once
+      // (each fill blurs the one before, and this focus blurs the last). A blur-save would turn
+      // the store-driven status chip from "Not checked" at once, so wait two frames for any such
+      // render, then the chip must still say unchecked.
       await page.getByLabel(new RegExp(`Our points in ${label}`)).focus();
-      await expect(page.getByText(`Saved ${label} check`, { exact: true })).toHaveCount(0);
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      expect(await page.getByTestId('check-status').textContent()).toBe(STATUS.pending);
     },
     /** The check's top line, quarter first. */
     expectAppHas: (label: string, us: number, them: number, gameUs: number, gameThem: number) =>
@@ -279,6 +283,17 @@ function ui(page: Page) {
     expectToast: (text: string) => expect(page.getByRole('status').locator('span').first()).toHaveText(text),
     /** The toast offers Undo (the check's Save does; an export does not). */
     expectToastUndo: () => expect(page.getByRole('status').getByRole('button', exact('Undo'))).toBeVisible(),
+    /** Checked once, while the toast is up: a retrying toHaveCount(0) would pass when the toast times out. */
+    async expectToastNoUndo() {
+      const toast = page.getByRole('status');
+      await expect(toast).toBeVisible();
+      expect(await toast.getByRole('button', exact('Undo')).count()).toBe(0);
+      await expect(toast).toBeVisible(); // still the same toast, so the count above was not of an empty bar
+    },
+    /** From the Final screen to Live and straight back. */
+    async backToLive() {
+      await page.getByRole('button', exact('Back')).click();
+    },
     /** The 4-foul warning, which shows only as the card's amber border. */
     expectWarning: (name: Name) => expect(card(name)).toHaveClass(/border-amber-400/),
     /** A player card's foul state, through its accessible name (OUT reads ", out"). */
@@ -503,12 +518,19 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectExportState(false, false);
     const rows = await downloadCsv(page, app.exportButton('Book CSV'));
     await app.expectExportState(true, false);
+    // Saving a file is not an edit: its toast (shown on Live) has no Undo.
+    await app.backToLive();
+    await app.expectToast('Exported Book CSV');
+    await app.expectToastNoUndo();
+    await app.openEnd();
+    await app.expectExportState(true, false);
     const at = (first: string) => rows.findIndex((r) => r[0] === first);
 
     const score = at('Score by period');
     expect(rows[score + 1]).toEqual(['', 'Q1', 'Q2', 'Q3', 'Q4', 'OT1', 'Total']);
     expect(rows[score + 2]).toEqual([TEAM, '8', '9', '7', '6*', '4', '34*']);
-    expect(rows[score + 3]).toEqual([OPPONENT, '6', '4', '5', '13', '3', '31']);
+    // Q4's opponent figure was never typed, so it is the tap total, starred like our estimates.
+    expect(rows[score + 3]).toEqual([OPPONENT, '6', '4', '5', '13*', '3', '31*']);
 
     const header = rows[at('POS')];
     const col = (name: string) => header.indexOf(name);

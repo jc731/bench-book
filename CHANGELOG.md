@@ -21,6 +21,9 @@ All notable changes to Bench Book are listed here, in the
 - The quarter check has one way out: `Later` or `Save` at the bottom. The header Later and the Check button are gone, and the comparison updates as you type. Leaving a field no longer saves; only Save does, and its toast keeps Undo.
 - The check's top line puts the quarter first, for example `App has Q2: Us 8 · Them 6 (game 18–12)`, and a mismatch adds `Add the missing play, fix one below, or write a note and Save.`
 - The plays list inside the check no longer has its own header and Back button.
+- In the Book CSV's score by period, an opponent figure taken from the taps because the book box was left blank is now marked `*`, as our own estimates are, and so is the opponent total.
+- The Book CSV's `Timer` column is renamed `Timekeeper`, to match Setup.
+- The resume note no longer shows when reopening a game that has already ended.
 
 ## [0.1.0] - 2026-11-10
 

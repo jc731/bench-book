@@ -112,7 +112,7 @@ export function Reconcile({ store }: { store: GameStore }) {
     <div class="flex min-h-0 flex-1 flex-col">
       <header class="flex min-h-15 shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
         <h1 class="text-xl font-bold">Check {periodLabel(period)}</h1>
-        <span class="ml-auto rounded bg-slate-700 px-2 py-1 text-sm font-semibold">{statusChipText(c.status)}</span>
+        <span class="ml-auto rounded bg-slate-700 px-2 py-1 text-sm font-semibold" data-testid="check-status">{statusChipText(c.status)}</span>
       </header>
 
       <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 pb-24">

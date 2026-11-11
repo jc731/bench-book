@@ -140,9 +140,9 @@ export function namedEventLabel(g: Game, e: GameEvent): string {
   return `${who} ${eventLabel(g, e).replace(/^#\S+ /, '')}`;
 }
 
-/** The toast on reopening a saved game: `Resumed · last: #3 Player One +2`, or null when it has no plays. */
+/** The toast on reopening a game in progress: `Resumed · last: #3 Player One +2`; null with no plays or once ended. */
 export function resumeText(g: Game): string | null {
-  if (g.events.length === 0) return null;
+  if (g.endedAt || g.events.length === 0) return null;
   // The most recently entered play, which is where the scorer left off (an insert may sort earlier).
   const last = g.events.reduce((a, b) => (b.enteredAt > a.enteredAt || (b.enteredAt === a.enteredAt && b.order > a.order) ? b : a));
   return `Resumed · last: ${namedEventLabel(g, last)}`;

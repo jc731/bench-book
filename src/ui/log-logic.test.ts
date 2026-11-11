@@ -158,6 +158,11 @@ describe('resumeText', () => {
   it('is null with no plays', () => {
     expect(resumeText(game([]))).toBeNull();
   });
+  it('is null for an ended game', () => {
+    const g = game([{ type: 'FG2', playerId: 'a' }]);
+    expect(resumeText(g)).not.toBeNull();
+    expect(resumeText({ ...g, endedAt: NOW.toISOString() })).toBeNull();
+  });
   it('names the most recently entered play, with the player name', () => {
     let g = game([{ type: 'FG2', playerId: 'b' }]);
     g = appendEvent(g, { type: 'FG2', playerId: 'a' }, new Date(NOW.getTime() + 1000));

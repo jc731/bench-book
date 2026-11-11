@@ -80,13 +80,13 @@ describe('bookCsv', () => {
     expect(tot[head.indexOf("2'S")]).toBe('2');
   });
 
-  test('score by period: book number as-is, app sum starred, opponent uses book else taps', () => {
+  test('score by period: book number as-is, app sum starred, opponent uses book else taps starred', () => {
     let g = { ...sample(), trackOpponentTaps: true }; // app Q1 = 8, opp tap Q1 = 2
     g = saveReconcile(g, 1, 8, 5, '', now);
     let rows = parse(bookCsv(g));
     let us = scoreRow(rows, 'Team A');
     expect(us.slice(1, 6)).toEqual(['8', '0*', '0*', '0*', '8*']);
-    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['5', '0', '0', '0', '5']);
+    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['5', '0*', '0*', '0*', '5*']);
     g = saveReconcile(g, 1, null, null, '', now);
     g = saveReconcile(g, 2, 0, 0, '', now);
     g = saveReconcile(g, 3, 0, 0, '', now);
@@ -95,7 +95,16 @@ describe('bookCsv', () => {
     rows = parse(bookCsv(g));
     us = scoreRow(rows, 'Team A');
     expect(us.slice(1, 6)).toEqual(['8', '0', '0', '0', '8']);
-    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['2', '0', '0', '0', '2']);
+    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['2*', '0', '0', '0', '2*']);
+  });
+
+  test('an opponent row typed in every period carries no star', () => {
+    let g = { ...sample(), trackOpponentTaps: true }; // opp tap Q1 = 2
+    for (const p of [1, 2, 3, 4]) g = saveReconcile(g, p, null, p === 1 ? 2 : 0, '', now);
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '0', '0', '0', '2']);
+    // Clearing one period's box brings the star back, on that cell and the total.
+    g = saveReconcile(g, 3, null, null, '', now);
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '0', '0*', '0', '2*']);
   });
 
   test('with taps off, an opponent period nobody entered prints blank; an entered one still prints', () => {
@@ -146,7 +155,7 @@ describe('bookCsv', () => {
 
   test('header block and BOM', () => {
     const csv = bookCsv(game());
-    expect(csv.startsWith('\uFEFFTeam,Opponent,Date,Home/Away,Coach,Scorer,Timer\r\n')).toBe(true);
+    expect(csv.startsWith('\uFEFFTeam,Opponent,Date,Home/Away,Coach,Scorer,Timekeeper\r\n')).toBe(true);
     expect(csv.split('\uFEFF').length).toBe(2);
     expect(parse(csv)[1]).toEqual(['Team A', "St. Mary's", '2026-11-14', 'home', 'Coach One', 'Scorer One', 'Timer One']);
   });

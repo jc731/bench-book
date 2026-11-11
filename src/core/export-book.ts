@@ -11,7 +11,7 @@ export function bookCsv(g: Game): string {
   const i = g.info;
   const rows: Cell[][] = [];
 
-  rows.push(['Team', 'Opponent', 'Date', 'Home/Away', 'Coach', 'Scorer', 'Timer']);
+  rows.push(['Team', 'Opponent', 'Date', 'Home/Away', 'Coach', 'Scorer', 'Timekeeper']);
   rows.push([i.team, i.opponent, i.date, i.homeAway, i.coach, i.scorer, i.timer]);
   rows.push([]);
 
@@ -25,16 +25,20 @@ export function bookCsv(g: Game): string {
     estimated = true;
     return `${c.appUs}*`;
   });
+  // Opponent: the book's number where typed, else the tap total marked `*`, like our estimates.
+  let oppEstimated = false;
   const opp: Cell[] = played.map((p) => {
     const c = checkPeriod(g, p);
+    if (c.bookOpp !== null) return c.bookOpp;
     // Taps off and nothing entered: a blank, not a 0 nobody counted.
-    if (c.bookOpp === null && !g.trackOpponentTaps) return '';
-    return c.bookOpp ?? c.oppTapped;
+    if (!g.trackOpponentTaps) return '';
+    oppEstimated = true;
+    return `${c.oppTapped}*`;
   });
   rows.push(['Score by period']);
   rows.push(['', ...labels, 'Total']);
   rows.push([i.team, ...us, estimated ? `${usSum}*` : usSum]);
-  rows.push([i.opponent, ...opp, oppTotal(g)]);
+  rows.push([i.opponent, ...opp, oppEstimated ? `${oppTotal(g)}*` : oppTotal(g)]);
   rows.push([]);
 
   const byId = new Map(g.roster.map((p) => [p.id, p]));
