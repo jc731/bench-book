@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { appendEvent, moveFrom, newGame } from '../core/events';
 import type { EventDraft, Game, GameEvent } from '../core/types';
+import { applyUndo, applyUpdate } from './game-state';
 import {
-  addedLabel, compatibleTypes, draftOf, editLabel, editPatch, eventRowText, groupByPeriod, insertLabel,
-  moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, playsCount, resumeText,
+  addedLabel, alsoMoveText, compatibleTypes, draftOf, editLabel, editPatch, editSave, editTitle, eventRowText,
+  followersCount, groupByPeriod, moveFromCount, moveFromLabel, playsCount, resumeText,
 } from './log-logic';
 
 const info = { team: 'T', opponent: 'O', date: '2026-11-10', homeAway: 'home' as const, coach: '', scorer: '', timer: '' };
@@ -49,14 +50,19 @@ describe('groupByPeriod', () => {
     { type: 'FG3', playerId: 'a', period: 2 },
     { type: 'FOUL', playerId: 'b', period: 1 },
   ]);
-  it('lists the newest period first and events in order within a period', () => {
+  it('lists the newest period first and the newest play first by default', () => {
     const groups = groupByPeriod(g);
     expect(groups.map((x) => x.period)).toEqual([2, 1]);
-    expect(groups[1].events.map((e) => e.type)).toEqual(['FG2', 'FOUL']);
+    expect(groups[1].events.map((e) => e.type)).toEqual(['FOUL', 'FG2']);
+  });
+  it('lists both oldest first when asked (the quarter check)', () => {
+    expect(groupByPeriod(g, undefined, 'oldest').map((x) => x.period)).toEqual([1, 2]);
+    expect(groupByPeriod(g, 1, 'oldest')[0].events.map((e) => e.type)).toEqual(['FG2', 'FOUL']);
   });
   it('sorts by order, not array position', () => {
     const swapped = { ...g, events: [...g.events].reverse() };
-    expect(groupByPeriod(swapped)[1].events.map((e) => e.type)).toEqual(['FG2', 'FOUL']);
+    expect(groupByPeriod(swapped)[1].events.map((e) => e.type)).toEqual(['FOUL', 'FG2']);
+    expect(groupByPeriod(swapped, 1, 'oldest')[0].events.map((e) => e.type)).toEqual(['FG2', 'FOUL']);
   });
   it('filters to one period and gives nothing for an empty one', () => {
     expect(groupByPeriod(g, 1)).toHaveLength(1);
@@ -108,8 +114,11 @@ describe('editing', () => {
   it('labels an added play with the period', () => {
     expect(addedLabel('FG2', '4', 2)).toBe('Added #4 +2 to Q2');
   });
-  it('labels an insert with the period', () => {
-    expect(insertLabel('FOUL', '4', 1)).toBe('Inserted #4 Foul in Q1');
+  it('titles the fix sheet with the play and its quarter', () => {
+    const q1 = game([{ type: 'FG2', playerId: 'a' }, { type: 'TIMEOUT', timeoutKind: 'full' }], 1);
+    expect(editTitle(q1, q1.events[0])).toBe('Fix: #4 +2 · Q1');
+    expect(editTitle(q1, q1.events[1])).toBe('Fix: Timeout (Full) · Q1');
+    expect(editTitle(g, first(g))).toBe('Fix: #4 +2 · Q3');
   });
 });
 
@@ -126,11 +135,6 @@ describe('moving', () => {
   );
   // A legacy shape appendEvent no longer makes: hand-set orders keep the late Q1 play after Q2.
   g.events = g.events.map((e, i) => ({ ...e, order: i }));
-  it('offers the periods either side, bounded', () => {
-    expect(moveFromTargets(g, g.events[0])).toEqual([2]);
-    expect(moveFromTargets(g, g.events[3])).toEqual([1, 3]);
-    expect(moveFromTargets({ ...g, currentPeriod: 2 }, g.events[3])).toEqual([1]);
-  });
   it('counts what moveFrom touches', () => {
     expect(moveFromCount(g, g.events[1].id)).toBe(3); // itself, the next Q1 play, and the late Q1 play; the Q2 play stays
     expect(moveFromCount(g, g.events[3].id)).toBe(1); // the later Q1 play is an earlier period, so it stays
@@ -149,8 +153,92 @@ describe('moving', () => {
     expect(playsCount(3)).toBe('3 plays');
     expect(moveFromLabel(5, 2)).toBe('Moved 5 plays to Q2');
     expect(moveFromLabel(1, 6)).toBe('Moved 1 play to OT2');
-    expect(moveFromSubtitle(3, 2)).toBe('This play and the ones after it in Q2');
-    expect(moveFromSubtitle(1, 5)).toBe('Just this play, the last in OT1');
+    expect(alsoMoveText(1, 3)).toBe('Also move the 1 play after it in Q3');
+    expect(alsoMoveText(3, 3)).toBe('Also move the 3 plays after it in Q3');
+  });
+  it('counts the plays after it in its quarter', () => {
+    expect(followersCount(g, g.events[1].id)).toBe(2);
+    expect(followersCount(g, g.events[3].id)).toBe(0);
+    expect(followersCount(g, 'nope')).toBe(0);
+  });
+});
+
+describe('editSave', () => {
+  // Q3: #4 +2 (the one fixed), #7 Foul, Opp +2; then a Q4 play. Q1 and Q2 hold one play each.
+  const g = game(
+    [
+      { type: 'FG2', playerId: 'b', period: 1 },
+      { type: 'FG3', playerId: 'b', period: 2 },
+      { type: 'FG2', playerId: 'a', period: 3 },
+      { type: 'FOUL', playerId: 'b', period: 3 },
+      { type: 'OPP_PTS', oppPoints: 2, period: 3 },
+      { type: 'FTM', playerId: 'b', period: 4 },
+    ],
+    4,
+  );
+  const e = g.events[2];
+  const periods = (x: Game) => x.events.map((y) => y.period);
+  const apply = (s: NonNullable<ReturnType<typeof editSave>>) => s.apply(g, NOW);
+
+  it('is null when nothing changes, ticked or not', () => {
+    expect(editSave(g, e, draftOf(e), false)).toBeNull();
+    expect(editSave(g, e, draftOf(e), true)).toBeNull();
+  });
+  it('moves the play and the ones after it, unmarked, when only the quarter changed', () => {
+    const s = editSave(g, e, { ...draftOf(e), period: 4 }, true)!;
+    expect(s.label).toBe('Moved 3 plays to Q4');
+    const next = apply(s);
+    expect(periods(next)).toEqual([1, 2, 4, 4, 4, 4]);
+    expect(next.events.filter((x) => x.editedAt)).toEqual([]);
+  });
+  it('changes the player and moves the plays after it in one step', () => {
+    const d = { ...draftOf(e), playerId: 'b', period: 4 };
+    const s = editSave(g, e, d, true)!;
+    const prefix = editLabel(g, e, { playerId: 'b' });
+    expect(prefix).toBe('Edited #4 +2 → #7 +2');
+    expect(s.label).toBe(`${prefix}; moved 3 plays to Q4`);
+    const next = apply(s);
+    const fixed = next.events.find((x) => x.id === e.id)!;
+    expect(fixed.playerId).toBe('b');
+    expect(fixed.editedAt).toBe(NOW.toISOString());
+    expect(periods(next)).toEqual([1, 2, 4, 4, 4, 4]);
+    // The fixed play and its followers stay in their order, ahead of the play already in Q4.
+    expect(next.events.filter((x) => x.period === 4).sort((a, b) => a.order - b.order).map((x) => x.id)).toEqual(
+      [2, 3, 4, 5].map((i) => g.events[i].id),
+    );
+  });
+  it('is one undo step that restores the game as it was', () => {
+    const s = editSave(g, e, { ...draftOf(e), playerId: 'b', period: 4 }, true)!;
+    const after = applyUpdate({ game: g, stack: [] }, s.apply, s.label, NOW);
+    expect(after.stack).toHaveLength(1);
+    const back = applyUndo(after);
+    expect(back.label).toBe(s.label);
+    expect(back.state.game).toEqual(g);
+    expect(back.state.stack).toEqual([]);
+  });
+  it('moves only the play when not ticked', () => {
+    const s = editSave(g, e, { ...draftOf(e), period: 4 }, false)!;
+    expect(s.label).toBe('Moved #4 +2 to Q4');
+    expect(periods(apply(s))).toEqual([1, 2, 4, 3, 3, 4]);
+  });
+  it('moves backward too, to a quarter that is not next to it', () => {
+    const s = editSave(g, e, { ...draftOf(e), period: 1 }, true)!;
+    expect(s.label).toBe('Moved 3 plays to Q1');
+    const next = apply(s);
+    expect(periods(next)).toEqual([1, 2, 1, 1, 1, 4]);
+    const ordered = [...next.events].sort((a, b) => a.order - b.order).map((x) => x.period);
+    expect(ordered).toEqual([1, 1, 1, 1, 2, 4]);
+  });
+  it('is a plain edit when ticked but nothing follows it', () => {
+    const last = g.events[4];
+    const s = editSave(g, last, { ...draftOf(last), period: 4 }, true)!;
+    expect(s.label).toBe('Moved Opp +2 to Q4');
+    expect(periods(apply(s))).toEqual([1, 2, 3, 3, 4, 4]);
+  });
+  it('ignores the tick when the quarter did not change', () => {
+    const s = editSave(g, e, { ...draftOf(e), type: 'FG3' }, true)!;
+    expect(s.label).toBe('Edited #4 +2 → +3');
+    expect(periods(apply(s))).toEqual([1, 2, 3, 3, 3, 4]);
   });
 });
 

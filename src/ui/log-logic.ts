@@ -1,5 +1,5 @@
 import { periodLabel } from '../core/periods';
-import { orderedEvents } from '../core/events';
+import { editEvent, moveFrom, orderedEvents } from '../core/events';
 import type { EventType, Game, GameEvent, TimeoutKind } from '../core/types';
 import { BENCH_TECH_TEXT, oppLabel, playLabel, timeoutLabel, type PlayType } from './live-logic';
 
@@ -32,14 +32,21 @@ export interface PeriodGroup {
   events: GameEvent[];
 }
 
-/** Newest period first, events in `order` within a period; `period` filters to one. Empty periods are omitted. */
-export function groupByPeriod(g: Game, period?: number): PeriodGroup[] {
+/**
+ * Periods and the events within each, by `order`: `newest` (the Log) lists the newest period and the
+ * newest play first; `oldest` (the quarter check, walked beside the book) lists both oldest first.
+ * `period` filters to one. Empty periods are omitted.
+ */
+export function groupByPeriod(g: Game, period?: number, order: 'newest' | 'oldest' = 'newest'): PeriodGroup[] {
   const by = new Map<number, GameEvent[]>();
-  for (const e of orderedEvents(g)) {
+  const events = orderedEvents(g);
+  if (order === 'newest') events.reverse();
+  for (const e of events) {
     if (period !== undefined && e.period !== period) continue;
     by.set(e.period, [...(by.get(e.period) ?? []), e]);
   }
-  return [...by.entries()].sort((a, b) => b[0] - a[0]).map(([p, events]) => ({ period: p, events }));
+  const dir = order === 'newest' ? -1 : 1;
+  return [...by.entries()].sort((a, b) => dir * (a[0] - b[0])).map(([p, events]) => ({ period: p, events }));
 }
 
 /** Types an event may switch to without gaining or losing fields. */
@@ -98,11 +105,6 @@ export function editLabel(g: Game, e: GameEvent, patch: EditPatch): string {
   return moved ? `${text}, now in ${periodLabel(after.period)}` : text;
 }
 
-/** For "this and everything after": the period before and after the event's own, within 1..currentPeriod. */
-export function moveFromTargets(g: Game, e: GameEvent): number[] {
-  return [e.period - 1, e.period + 1].filter((p) => p >= 1 && p <= g.currentPeriod);
-}
-
 /** How many events `moveFrom` would touch: the play and every later play in its own period. */
 export function moveFromCount(g: Game, fromId: string): number {
   const from = g.events.find((e) => e.id === fromId);
@@ -110,26 +112,59 @@ export function moveFromCount(g: Game, fromId: string): number {
   return g.events.filter((e) => e.id === fromId || (e.order > from.order && e.period === from.period)).length;
 }
 
-export function playsCount(count: number): string {
-  return `${count} ${count === 1 ? 'play' : 'plays'}`;
+/** How many plays come after this one in its own quarter (what "Also move" adds); 0 when absent. */
+export function followersCount(g: Game, id: string): number {
+  return Math.max(0, moveFromCount(g, id) - 1);
 }
 
-/** The second line of the Log's move action, naming what moves. */
-export function moveFromSubtitle(count: number, period: number): string {
-  const p = periodLabel(period);
-  return count === 1 ? `Just this play, the last in ${p}` : `This play and the ones after it in ${p}`;
+export function playsCount(count: number): string {
+  return `${count} ${count === 1 ? 'play' : 'plays'}`;
 }
 
 export function moveFromLabel(count: number, period: number): string {
   return `Moved ${playsCount(count)} to ${periodLabel(period)}`;
 }
 
-export function addedLabel(type: PlayType, number: string, period: number): string {
-  return `Added ${playLabel(type, number)} to ${periodLabel(period)}`;
+/** The checkbox in the fix sheet's Quarter group: `Also move the 3 plays after it in Q3`. */
+export function alsoMoveText(after: number, period: number): string {
+  return `Also move the ${playsCount(after)} after it in ${periodLabel(period)}`;
 }
 
-export function insertLabel(type: PlayType, number: string, period: number): string {
-  return `Inserted ${playLabel(type, number)} in ${periodLabel(period)}`;
+/** The fix sheet's title: `Fix: #12 +2 · Q1`. */
+export function editTitle(g: Game, e: GameEvent): string {
+  return `Fix: ${eventLabel(g, e)} · ${periodLabel(e.period)}`;
+}
+
+/**
+ * What the fix sheet's Save does, as one update (so one undo step), or null when nothing changes.
+ * With "Also move" ticked, a changed quarter takes the plays after it along (`moveFrom`); the other
+ * fields are edited first, and the play is marked edited only when one of them changed.
+ */
+export function editSave(
+  g: Game,
+  e: GameEvent,
+  d: EditDraft,
+  alsoMove: boolean,
+): { apply: (g: Game, now: Date) => Game; label: string } | null {
+  const patch = editPatch(e, d);
+  if (Object.keys(patch).length === 0) return null;
+  const followers = followersCount(g, e.id);
+  if (!alsoMove || followers === 0 || patch.period === undefined) {
+    return { apply: (x, now) => editEvent(x, e.id, patch, now), label: editLabel(g, e, patch) };
+  }
+  const { period: _moved, ...rest } = patch;
+  const to = d.period;
+  const edited = Object.keys(rest).length > 0;
+  return {
+    apply: (x, now) => moveFrom(edited ? editEvent(x, e.id, rest, now) : x, e.id, to, now),
+    label: edited
+      ? `${editLabel(g, e, rest)}; moved ${playsCount(followers + 1)} to ${periodLabel(to)}`
+      : moveFromLabel(followers + 1, to),
+  };
+}
+
+export function addedLabel(type: PlayType, number: string, period: number): string {
+  return `Added ${playLabel(type, number)} to ${periodLabel(period)}`;
 }
 
 /** The feedback line on reopening a game in progress: `Last: #3 +2`; null with no plays or once ended. */

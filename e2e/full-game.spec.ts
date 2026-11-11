@@ -33,7 +33,7 @@ import { downloadCsv } from './csv';
  *  13 | Q2  | #31 Player Six    +3                   |  11 |   6 |  0 |
  *  14 | Q2  | Opp +2                                 |  11 |   8 |  0 |
  *  15 | Q2  | #12 Player Four   Foul                 |  11 |   8 |  1 | P4 3
- *  16 | Q2  | #44 Player Seven  +2                   |  13 |   8 |  1 | (missed play goes before this)
+ *  16 | Q2  | #44 Player Seven  +2                   |  13 |   8 |  1 | (a +2 by #31 before this was missed)
  *  17 | Q2  | #12 Player Four   Foul                 |  13 |   8 |  2 | P4 4 -> warning
  *  18 | Q2  | #23 Player Five   Tech                 |  13 |   8 |  3 | P5 1 foul, 1 tech
  *  19 | Q2  | #00 Player Two    Foul                 |  13 |   8 |  4 | no bonus chip yet
@@ -43,7 +43,7 @@ import { downloadCsv } from './csv';
  *  23 | Q2  | #00 Player Two    FT made (same sheet) |  15 |  10 |  5 | Q2 app 3+2+1+1 = 7, opp 2+2 = 4
  *     |     | End Q2 -> Q3 Fouls 0, no chip (reset)  |     |     |  0 |
  *     |     | Check Q2: book 9 / 4 -> app 2 short    |     |     |    | MISMATCH saved
- *  24 | Q2  | INSERT #31 Player Six +2 before ev 16  |  17 |  10 |    | Q2 now 9 -> FIXED
+ *  24 | Q2  | ADD #31 Player Six +2 from Check Q2    |  17 |  10 |    | at the end of Q2; Q2 now 9 -> FIXED
  *  25 | Q3  | #4  Player One    +2  (WRONG PLAYER)   |  19 |  10 |  0 | later edited to #0 Player Three
  *  26 | Q3  | Opp +3                                 |  19 |  13 |  0 |
  *  27 | Q3  | #12 Player Four   Foul                 |  19 |  13 |  1 | P4 5 fouls -> OUT
@@ -53,7 +53,7 @@ import { downloadCsv } from './csv';
  *  31 | Q3  | Opp +2                                 |  22 |  15 |  2 | Q3 app 2+3 = 5, opp 3+2 = 5
  *  32 | Q3* | #0  Player Three  +2   (End Q3 missed) |  24 |  15 |  2 | really Q4
  *  33 | Q3* | Opp +2                 (End Q3 missed) |  24 |  17 |  2 | really Q4
- *     |     | End Q3 (late). Log: "Move to another quarter…" from ev 32 -> Q4 (2 plays)
+ *     |     | End Q3 (late). Log: fix ev 32, Quarter Q4 + "Also move" the 1 after it (2 plays)
  *     |     | Log: edit ev 25 player #4 -> #0 (points unchanged: 24-17, Q4 Fouls 0)
  *     |     | Check Q3: book 7 / 5 + note -> app 2 short, left with a note -> NOTED
  *  34 | Q4  | #31 Player Six    Foul                 |  24 |  17 |  1 |
@@ -91,7 +91,7 @@ import { downloadCsv } from './csv';
  * Reconcile: Q1 matched (8/8/0) · Q2 fixed (9/9/0) · Q3 noted (7/5/2) · Q4 pending (–/6/–)
  *            · OT1 matched (4/4/0).
  *
- * Players (final, after the edit, the insert and the move):
+ * Players (final, after the edit, the added play and the move):
  *   player         | FOULS | TECHS | 2'S | 3'S | FTA | FTM | TP | marks
  *   #4  One        |   2   |   0   |  1  |  0  |  2  |  2  |  4 | Q1 "2", OT1 "FT FT"; Q3 "" (edited away)
  *   #00 Two        |   2   |   0   |  0  |  1  |  4  |  3  |  6 | Q1 "FT 0", Q2 "FT FT", Q4 "3"
@@ -257,25 +257,25 @@ function ui(page: Page) {
     /** The Log row starting with `text` (an "edited" tag may follow it). */
     logRow: (scope: Locator, text: string) =>
       scope.getByRole('button', { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }),
-    async insertBefore(rowScope: Locator, rowText: string, name: Name, pts: '+2' | '+3') {
-      await this.logRow(rowScope, rowText).click();
-      await dialog().getByRole('button', exact('Add a missed play before this')).click();
+    /** From the check's "Plays to fix": adds a play at the end of that quarter. */
+    async addPlay(label: string, name: Name, pts: '+2' | '+3') {
+      await this.fixRegion().getByRole('button', exact(`Add play to ${label}`)).click();
       await dialog().getByRole('button', exact(`#${numberOf(name)} ${name}`)).click();
       await dialog().getByRole('button', exact(pts)).click();
       await expect(dialog()).toHaveCount(0);
+      await this.expectToast(`Added #${numberOf(name)} ${pts} to ${label}`);
     },
-    async moveFrom(rowScope: Locator, rowScopeLabel: string, rowText: string, toLabel: string, count: number) {
+    /** Taps a row, picks another quarter and ticks "Also move" for the `after` plays that follow it. */
+    async moveFrom(rowScope: Locator, fromLabel: string, rowText: string, toLabel: string, after: number) {
       await this.logRow(rowScope, rowText).click();
-      const move = dialog().getByRole('button', exact('Move to another quarter…'));
-      await expect(move).toHaveAccessibleDescription(`This play and the ones after it in ${rowScopeLabel}`);
-      await move.click();
-      await expect(dialog()).toHaveAccessibleName(`Move ${count} plays to`);
-      await dialog().getByRole('button', exact(toLabel)).click();
+      await dialog().getByRole('group', exact('Quarter')).getByRole('button', exact(toLabel)).click();
+      await dialog().getByRole('checkbox', exact(`Also move the ${after} play${after === 1 ? '' : 's'} after it in ${fromLabel}`)).check();
+      await dialog().getByRole('button', exact('Save')).click();
       await expect(dialog()).toHaveCount(0);
+      await this.expectToast(`Moved ${after + 1} plays to ${toLabel}`);
     },
     async editPlayer(rowScope: Locator, rowText: string, name: Name) {
       await this.logRow(rowScope, rowText).click();
-      await dialog().getByRole('button', exact('Edit')).click();
       await dialog().getByRole('group', exact('Player')).getByRole('button', exact(`#${numberOf(name)} ${name}`)).click();
       await dialog().getByRole('button', exact('Save')).click();
       await expect(dialog()).toHaveCount(0);
@@ -424,7 +424,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
   });
 
-  await test.step('Q2: bonus on the 5th team foul (a bench T); check is off, fixed by an insert', async () => {
+  await test.step('Q2: bonus on the 5th team foul (a bench T); check is off, fixed by adding the missed play', async () => {
     await app.score('Player Six', '+3');
     await app.opp(2);
     await app.foul('Player Four');
@@ -447,14 +447,14 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     // The count resets for the new quarter.
     await app.expectStrip({ us: 15, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
 
-    // The book says 9; the app has 7. A +2 by #31 was missed before #44's +2.
+    // The book says 9; the app has 7. A +2 by #31 was missed; it is added from the check, at the end of Q2.
     await app.banner('Q2').click();
     await app.expectAppHas('Q2', 7, 4, 15, 10);
     await app.fillCheck('Q2', 9, 4);
     await app.expectShort(9, 7);
     await app.expectMismatchHint();
     await expectNoOverflow(page);
-    await app.insertBefore(app.fixRegion(), app.playText('Player Seven', '+2'), 'Player Six', '+2');
+    await app.addPlay('Q2', 'Player Six', '+2');
     await app.expectMatches();
     await app.saveCheck();
     await app.expectToastUndo('Saved Q2 check');
@@ -486,7 +486,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
     await app.openLog();
     const q3 = app.logSection('Q3');
-    await app.moveFrom(q3, 'Q3', app.playText('Player Three', '+2'), 'Q4', 2);
+    await app.moveFrom(q3, 'Q3', app.playText('Player Three', '+2'), 'Q4', 1);
     const q4 = app.logSection('Q4');
     await expect(app.logRow(q4, app.playText('Player Three', '+2'))).toBeVisible();
     await expect(app.logRow(q4, app.oppText(2))).toBeVisible();
@@ -626,7 +626,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     expect([totals[col('FOULS')], totals[col('TECHS')], totals[col("2'S")], totals[col("3'S")],
       totals[col('FTA')], totals[col('FTM')], totals[col('TP')]]).toEqual(['14', '2', '7', '4', '8', '6', '32']);
 
-    // Marks show where the edit, insert and move landed.
+    // Marks show where the edit, the added play and the move landed.
     const marks = (name: string) => ['Q1', 'Q2', 'Q3', 'Q4', 'OT1'].map((p) => line(name)[col(p)]);
     expect(marks('Player One')).toEqual(['2', '', '', '', 'FT FT']);
     expect(marks('Player Two')).toEqual(['FT 0', 'FT FT', '', '3', '']);
@@ -681,9 +681,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     const edited = plays.filter((r) => r[c('edited')] === 'yes');
     expect(edited.map((r) => [r[c('period')], r[c('number')], r[c('event')]])).toEqual([['Q3', '0', 'FG2']]);
 
-    // The insert sits right before #44's +2 in Q2.
+    // The missed play, added from the check, is the last Q2 row.
     const q2 = plays.filter((r) => r[c('period')] === 'Q2').map((r) => `${r[c('number')]} ${r[c('event')]}`);
-    expect(q2.slice(3, 5)).toEqual(['31 FG2', '44 FG2']);
+    expect(q2[q2.length - 1]).toBe('31 FG2');
 
     // The move: the first two Q4 rows are the plays entered before End Q3.
     const q4 = plays.filter((r) => r[c('period')] === 'Q4').map((r) => `${r[c('team')]} ${r[c('number')]} ${r[c('event')]}`);

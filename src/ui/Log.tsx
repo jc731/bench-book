@@ -1,28 +1,26 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
-import { deleteEvent, editEvent, insertEventBefore, moveFrom } from '../core/events';
+import { deleteEvent } from '../core/events';
 import { periodLabel } from '../core/periods';
 import type { EventType, GameEvent, Player, TimeoutKind } from '../core/types';
-import { EventSheet, Sheet } from './EventSheet';
+import { Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { BENCH_TECH_TEXT, feedbackLine, playButtonText, timeoutKindText, type PlayType } from './live-logic';
 import {
-  compatibleTypes, draftOf, editLabel, editPatch, eventLabel, eventRowText, groupByPeriod,
-  insertLabel, isPlayType, moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, playsCount, timeoutKindsFor,
-  type EditDraft,
+  alsoMoveText, compatibleTypes, draftOf, editSave, editTitle, eventLabel, eventRowText, followersCount, groupByPeriod,
+  isPlayType, timeoutKindsFor, type EditDraft,
 } from './log-logic';
 import type { GameStore } from './store';
 
 const btn = 'min-h-12 rounded-xl bg-slate-600 px-3 text-lg font-bold active:bg-slate-500';
 const on = 'bg-white text-slate-900';
-const action = 'min-h-12 w-full rounded-xl bg-slate-600 px-4 text-left text-lg font-semibold active:bg-slate-500';
-
-type Step = 'actions' | 'edit' | 'moveFrom' | 'insertPlayer' | 'insertPlay';
 
 interface Props {
   store: GameStore;
   /** Show one period only (Reconcile uses this). */
   period?: number;
+  /** `newest` (the Log) or `oldest` (the quarter check, walked beside the book). */
+  order?: 'newest' | 'oldest';
   onClose?: () => void;
   /** Slot in each period header, e.g. status chips. */
   headerExtra?: (period: number) => ComponentChildren;
@@ -32,23 +30,21 @@ interface Props {
   embedded?: boolean;
 }
 
-export function Log({ store, period, onClose, headerExtra, showToast = true, embedded = false }: Props) {
+export function Log({ store, period, order = 'newest', onClose, headerExtra, showToast = true, embedded = false }: Props) {
   const { game, toast, update, undo, setView } = store;
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>('actions');
   const [draft, setDraft] = useState<EditDraft | null>(null);
-  const [insertPlayer, setInsertPlayer] = useState<Player | null>(null);
+  const [alsoMove, setAlsoMove] = useState(false);
 
   if (!game) return null;
   const selected = game.events.find((e) => e.id === selectedId) ?? null;
-  const groups = groupByPeriod(game, period);
+  const groups = groupByPeriod(game, period, order);
   const close = onClose ?? (() => setView('live'));
 
   const open = (e: GameEvent) => {
     setSelectedId(e.id);
-    setStep('actions');
-    setDraft(null);
-    setInsertPlayer(null);
+    setDraft(draftOf(e));
+    setAlsoMove(false);
   };
   const done = () => setSelectedId(null);
 
@@ -56,18 +52,9 @@ export function Log({ store, period, onClose, headerExtra, showToast = true, emb
     update((g, now) => deleteEvent(g, e.id, now), `Deleted ${eventLabel(game, e)}`);
     done();
   };
-  const doEdit = (e: GameEvent, d: EditDraft) => {
-    const patch = editPatch(e, d);
-    if (Object.keys(patch).length > 0) update((g, now) => editEvent(g, e.id, patch, now), editLabel(game, e, patch));
-    done();
-  };
-  const doMoveFrom = (e: GameEvent, to: number) => {
-    const n = moveFromCount(game, e.id);
-    update((g, now) => moveFrom(g, e.id, to, now), moveFromLabel(n, to));
-    done();
-  };
-  const doInsert = (e: GameEvent, p: Player, type: PlayType) => {
-    update((g, now) => insertEventBefore(g, e.id, { type, playerId: p.id }, now), insertLabel(type, p.number, e.period));
+  const doSave = (e: GameEvent, d: EditDraft) => {
+    const save = editSave(game, e, d, alsoMove);
+    if (save) update(save.apply, save.label);
     done();
   };
 
@@ -89,18 +76,19 @@ export function Log({ store, period, onClose, headerExtra, showToast = true, emb
               <h2 class="text-lg font-bold">{periodLabel(grp.period)}</h2>
               {headerExtra?.(grp.period)}
             </div>
-            <ul>
+            <ul class="flex flex-col gap-1.5 p-2">
               {grp.events.map((e) => (
-                <li key={e.id} class="border-b border-slate-800">
+                <li key={e.id}>
                   <button
                     type="button"
-                    class="flex min-h-12 w-full items-center justify-between gap-2 px-3 text-left active:bg-slate-800"
+                    class="flex min-h-12 w-full items-center gap-2 rounded-lg border border-slate-600 bg-slate-900 px-3 text-left active:bg-slate-800"
                     onClick={() => open(e)}
                   >
-                    <span class="min-w-0 truncate">{eventRowText(game, e)}</span>
+                    <span class="min-w-0 flex-1 truncate">{eventRowText(game, e)}</span>
                     {e.editedAt && (
                       <span class="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-xs font-semibold text-amber-300">edited</span>
                     )}
+                    <span class="shrink-0 text-2xl leading-none text-slate-400" aria-hidden="true">›</span>
                   </button>
                 </li>
               ))}
@@ -113,65 +101,16 @@ export function Log({ store, period, onClose, headerExtra, showToast = true, emb
         <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-0 z-10 border-t border-slate-600" onUndo={undo} />
       )}
 
-      {selected && step === 'actions' && (
-        <Sheet title={eventRowText(game, selected)} onClose={done}>
-          <div class="flex flex-col gap-2">
-            <button type="button" class={action} onClick={() => { setDraft(draftOf(selected)); setStep('edit'); }}>Edit</button>
-            <button type="button" class={action} onClick={() => doDelete(selected)}>Delete</button>
-            <button type="button" class={action} onClick={() => setStep('insertPlayer')}>Add a missed play before this</button>
-            {moveFromTargets(game, selected).length > 0 && (
-              <button
-                type="button"
-                class={`${action} leading-tight`}
-                aria-label="Move to another quarter…"
-                aria-describedby="move-from-subtitle"
-                onClick={() => setStep('moveFrom')}
-              >
-                <span class="block">Move to another quarter…</span>
-                <span id="move-from-subtitle" class="block text-sm font-normal text-slate-300">
-                  {moveFromSubtitle(moveFromCount(game, selected.id), selected.period)}
-                </span>
-              </button>
-            )}
-          </div>
-        </Sheet>
-      )}
-      {selected && step === 'edit' && draft && (
+      {selected && draft && (
         <EditSheet
           game={game}
           event={selected}
           draft={draft}
           setDraft={setDraft}
-          onSave={() => doEdit(selected, draft)}
-          onClose={done}
-        />
-      )}
-      {selected && step === 'moveFrom' && (
-        <Sheet title={`Move ${playsCount(moveFromCount(game, selected.id))} to`} onClose={done}>
-          <div class="grid grid-cols-2 gap-2">
-            {moveFromTargets(game, selected).map((p) => (
-              <button key={p} type="button" class={btn} onClick={() => doMoveFrom(selected, p)}>
-                {periodLabel(p)}
-              </button>
-            ))}
-          </div>
-        </Sheet>
-      )}
-      {selected && step === 'insertPlayer' && (
-        <Sheet title={`Add a missed play before this, in ${periodLabel(selected.period)}`} onClose={done}>
-          <div class="grid max-h-[60dvh] grid-cols-2 gap-2 overflow-y-auto">
-            {game.roster.map((p) => (
-              <PlayerButton key={p.id} p={p} onClick={() => { setInsertPlayer(p); setStep('insertPlay'); }} />
-            ))}
-          </div>
-        </Sheet>
-      )}
-      {selected && step === 'insertPlay' && insertPlayer && (
-        <EventSheet
-          player={insertPlayer}
-          toast={null}
-          onPlay={(t) => doInsert(selected, insertPlayer, t)}
-          onUndo={undo}
+          alsoMove={alsoMove}
+          setAlsoMove={setAlsoMove}
+          onSave={() => doSave(selected, draft)}
+          onDelete={() => doDelete(selected)}
           onClose={done}
         />
       )}
@@ -187,67 +126,93 @@ function PlayerButton({ p, onClick, selected }: { p: Player; onClick: () => void
   );
 }
 
-function EditSheet({ game, event, draft, setDraft, onSave, onClose }: {
+/** One labeled group of the fix sheet, with a visible heading. */
+function Group({ label, cols, children }: { label: string; cols: string; children: ComponentChildren }) {
+  return (
+    <div role="group" aria-label={label}>
+      <h3 class="mb-1 text-sm font-semibold text-slate-300">{label}</h3>
+      <div class={`grid ${cols} gap-2`}>{children}</div>
+    </div>
+  );
+}
+
+function EditSheet({ game, event, draft, setDraft, alsoMove, setAlsoMove, onSave, onDelete, onClose }: {
   game: NonNullable<GameStore['game']>;
   event: GameEvent;
   draft: EditDraft;
   setDraft: (d: EditDraft) => void;
+  alsoMove: boolean;
+  setAlsoMove: (on: boolean) => void;
   onSave: () => void;
+  onDelete: () => void;
   onClose: () => void;
 }) {
   const types = compatibleTypes(event);
   const kinds = timeoutKindsFor(event);
   const periods = Array.from({ length: game.currentPeriod }, (_, i) => i + 1);
+  const followers = followersCount(game, event.id);
   const typeText = (t: EventType) => (t === 'BENCH_TECH' ? BENCH_TECH_TEXT : t === 'TIMEOUT' ? 'Timeout' : t === 'OPP_PTS' ? 'Opp' : playButtonText(t as PlayType));
   return (
-    <Sheet title="Edit" onClose={onClose}>
-      <div class="flex max-h-[70dvh] flex-col gap-3 overflow-y-auto">
+    <Sheet title={editTitle(game, event)} onClose={onClose}>
+      <div class="flex max-h-[65dvh] flex-col gap-3 overflow-y-auto">
         {types.length > 1 && (
-          <div class="grid grid-cols-3 gap-2" role="group" aria-label="Play">
+          <Group label="Play" cols="grid-cols-3">
             {types.map((t) => (
               <button key={t} type="button" class={`${btn} ${draft.type === t ? on : ''}`} onClick={() => setDraft({ ...draft, type: t })}>
                 {typeText(t)}
               </button>
             ))}
-          </div>
+          </Group>
         )}
         {kinds.length > 0 && (
-          <div class="grid grid-cols-3 gap-2" role="group" aria-label="Timeout kind">
+          <Group label="Play" cols="grid-cols-3">
             {kinds.map((k: TimeoutKind) => (
               <button key={k} type="button" class={`${btn} ${draft.timeoutKind === k ? on : ''}`} onClick={() => setDraft({ ...draft, timeoutKind: k })}>
                 {timeoutKindText(k)}
               </button>
             ))}
-          </div>
+          </Group>
         )}
         {event.type === 'OPP_PTS' && (
-          <div class="grid grid-cols-3 gap-2" role="group" aria-label="Opponent points">
+          <Group label="Play" cols="grid-cols-3">
             {([1, 2, 3] as const).map((n) => (
               <button key={n} type="button" class={`${btn} ${draft.oppPoints === n ? on : ''}`} onClick={() => setDraft({ ...draft, oppPoints: n })}>
                 +{n}
               </button>
             ))}
-          </div>
+          </Group>
         )}
         {isPlayType(event.type) && (
-          <div class="grid grid-cols-2 gap-2" role="group" aria-label="Player">
+          <Group label="Player" cols="grid-cols-2">
             {game.roster.map((p) => (
               <PlayerButton key={p.id} p={p} selected={draft.playerId === p.id} onClick={() => setDraft({ ...draft, playerId: p.id })} />
             ))}
-          </div>
+          </Group>
         )}
         {periods.length > 1 && (
-          <div class="grid grid-cols-4 gap-2" role="group" aria-label="Period">
+          <Group label="Quarter" cols="grid-cols-4">
             {periods.map((p) => (
               <button key={p} type="button" class={`${btn} ${draft.period === p ? on : ''}`} onClick={() => setDraft({ ...draft, period: p })}>
                 {periodLabel(p)}
               </button>
             ))}
-          </div>
+          </Group>
+        )}
+        {draft.period !== event.period && followers > 0 && (
+          <label class="flex min-h-11 items-center gap-3 font-semibold">
+            <input
+              type="checkbox"
+              class="h-6 w-6 shrink-0 accent-amber-400"
+              checked={alsoMove}
+              onChange={(e) => setAlsoMove(e.currentTarget.checked)}
+            />
+            {alsoMoveText(followers, event.period)}
+          </label>
         )}
       </div>
-      <div class="mt-3 flex justify-end gap-2">
-        <button type="button" class="min-h-12 rounded-lg border border-slate-400 px-5 font-semibold" onClick={onClose}>Cancel</button>
+      <div class="mt-3 flex gap-2">
+        <button type="button" class="min-h-12 rounded-lg border border-red-400 px-4 font-semibold text-red-300" onClick={onDelete}>Delete</button>
+        <button type="button" class="ml-auto min-h-12 rounded-lg border border-slate-400 px-5 font-semibold" onClick={onClose}>Cancel</button>
         <button type="button" class="min-h-12 rounded-lg bg-white px-6 font-semibold text-slate-900" onClick={onSave}>Save</button>
       </div>
     </Sheet>

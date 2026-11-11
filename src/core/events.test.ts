@@ -181,6 +181,17 @@ describe('event log', () => {
     expect(editEvent(g, id, { period: 1, type: 'FG3' }, t1).events.find((e) => e.id === id)!.order).toBe(0);
   });
 
+  test('moveFrom to a quarter that is not next to it moves the block and leaves the one between alone', () => {
+    let g = { ...newGame(info, roster, t0), currentPeriod: 3 };
+    for (const period of [1, 1, 1, 2]) g = appendEvent(g, { type: 'FG2', playerId: 'p1', period }, t0);
+    const [Q1a, Q1b, Q1c, Q2] = orderedEvents(g);
+    const g2 = moveFrom(g, Q1b.id, 3, t1);
+    const p = Object.fromEntries(g2.events.map((e) => [e.id, e.period]));
+    expect(p).toEqual({ [Q1a.id]: 1, [Q1b.id]: 3, [Q1c.id]: 3, [Q2.id]: 2 });
+    expect(g2.events.find((e) => e.id === Q2.id)).toEqual(Q2);
+    expectMonotonic(g2);
+  });
+
   test('moveFrom after a missed End Q keeps the order period-monotonic', () => {
     let g = threeEvents(); // Q1 x3; End Q1 was missed for the last two
     const [, B] = orderedEvents(g);

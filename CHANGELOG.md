@@ -14,6 +14,11 @@ All notable changes to Bench Book are listed here, in the
 - After End game the status strip reads Final and the End Q button becomes Final ▸. The separate "Game ended" bar is gone.
 - The ⋯ menu's "Final / export" opens the Final screen without ending the game. Final offers "End game early" (with a confirm) while the game is live, and "Reopen game" once it has ended, even after a reload.
 - The Final screen's footer is "Back to game" and "New game".
+- Log rows look like buttons, and the Log lists the newest quarter and the newest play first. The quarter check's list stays oldest first, to walk beside the book.
+- Tapping a Log row opens the fix directly, titled with the play, for example "Fix: #12 +2 · Q1", with Play, Player and Quarter groups and Delete at the bottom.
+- Moving a play to another quarter is in the fix's Quarter group, with "Also move the plays after it" for a missed End Q.
+- "Add a missed play before this" is gone. Add a missed play from the quarter check's "Add play to Q…"; it goes at the end of that quarter.
+- The quarter check always shows its plays on a mismatch; the Hide/Show toggle is gone.
 
 ## [0.2.0] - 2026-11-11
 

@@ -45,7 +45,6 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
   const [note, setNote] = useState('');
-  const [showLog, setShowLog] = useState(true);
   const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
   const [addPlayer, setAddPlayer] = useState<Player | null>(null);
   const seeded = useRef<number | null>(null);
@@ -153,12 +152,7 @@ export function Reconcile({ store }: { store: GameStore }) {
 
         {mismatch && (
           <section aria-label="Plays to fix">
-            <div class="flex items-center justify-between">
-              <h2 class="font-bold">Fix the plays</h2>
-              <button type="button" class="min-h-11 px-3 font-semibold text-amber-300" onClick={() => setShowLog(!showLog)}>
-                {showLog ? 'Hide' : 'Show'}
-              </button>
-            </div>
+            <h2 class="mb-2 font-bold">Fix the plays</h2>
             <button
               type="button"
               class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
@@ -166,11 +160,9 @@ export function Reconcile({ store }: { store: GameStore }) {
             >
               Add play to {periodLabel(period)}
             </button>
-            {showLog && (
-              <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
-                <Log store={store} period={period} showToast={false} embedded />
-              </div>
-            )}
+            <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
+              <Log store={store} period={period} order="oldest" showToast={false} embedded />
+            </div>
           </section>
         )}
 

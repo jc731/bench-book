@@ -236,6 +236,7 @@ test('ended game: Final, reload, Reopen game', async ({ page }) => {
   await expect(stripPeriod(page, 'Final')).toBeVisible();
   await expect(notExportedChip(page)).toBeVisible();
   await endSlotButton(page, 'Final ▸').click();
+  await expect(page.getByRole('heading', { name: 'Final' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'End game early' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Reopen game' }).click();
 
@@ -274,4 +275,59 @@ test('a live game: Final / export, then End game early with a confirm', async ({
   await page.getByRole('button', { name: 'Back to game' }).click();
   await expect(stripPeriod(page, 'Final')).toBeVisible();
   await expect(endSlotButton(page, 'Final ▸')).toBeVisible();
+});
+
+test('Log: newest first, tap to fix, Delete and Undo', async ({ page }) => {
+  await onePlayerGame(page);
+  const one = card(page, '4', 'Player One');
+  await tap(page, one, '+2');
+  await tap(page, one, 'Foul');
+  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+
+  const q1 = page.getByRole('region', { name: 'Q1', exact: true });
+  const rows = q1.getByRole('button');
+  await expect(rows).toHaveCount(2);
+  // The chevron is decoration: the name is the row text alone.
+  await expect(rows.first()).toHaveAccessibleName('#4 Player One · Foul');
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · +2');
+
+  await rows.nth(1).click();
+  const fix = page.getByRole('dialog');
+  await expect(fix).toHaveAccessibleName('Fix: #4 +2 · Q1');
+  await expect(fix.getByRole('group', { name: 'Play', exact: true })).toBeVisible();
+  await expect(fix.getByRole('group', { name: 'Player', exact: true })).toBeVisible();
+  await fix.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(fix).toHaveCount(0);
+  await expect(page.getByTestId('feedback-text')).toHaveText('Deleted #4 +2');
+  await expect(rows).toHaveCount(1);
+
+  await page.getByRole('status').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · +2');
+});
+
+test("the check's Add-play sheet shows only what was added while it is open, and its list is oldest first", async ({ page }) => {
+  await onePlayerGame(page);
+  await tap(page, card(page, '4', 'Player One'), '+2');
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
+  await page.getByLabel(/Our points in Q1/).fill('5');
+  // An entry from before the sheet opens is on the check's own line...
+  await expect(page.getByTestId('feedback-text')).not.toHaveText('');
+
+  await page.getByRole('button', { name: 'Add play to Q1' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
+  // ...but not inside the sheet.
+  const status = page.getByRole('dialog').getByTestId('sheet-status');
+  await expect(status).toHaveText('');
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
+  // An FT keeps the sheet open, and what it added does show.
+  await page.getByRole('dialog').getByRole('button', { name: 'FT made', exact: true }).click();
+  await expect(status).toHaveText('Added #4 FT made to Q1');
+  await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
+  // The check's list stays oldest first, to walk beside the book.
+  const rows = page.getByRole('region', { name: 'Plays to fix' }).getByRole('region', { name: 'Q1' }).getByRole('button');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toHaveAccessibleName('#4 Player One · +2');
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · FT made');
 });
