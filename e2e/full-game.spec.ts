@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { downloadCsv } from './csv';
 
 /*
  * Full-game release test: one whole game played the way a fluent scorer plays it, with every
@@ -113,9 +114,20 @@ const ROSTER = [
   { pos: 'C', name: 'Player Seven', number: '44' },
 ] as const;
 type Name = (typeof ROSTER)[number]['name'];
+const TEAM = 'Test Home';
+const OPPONENT = 'Test Opp';
 const numberOf = (name: Name) => ROSTER.find((p) => p.name === name)!.number;
 
+/** Check statuses as the Log chips and the open-issues list show them. */
+const STATUS = { matched: '✓ Matched', fixed: '✓ Fixed', noted: 'Noted', pending: 'Not checked' } as const;
+type Status = keyof typeof STATUS;
+
 // ---- UI wording lives only in this block --------------------------------------------------
+
+/** Timeouts left; `ot` only in an OT period (one OT timeout per OT period, so OT1 has 1). */
+interface TimeoutsLeft { full: number; thirty: number; ot?: number }
+const timeoutsText = (t: TimeoutsLeft) =>
+  [`Full ${t.full}/3`, `30 ${t.thirty}/2`, ...(t.ot === undefined ? [] : [`OT ${t.ot}/1`])].join(' · ');
 
 function ui(page: Page) {
   const dialog = () => page.getByRole('dialog');
@@ -125,12 +137,11 @@ function ui(page: Page) {
 
   const card = (name: Name) => page.getByRole('button', { name: new RegExp(`^#${numberOf(name)} ${name},`) });
 
-  /** Taps a player, then each play button; FT buttons keep the sheet open, so close it with Done. */
-  async function onPlayer(name: Name, ...plays: string[]) {
+  /** Taps a player, then each play button. FT buttons keep the sheet open for the pair, so close it with Done. */
+  async function onPlayer(name: Name, plays: string[], closeWithDone: boolean) {
     await card(name).click();
     for (const p of plays) await dialog().getByRole('button', exact(p)).click();
-    const done = dialog().getByRole('button', exact('Done'));
-    if (await done.isVisible()) await done.click();
+    if (closeWithDone) await dialog().getByRole('button', exact('Done')).click();
     await expect(dialog()).toHaveCount(0);
   }
 
@@ -150,10 +161,10 @@ function ui(page: Page) {
     },
     startGame: () => page.getByRole('button', exact('Start game')).click(),
     card,
-    score: (name: Name, pts: '+2' | '+3') => onPlayer(name, pts),
-    ft: (name: Name, ...made: boolean[]) => onPlayer(name, ...made.map((m) => (m ? 'FT ✓' : 'FT ✗'))),
-    foul: (name: Name) => onPlayer(name, 'Foul'),
-    tech: (name: Name) => onPlayer(name, 'Tech'),
+    score: (name: Name, pts: '+2' | '+3') => onPlayer(name, [pts], false),
+    ft: (name: Name, ...made: boolean[]) => onPlayer(name, made.map((m) => (m ? 'FT ✓' : 'FT ✗')), true),
+    foul: (name: Name) => onPlayer(name, ['Foul'], false),
+    tech: (name: Name) => onPlayer(name, ['Tech'], false),
     opp: (n: 1 | 2 | 3) => nav().getByRole('button', exact(`Opp +${n}`)).click(),
     benchTech: () => nav().getByRole('button', exact('Bench T')).click(),
     undo: () => nav().getByRole('button', exact('Undo')).click(),
@@ -177,7 +188,9 @@ function ui(page: Page) {
       if (note !== undefined) await page.getByLabel('Note', { exact: true }).fill(note);
       await page.getByRole('button', exact('Check')).click();
     },
-    compare: () => page.getByTestId('compare'),
+    expectMatches: () => expect(page.getByTestId('compare')).toHaveText('✓ Matches'),
+    expectShort: (book: number, app: number) =>
+      expect(page.getByTestId('compare')).toHaveText(`Book ${book} · App ${app} — app is ${book - app} short`),
     saveCheck: () => page.getByRole('button', exact('Save')).click(),
     /** Check a quarter from the Live banner (the caller saves). */
     async checkQuarter(label: string, us: number, opp: number, note?: string) {
@@ -188,7 +201,12 @@ function ui(page: Page) {
     openLog: () => nav().getByRole('button', exact('Log')).click(),
     back: () => page.getByRole('button', exact('Back')).click(),
     logSection: (label: string) => page.getByRole('region', exact(label)),
-    logRow: (scope: Locator, text: string) => scope.getByRole('button', { name: new RegExp(`^${text}`) }),
+    /** A Log row's text: `#44 Player Seven · +2`. */
+    playText: (name: Name, play: '+2' | '+3') => `#${numberOf(name)} ${name} · ${play}`,
+    oppText: (n: 1 | 2 | 3) => `Opp +${n}`,
+    /** The Log row starting with `text` (an "edited" tag may follow it). */
+    logRow: (scope: Locator, text: string) =>
+      scope.getByRole('button', { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }),
     async insertBefore(rowScope: Locator, rowText: string, name: Name, pts: '+2' | '+3') {
       await this.logRow(rowScope, rowText).click();
       await dialog().getByRole('button', exact('Insert before')).click();
@@ -210,29 +228,33 @@ function ui(page: Page) {
       await dialog().getByRole('button', exact('Save')).click();
       await expect(dialog()).toHaveCount(0);
     },
-    chip: (label: string, text: string) => page.getByRole('region', exact(label)).getByRole('button', exact(text)),
+    chip: (label: string, status: Status) => page.getByRole('region', exact(label)).getByRole('button', exact(STATUS[status])),
     openEnd: async () => {
       await page.getByRole('button', exact('More')).click();
       await dialog().getByRole('button', exact('End game / export')).click();
     },
     issues: () => page.getByRole('region', exact('Open issues')),
-    issue: (label: string, status: string) => page.getByRole('region', exact('Open issues')).getByText(`${label} · ${status}`, { exact: true }),
-    async reopen(label: string, status: string) {
+    issue: (label: string, status: Status) =>
+      page.getByRole('region', exact('Open issues')).getByText(`${label} · ${STATUS[status]}`, { exact: true }),
+    async reopen(label: string, status: Status) {
       await this.issue(label, status).locator('..').getByRole('button', exact('Reopen')).click();
     },
-    finalScore: () => page.getByTestId('final-score'),
+    expectFinalScore: (us: number, opp: number) =>
+      expect(page.getByTestId('final-score')).toHaveText(`${TEAM} ${us} – ${opp} ${OPPONENT}`),
     exportButton: (which: 'Book CSV' | 'Plays CSV') => page.getByRole('button', exact(which)),
 
     /** The status strip: score, period, team fouls, bonus chip, timeouts left. */
-    async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: string }) {
+    async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {
       const h = strip();
       await expect(h.getByLabel(`Score ${s.us} to ${s.opp}`)).toBeVisible();
       await expect(h.getByText(s.period, { exact: true })).toBeVisible();
       await expect(h.getByText(`Fouls ${s.fouls}`, { exact: true })).toBeVisible();
       await expect(h.getByText('OPP IN BONUS', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
-      await expect(h.getByText(s.timeouts, { exact: true })).toBeVisible();
+      await expect(h.getByText(timeoutsText(s.timeouts), { exact: true })).toBeVisible();
     },
-    /** A player card's foul state, through its accessible name. */
+    /** The 4-foul warning, which shows only as the card's amber border. */
+    expectWarning: (name: Name) => expect(card(name)).toHaveClass(/border-amber-400/),
+    /** A player card's foul state, through its accessible name (OUT reads ", out"). */
     async expectPlayer(name: Name, points: number, fouls: number, out = false) {
       const tail = out ? `, ${fouls} fouls, out$` : `, ${fouls} fouls$`;
       await expect(card(name)).toHaveAccessibleName(new RegExp(`^#${numberOf(name)} ${name}, ${points} points${tail}`));
@@ -246,47 +268,15 @@ async function expectNoOverflow(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 }
 
-/** Minimal RFC 4180 parser: quoted cells, doubled quotes, CRLF. Same as game.spec.ts. */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = '';
-  let quoted = false;
-  const s = text.replace(/^﻿/, '');
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (quoted) {
-      if (c === '"' && s[i + 1] === '"') { cell += '"'; i++; }
-      else if (c === '"') quoted = false;
-      else cell += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ',') { row.push(cell); cell = ''; }
-    else if (c === '\n' || c === '\r') {
-      if (c === '\r' && s[i + 1] === '\n') i++;
-      row.push(cell); rows.push(row); row = []; cell = '';
-    } else cell += c;
-  }
-  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
-  return rows;
-}
-
-async function downloadCsv(page: Page, button: Locator): Promise<string[][]> {
-  const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
-  const stream = await download.createReadStream();
-  let text = '';
-  for await (const chunk of stream) text += chunk;
-  return parseCsv(text);
-}
-
 const Q3_NOTE = 'Book shows 7, could not find the other 2';
 
 test('full game: every number on screen and in both CSVs', async ({ page }) => {
   const app = ui(page);
-  const FULL_TIMEOUTS = 'Full 3/3 · 30 2/2';
+  const FULL_TIMEOUTS = { full: 3, thirty: 2 };
 
   await test.step('setup: 7 players with #0 and #00, opponent taps on', async () => {
     await page.goto('/');
-    await app.fillSetup('Test Opp', 'Test Home');
+    await app.fillSetup(OPPONENT, TEAM);
     await expectNoOverflow(page);
     await app.startGame();
     await app.expectStrip({ us: 0, opp: 0, period: 'Q1', fouls: 0, bonus: false, timeouts: FULL_TIMEOUTS });
@@ -313,20 +303,20 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.foul('Player One');
     await app.score('Player Five', '+2');
     await app.opp(1);
-    await app.expectStrip({ us: 8, opp: 6, period: 'Q1', fouls: 3, bonus: false, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 8, opp: 6, period: 'Q1', fouls: 3, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.expectPlayer('Player Four', 0, 2);
     await app.expectPlayer('Player One', 2, 1);
     await expectNoOverflow(page);
 
     await app.endPeriod('Q1');
-    await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await expect(app.banner('Q1')).toBeVisible();
     await app.checkQuarter('Q1', 8, 6);
-    await expect(app.compare()).toHaveText('✓ Matches');
+    await app.expectMatches();
     await expectNoOverflow(page);
     await app.saveCheck();
     await expect(app.banner('Q1')).toHaveCount(0);
-    await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
   });
 
   await test.step('Q2: bonus on the 5th team foul (a bench T); check is off, fixed by an insert', async () => {
@@ -336,29 +326,29 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.score('Player Seven', '+2');
     await app.foul('Player Four');
     await app.expectPlayer('Player Four', 0, 4);
-    await expect(app.card('Player Four')).toHaveClass(/border-amber-400/);
+    await app.expectWarning('Player Four');
     await app.tech('Player Five');
     await app.expectPlayer('Player Five', 2, 1);
     await app.foul('Player Two');
-    await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 4, bonus: false, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.benchTech();
-    await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 5, bonus: true, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 2 } });
     await app.opp(2);
     await app.ft('Player Two', true, true);
-    await app.expectStrip({ us: 15, opp: 10, period: 'Q2', fouls: 5, bonus: true, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 15, opp: 10, period: 'Q2', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 2 } });
 
     await app.endPeriod('Q2');
     // The count resets for the new quarter.
-    await app.expectStrip({ us: 15, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 15, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
 
     // The book says 9; the app has 7. A +2 by #31 was missed before #44's +2.
     await app.checkQuarter('Q2', 9, 4);
-    await expect(app.compare()).toHaveText('Book 9 · App 7 — app is 2 short');
+    await app.expectShort(9, 7);
     await expectNoOverflow(page);
-    await app.insertBefore(app.fixRegion(), '#44 Player Seven · \\+2', 'Player Six', '+2');
-    await expect(app.compare()).toHaveText('✓ Matches');
+    await app.insertBefore(app.fixRegion(), app.playText('Player Seven', '+2'), 'Player Six', '+2');
+    await app.expectMatches();
     await app.saveCheck();
-    await app.expectStrip({ us: 17, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 2/2' });
+    await app.expectStrip({ us: 17, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.expectPlayer('Player Six', 5, 0);
   });
 
@@ -367,41 +357,41 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.opp(3);
     await app.foul('Player Four');
     await app.expectPlayer('Player Four', 0, 5, true);
-    await expect(app.card('Player Four')).toHaveClass(/border-red-500/);
     await app.timeout('30');
     await app.tech('Player Five');
     await app.expectPlayer('Player Five', 2, 2, true);
     await app.score('Player Seven', '+3');
     await app.opp(2);
-    await app.expectStrip({ us: 22, opp: 15, period: 'Q3', fouls: 2, bonus: false, timeouts: 'Full 2/3 · 30 1/2' });
+    await app.expectStrip({ us: 22, opp: 15, period: 'Q3', fouls: 2, bonus: false, timeouts: { full: 2, thirty: 1 } });
 
     // Q4 has started but End Q3 was never tapped.
     await app.score('Player Three', '+2');
     await app.opp(2);
-    await app.expectStrip({ us: 24, opp: 17, period: 'Q3', fouls: 2, bonus: false, timeouts: 'Full 2/3 · 30 1/2' });
+    await app.expectStrip({ us: 24, opp: 17, period: 'Q3', fouls: 2, bonus: false, timeouts: { full: 2, thirty: 1 } });
     await app.endPeriod('Q3');
-    await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 1/2' });
+    await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 1 } });
 
     await app.openLog();
     const q3 = app.logSection('Q3');
-    await app.moveFrom(q3, '#0 Player Three · \\+2', 'Q4', 2);
-    await expect(app.logSection('Q4')).toContainText('#0 Player Three · +2');
-    await expect(app.logSection('Q4')).toContainText('Opp +2');
-    await app.editPlayer(q3, '#4 Player One · \\+2', 'Player Three');
-    await expect(app.logRow(q3, '#0 Player Three · \\+2')).toContainText('edited');
-    await expect(app.logRow(q3, '#4 Player One')).toHaveCount(0);
+    await app.moveFrom(q3, app.playText('Player Three', '+2'), 'Q4', 2);
+    const q4 = app.logSection('Q4');
+    await expect(app.logRow(q4, app.playText('Player Three', '+2'))).toBeVisible();
+    await expect(app.logRow(q4, app.oppText(2))).toBeVisible();
+    await app.editPlayer(q3, app.playText('Player One', '+2'), 'Player Three');
+    await expect(app.logRow(q3, app.playText('Player Three', '+2'))).toContainText('edited');
+    await expect(app.logRow(q3, app.playText('Player One', '+2'))).toHaveCount(0);
     await expectNoOverflow(page);
     await app.back();
-    await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 1/2' });
+    await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 1 } });
     await app.expectPlayer('Player One', 2, 1);
     await app.expectPlayer('Player Three', 7, 0);
 
     await expect(app.banner('Q3')).toBeVisible();
     await app.checkQuarter('Q3', 7, 5, Q3_NOTE);
-    await expect(app.compare()).toHaveText('Book 7 · App 5 — app is 2 short');
+    await app.expectShort(7, 5);
     await app.saveCheck();
     await expect(app.banner('Q3')).toHaveCount(0);
-    await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: 'Full 2/3 · 30 1/2' });
+    await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 1 } });
   });
 
   await test.step('Q4: ends tied, left unchecked; Start OT', async () => {
@@ -415,27 +405,27 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.ft('Player Six', false, true);
     await app.opp(3);
     await app.opp(3);
-    await app.expectStrip({ us: 28, opp: 28, period: 'Q4', fouls: 4, bonus: false, timeouts: 'Full 2/3 · 30 1/2' });
+    await app.expectStrip({ us: 28, opp: 28, period: 'Q4', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 1 } });
     await app.expectPlayer('Player One', 2, 2);
     await app.expectPlayer('Player Two', 6, 2);
 
     await app.endPeriodThen('Q4', 'Start OT');
     // OT bonus counting continues from Q4's 4.
-    await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 4, bonus: false, timeouts: 'Full 2/3 · 30 1/2 · OT 1/1' });
+    await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 1, ot: 1 } });
     await expect(app.banner('Q4')).toBeVisible();
     await expectNoOverflow(page);
   });
 
   await test.step('OT1: the 5th foul counting Q4 puts them in the bonus; an OT timeout; End game', async () => {
     await app.foul('Player Three');
-    await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 5, bonus: true, timeouts: 'Full 2/3 · 30 1/2 · OT 1/1' });
+    await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 1 } });
     await app.timeout('OT');
-    await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 5, bonus: true, timeouts: 'Full 2/3 · 30 1/2 · OT 0/1' });
+    await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 0 } });
     await app.score('Player Three', '+2');
     await app.opp(1);
     await app.ft('Player One', true, true);
     await app.opp(2);
-    await app.expectStrip({ us: 32, opp: 31, period: 'OT1', fouls: 5, bonus: true, timeouts: 'Full 2/3 · 30 1/2 · OT 0/1' });
+    await app.expectStrip({ us: 32, opp: 31, period: 'OT1', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 0 } });
     await app.expectPlayer('Player Three', 9, 1);
     await app.expectPlayer('Player One', 4, 2);
     await app.expectPlayer('Player Four', 0, 5, true);
@@ -443,29 +433,29 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
     // The Log's period chips carry each quarter's check.
     await app.openLog();
-    await expect(app.chip('Q1', '✓ Matched')).toBeVisible();
-    await expect(app.chip('Q2', '✓ Fixed')).toBeVisible();
-    await expect(app.chip('Q3', 'Noted')).toBeVisible();
-    await expect(app.chip('Q4', 'Not checked')).toBeVisible();
+    await expect(app.chip('Q1', 'matched')).toBeVisible();
+    await expect(app.chip('Q2', 'fixed')).toBeVisible();
+    await expect(app.chip('Q3', 'noted')).toBeVisible();
+    await expect(app.chip('Q4', 'pending')).toBeVisible();
     await expectNoOverflow(page);
     await app.back();
 
     await app.endPeriodThen('OT1', 'End game');
-    await expect(app.finalScore()).toHaveText('Test Home 32 – 31 Test Opp');
-    await expect(app.issue('Q4', 'Not checked')).toBeVisible();
-    await expect(app.issue('OT1', 'Not checked')).toBeVisible();
+    await app.expectFinalScore(32, 31);
+    await expect(app.issue('Q4', 'pending')).toBeVisible();
+    await expect(app.issue('OT1', 'pending')).toBeVisible();
     await expect(app.issues()).not.toContainText('Q1');
     await expect(app.issues()).not.toContainText('Q2');
     await expect(app.issues()).not.toContainText('Q3');
     await expectNoOverflow(page);
 
-    await app.reopen('OT1', 'Not checked');
+    await app.reopen('OT1', 'pending');
     await app.fillCheck('OT1', 4, 3);
-    await expect(app.compare()).toHaveText('✓ Matches');
+    await app.expectMatches();
     await app.saveCheck();
-    await expect(app.issue('Q4', 'Not checked')).toBeVisible();
+    await expect(app.issue('Q4', 'pending')).toBeVisible();
     await expect(app.issues()).not.toContainText('OT1');
-    await expect(app.finalScore()).toHaveText('Test Home 32 – 31 Test Opp');
+    await app.expectFinalScore(32, 31);
   });
 
   await test.step('Book CSV', async () => {
@@ -474,8 +464,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
     const score = at('Score by period');
     expect(rows[score + 1]).toEqual(['', 'Q1', 'Q2', 'Q3', 'Q4', 'OT1', 'Total']);
-    expect(rows[score + 2]).toEqual(['Test Home', '8', '9', '7', '6*', '4', '34*']);
-    expect(rows[score + 3]).toEqual(['Test Opp', '6', '4', '5', '13', '3', '31']);
+    expect(rows[score + 2]).toEqual([TEAM, '8', '9', '7', '6*', '4', '34*']);
+    expect(rows[score + 3]).toEqual([OPPONENT, '6', '4', '5', '13', '3', '31']);
 
     const header = rows[at('POS')];
     const col = (name: string) => header.indexOf(name);
@@ -520,7 +510,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
     const rec = at('Reconcile');
     expect(rows[rec + 1]).toEqual(['Period', 'Book', 'App', 'Diff', 'Status', 'Opp book', 'Opp taps', 'Note']);
-    expect(rows.slice(rec + 2, rec + 7)).toEqual([
+    // Exactly five periods: no ghost OT2 row.
+    expect(rows.slice(rec + 2)).toEqual([
       ['Q1', '8', '8', '0', 'matched', '6', '6', ''],
       ['Q2', '9', '9', '0', 'fixed', '4', '4', ''],
       ['Q3', '7', '5', '2', 'noted', '5', '5', Q3_NOTE],

@@ -1,5 +1,6 @@
 import pkg from '../package.json' with { type: 'json' };
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { downloadCsv } from './csv';
 
 // Invented names only: the roster is personal data about minors.
 const ROSTER = [
@@ -22,30 +23,6 @@ async function tap(page: Page, who: Locator, ...labels: string[]) {
   const done = sheet.getByRole('button', { name: 'Done', exact: true });
   if (await done.isVisible()) await done.click();
   await expect(sheet).toHaveCount(0);
-}
-
-/** Minimal RFC 4180 parser: quoted cells, doubled quotes, CRLF. */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = '';
-  let quoted = false;
-  const s = text.replace(/^﻿/, '');
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (quoted) {
-      if (c === '"' && s[i + 1] === '"') { cell += '"'; i++; }
-      else if (c === '"') quoted = false;
-      else cell += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ',') { row.push(cell); cell = ''; }
-    else if (c === '\n' || c === '\r') {
-      if (c === '\r' && s[i + 1] === '\n') i++;
-      row.push(cell); rows.push(row); row = []; cell = '';
-    } else cell += c;
-  }
-  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
-  return rows;
 }
 
 test('scripted game reconciles and exports', async ({ page }) => {
@@ -116,14 +93,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await expect(issues).toContainText('Q2');
   await expect(issues).not.toContainText('Q1');
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Book CSV' }).click(),
-  ]);
-  const stream = await download.createReadStream();
-  let text = '';
-  for await (const chunk of stream) text += chunk;
-  const rows = parseCsv(text);
+  const rows = await downloadCsv(page, page.getByRole('button', { name: 'Book CSV' }));
   expect(rows.some((r) => r.includes('#00'))).toBe(true);
   const start = rows.findIndex((r) => r[0] === 'Reconcile');
   expect(start).toBeGreaterThan(-1);
