@@ -1,5 +1,5 @@
 import { runningScore } from '../core/running';
-import { ROW, buildCells } from './running-logic';
+import { MARK_LEGEND, ROW, buildCells } from './running-logic';
 import type { GameStore } from './store';
 
 // 16 cells must fit in 358px (390 minus padding): minmax(0,1fr) lets them shrink to ~22px,
@@ -15,6 +15,7 @@ export function RunningScore({ store }: { store: GameStore }) {
         </button>
         <h1 class="text-xl font-bold">Running score</h1>
       </header>
+      <p class="px-4 pb-2 text-xs text-slate-300">{MARK_LEGEND}</p>
       <div class="min-h-0 flex-1 overflow-auto px-4 pb-4" data-testid="running-grid">
         <div class="grid min-w-[336px] gap-0" style={{ gridTemplateColumns: `repeat(${ROW}, minmax(0, 1fr))` }}>
           {cells.map((c) => (

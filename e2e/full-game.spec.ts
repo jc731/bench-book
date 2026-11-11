@@ -204,6 +204,16 @@ function ui(page: Page) {
       expect(await el.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
     },
     undo: () => nav().getByRole('button', exact('Undo')).click(),
+    /** ⋯ > How to use: an in-app page, so the game and Undo stay. */
+    async openHowto() {
+      await nav().getByRole('button', exact('More')).click();
+      await dialog().getByRole('button', exact('How to use')).click();
+      await expect(page.getByRole('heading', exact('How to use'))).toBeVisible();
+    },
+    async closeHowto() {
+      await page.getByRole('button', exact('Back')).click();
+      await expect(page.getByRole('heading', exact('How to use'))).toHaveCount(0);
+    },
     async timeout(kind: 'Full' | '30' | 'OT') {
       await nav().getByRole('button', exact('Timeout')).click();
       await dialog().getByRole('button', exact(kind)).click();
@@ -397,6 +407,10 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectStrip({ us: 6, opp: 2, period: 'Q1', fouls: 1, bonus: false, timeouts: FULL_TIMEOUTS });
 
     await app.score('Player One', '+3'); // mis-tap
+    await app.expectStrip({ us: 9, opp: 2, period: 'Q1', fouls: 1, bonus: false, timeouts: FULL_TIMEOUTS });
+    // Reading the How-to between the mis-tap and its Undo must not cost the Undo (no reload, no reset).
+    await app.openHowto();
+    await app.closeHowto();
     await app.expectStrip({ us: 9, opp: 2, period: 'Q1', fouls: 1, bonus: false, timeouts: FULL_TIMEOUTS });
     await app.undo();
     await app.expectStrip({ us: 6, opp: 2, period: 'Q1', fouls: 1, bonus: false, timeouts: FULL_TIMEOUTS });

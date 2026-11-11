@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Mark } from '../core/running';
-import { buildCells } from './running-logic';
+import { MARK_LEGEND, buildCells } from './running-logic';
 
 const m = (score: number, mark: Mark['mark'], over: Partial<Mark> = {}): Mark => ({
   score, mark, number: '4', period: 1, endsPeriod: false, ...over,
@@ -29,5 +29,13 @@ describe('buildCells', () => {
     expect(c[1]).toMatchObject({ endsPeriod: true, periodLabel: 'Q1' });
     expect(c[2]).toMatchObject({ endsPeriod: true, periodLabel: 'OT1' });
     expect(c[0].periodLabel).toBeUndefined();
+  });
+});
+
+describe('MARK_LEGEND', () => {
+  it('names every mark', () => ['X', '●', '/'].forEach((m) => expect(MARK_LEGEND).toContain(m)));
+  it('names the shaded cells and the amber edge', () => {
+    expect(MARK_LEGEND).toMatch(/shaded/);
+    expect(MARK_LEGEND).toMatch(/amber/);
   });
 });

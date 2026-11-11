@@ -21,7 +21,7 @@ const opt = 'min-h-14 rounded-xl bg-slate-600 text-xl font-bold active:bg-slate-
 type SheetKind = 'timeout' | 'endPeriod' | 'menu' | 'bench' | null;
 
 export function Live({ store }: { store: GameStore }) {
-  const { game, toast, update, undo, canUndo, setView, openReconcile } = store;
+  const { game, toast, update, undo, canUndo, setView, openReconcile, openHowto } = store;
   const [picked, setPicked] = useState<Player | null>(null);
   const [sheet, setSheet] = useState<SheetKind>(null);
   // The feedback present when a player's sheet opened: the sheet shows only what came after it.
@@ -165,7 +165,8 @@ export function Live({ store }: { store: GameStore }) {
       )}
       {sheet === 'menu' && (
         <Sheet title="More" onClose={() => setSheet(null)}>
-          <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
+          <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); openHowto('live'); }}>How to use</button>
+          <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>Final / export</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('setup'); }}>New game</button>
         </Sheet>

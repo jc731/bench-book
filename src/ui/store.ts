@@ -5,7 +5,7 @@ import { applyUndo, applyUpdate, type GameState } from './game-state';
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
 
-export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end';
+export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end' | 'howto';
 export type { Toast } from './live-logic';
 
 function memoryStorage(): Storage {
@@ -44,6 +44,7 @@ export function useGameStore() {
   const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
   const [reconcilePeriod, setReconcilePeriod] = useState<number | null>(null);
   const [reconcileReturn, setReconcileReturn] = useState<View>('live');
+  const [howtoReturn, setHowtoReturn] = useState<View>('live');
   // Opening on a saved game with plays says where it left off, once.
   const [toast, setToast] = useState<Toast | null>(() => {
     const text = state.current.game ? resumeText(state.current.game) : null;
@@ -125,11 +126,17 @@ export function useGameStore() {
     setView('reconcile');
   }, []);
 
+  /** Opens the How-to; Back returns to `from`. Only the view changes: the game and its Undo stay. */
+  const openHowto = useCallback((from: View) => {
+    setHowtoReturn(from);
+    setView('howto');
+  }, []);
+
   const canUndo = state.current.stack.length > 0;
 
   return {
     game, saving, view, setView, update, quiet, undo, canUndo, toast, start, discard,
-    reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile,
+    reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile, howtoReturn, openHowto,
   };
 }
 

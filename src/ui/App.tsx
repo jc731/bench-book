@@ -1,4 +1,5 @@
 import { EndGame } from './EndGame';
+import { HowTo } from './HowTo';
 import { Live } from './Live';
 import { Log } from './Log';
 import { Reconcile, StatusChip } from './Reconcile';
@@ -34,6 +35,7 @@ export function App() {
       )}
       {view === 'reconcile' && <Reconcile store={store} />}
       {view === 'end' && <EndGame store={store} />}
+      {view === 'howto' && <HowTo store={store} />}
       {view === 'running' && <RunningScore store={store} />}
     </div>
   );
