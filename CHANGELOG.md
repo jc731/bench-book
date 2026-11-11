@@ -6,6 +6,7 @@ All notable changes to Bench Book are listed here, in the
 ## [Unreleased]
 
 - The Setup screen shows the app version.
+- A play added to an earlier quarter (from the quarter check) now sorts with that quarter, so the running score and the Plays CSV's running totals stay right. Changing a play's quarter in the Log moves it to the end of its new quarter.
 
 ## [0.1.0] - 2026-11-10
 

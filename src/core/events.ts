@@ -29,9 +29,29 @@ function makeEvent(d: EventDraft, order: number, period: number, now: Date): Gam
   return { ...rest, id: crypto.randomUUID(), order, period, enteredAt: now.toISOString() };
 }
 
+/**
+ * Orders for `count` events that belong in `period`: after the last of `others` (by order) whose
+ * period is `period` or earlier, and before the event that follows it. With nothing after, they
+ * count up from the last order; with nothing at or before `period`, they go before the first event.
+ */
+export function slotOrders(others: GameEvent[], period: number, count: number): number[] {
+  const sorted = [...others].sort((a, b) => a.order - b.order);
+  const steps = Array.from({ length: count }, (_, i) => i + 1);
+  if (sorted.length === 0) return steps.map((i) => i - 1);
+  let last = -1;
+  for (let i = 0; i < sorted.length; i++) if (sorted[i].period <= period) last = i;
+  if (last < 0) return steps.map((i) => sorted[0].order - (count + 1 - i));
+  const lo = sorted[last].order;
+  const next = sorted[last + 1];
+  if (!next) return steps.map((i) => lo + i);
+  return steps.map((i) => lo + ((next.order - lo) * i) / (count + 1));
+}
+
+/** Adds a play at the end of its period, so a play added to an earlier quarter sorts with that quarter. */
 export function appendEvent(g: Game, d: EventDraft, now: Date): Game {
-  const order = g.events.length === 0 ? 0 : Math.max(...g.events.map((e) => e.order)) + 1;
-  const e = makeEvent(d, order, d.period ?? g.currentPeriod, now);
+  const period = d.period ?? g.currentPeriod;
+  const [order] = slotOrders(g.events, period, 1);
+  const e = makeEvent(d, order, period, now);
   return withEvents(g, [...g.events, e], now);
 }
 
@@ -51,9 +71,15 @@ export function editEvent(
   patch: Partial<Pick<GameEvent, 'type' | 'playerId' | 'period' | 'timeoutKind' | 'oppPoints'>>,
   now: Date,
 ): Game {
+  const target = g.events.find((e) => e.id === id);
+  // A changed period re-slots the play at the end of its new period.
+  const moved = target && patch.period !== undefined && patch.period !== target.period;
+  const order = moved ? slotOrders(g.events.filter((e) => e.id !== id), patch.period!, 1)[0] : undefined;
   return withEvents(
     g,
-    g.events.map((e) => (e.id === id ? { ...e, ...patch, editedAt: now.toISOString() } : e)),
+    g.events.map((e) =>
+      e.id === id ? { ...e, ...patch, ...(order === undefined ? {} : { order }), editedAt: now.toISOString() } : e,
+    ),
     now,
   );
 }
@@ -63,14 +89,21 @@ export function deleteEvent(g: Game, id: string, now: Date): Game {
 }
 
 // Sets `period` on fromId and on every later event (by order) in the SAME original period as fromId; plays in other periods stay.
+// Moving forward (the missed End Q) leaves the order alone: the moved plays were the tail of their period.
+// Moving backward from mid-period would leave them after plays of a later period, so they are re-slotted,
+// in their own order, at the end of the target period.
 export function moveFrom(g: Game, fromId: string, period: number, now: Date): Game {
   const from = g.events.find((e) => e.id === fromId);
   if (!from) throw new Error(`No event with id ${fromId}`);
+  const inBlock = (e: GameEvent) => e.id === fromId || (e.order > from.order && e.period === from.period);
+  const others = g.events.filter((e) => !inBlock(e));
+  const outOfPlace = others.some((e) => e.order < from.order && e.period > period);
+  const block = g.events.filter(inBlock).sort((a, b) => a.order - b.order);
+  const orders = outOfPlace ? slotOrders(others, period, block.length) : block.map((e) => e.order);
+  const orderOf = new Map(block.map((e, i) => [e.id, orders[i]]));
   return withEvents(
     g,
-    g.events.map((e) =>
-      e.id === fromId || (e.order > from.order && e.period === from.period) ? { ...e, period } : e,
-    ),
+    g.events.map((e) => (orderOf.has(e.id) ? { ...e, period, order: orderOf.get(e.id)! } : e)),
     now,
   );
 }

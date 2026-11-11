@@ -124,6 +124,8 @@ describe('moving', () => {
     ],
     3,
   );
+  // A legacy shape appendEvent no longer makes: hand-set orders keep the late Q1 play after Q2.
+  g.events = g.events.map((e, i) => ({ ...e, order: i }));
   it('offers the periods either side, bounded', () => {
     expect(moveFromTargets(g, g.events[0])).toEqual([2]);
     expect(moveFromTargets(g, g.events[3])).toEqual([1, 3]);

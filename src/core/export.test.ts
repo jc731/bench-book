@@ -177,6 +177,21 @@ describe('playsCsv', () => {
     expect(parse(playsCsv(g)).slice(1).map((r) => r[0])).toEqual(['1', '2', '3', '4']);
   });
 
+  test('a play added to Q1 from Q2 lands in Q1 and the running score stays right', () => {
+    let g = add(game(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'OPP_PTS', oppPoints: 2 });
+    g = { ...g, currentPeriod: 2 };
+    g = add(g, 2, { type: 'FG3', playerId: 'p00' }, { type: 'OPP_PTS', oppPoints: 3 });
+    g = add(g, 1, { type: 'FTM', playerId: 'p0' }); // "Add play to Q1", made while in Q2
+    const rows = parse(playsCsv(g)).slice(1);
+    expect(rows.map((r) => [r[1], r[5], r[7], r[8]])).toEqual([
+      ['Q1', 'FG2', '2', '0'],
+      ['Q1', 'OPP_PTS', '2', '2'],
+      ['Q1', 'FTM', '3', '2'],
+      ['Q2', 'FG3', '6', '2'],
+      ['Q2', 'OPP_PTS', '6', '5'],
+    ]);
+  });
+
   test('TIMEOUT rows carry their kind in detail; others leave it empty', () => {
     const g = add(game(), 1, { type: 'TIMEOUT', timeoutKind: 'thirty' }, { type: 'FG2', playerId: 'p4' });
     const rows = parse(playsCsv(g));

@@ -50,6 +50,18 @@ describe('runningScore', () => {
     expect(m.map((x) => x.endsPeriod)).toEqual([false, true, false, true, true]);
   });
 
+  test('a play added to Q1 while in Q2 ends Q1, not Q2', () => {
+    let g: Game = newGame(info, roster, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p4' }, t0);
+    g = { ...g, currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG3', playerId: 'p00' }, t0);
+    g = appendEvent(g, { type: 'FTM', playerId: 'p00', period: 1 }, t0); // "Add play to Q1"
+    const m = runningScore(g);
+    expect(m.map((x) => [x.period, x.score, x.endsPeriod])).toEqual([
+      [1, 2, false], [1, 3, true], [2, 6, true],
+    ]);
+  });
+
   test('empty game has no marks', () => {
     expect(runningScore(newGame(info, roster, t0))).toEqual([]);
   });

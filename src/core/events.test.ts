@@ -19,6 +19,11 @@ function threeEvents(): Game {
   return g;
 }
 
+function expectMonotonic(g: Game): void {
+  const periods = orderedEvents(g).map((e) => e.period);
+  expect(periods).toEqual([...periods].sort((a, b) => a - b));
+}
+
 describe('periods', () => {
   test('periodLabel', () => {
     expect([1, 4, 5, 6].map(periodLabel)).toEqual(['Q1', 'Q4', 'OT1', 'OT2']);
@@ -109,14 +114,94 @@ describe('event log', () => {
 
   test('moveFrom moves only later plays of the same period, forward and backward', () => {
     let g = newGame(info, roster, t0);
-    for (const period of [1, 2, 3]) g = appendEvent(g, { type: 'FG2', playerId: 'p1', period }, t0);
-    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0); // E4: later by order, same period as E1
+    for (const period of [1, 2, 3, 1]) g = appendEvent(g, { type: 'FG2', playerId: 'p1', period }, t0);
+    // Hand-made legacy order: E4 is later by order than E2 and E3 but in E1's period.
+    g = { ...g, events: g.events.map((e, i) => ({ ...e, order: i })) };
     const [E1, E2, E3, E4] = orderedEvents(g);
     const periods = (x: typeof g) => orderedEvents(x).map((e) => e.period);
     expect(periods(moveFrom(g, E1.id, 2, t1))).toEqual([2, 2, 3, 2]);
     expect(periods(moveFrom(g, E2.id, 1, t1))).toEqual([1, 1, 3, 1]);
     expect(periods(moveFrom(g, E3.id, 2, t1))).toEqual([1, 2, 2, 1]);
     expect(E4.period).toBe(1);
+  });
+
+  test('appendEvent with the current period still orders after everything (max + 1)', () => {
+    let g = { ...threeEvents(), currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t1);
+    expect(orderedEvents(g).map((e) => e.order)).toEqual([0, 1, 2, 3]);
+  });
+
+  test('a play added to an earlier quarter sorts with that quarter', () => {
+    let g = threeEvents(); // Q1: 0, 1, 2
+    g = { ...g, currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1' }, t0); // Q2
+    g = appendEvent(g, { type: 'FTM', playerId: 'p1' }, t0); // Q2
+    g = appendEvent(g, { type: 'FOUL', playerId: 'p1', period: 1 }, t1); // added to Q1 from Q2
+    const o = orderedEvents(g);
+    expect(o.map((e) => e.period)).toEqual([1, 1, 1, 1, 2, 2]);
+    expect(o[3].type).toBe('FOUL');
+    expectMonotonic(g);
+  });
+
+  test('a play added to a quarter before every existing play goes first', () => {
+    let g = { ...newGame(info, roster, t0), currentPeriod: 3 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 2 }, t0);
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1', period: 1 }, t1);
+    expect(orderedEvents(g).map((e) => [e.period, e.type])).toEqual([[1, 'FG3'], [2, 'FG2']]);
+  });
+
+  test('adding to an empty middle quarter lands between its neighbors', () => {
+    let g = { ...newGame(info, roster, t0), currentPeriod: 3 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 3 }, t0);
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1', period: 2 }, t1);
+    expect(orderedEvents(g).map((e) => e.period)).toEqual([1, 2, 3]);
+  });
+
+  test('editing a play to an earlier period re-slots it at the end of that period', () => {
+    let g = threeEvents();
+    g = { ...g, currentPeriod: 3 };
+    for (const period of [2, 2, 3]) g = appendEvent(g, { type: 'FG3', playerId: 'p1', period }, t0);
+    const lastQ3 = orderedEvents(g)[5];
+    const g2 = editEvent(g, lastQ3.id, { period: 1 }, t1);
+    const o = orderedEvents(g2);
+    expect(o.map((e) => e.period)).toEqual([1, 1, 1, 1, 2, 2]);
+    expect(o[3].id).toBe(lastQ3.id);
+    expectMonotonic(g2);
+    // And forward: the first Q1 play moved to Q2 goes to the end of Q2.
+    const firstQ1 = o[0];
+    const g3 = editEvent(g2, firstQ1.id, { period: 2 }, t1);
+    expect(orderedEvents(g3)[5].id).toBe(firstQ1.id);
+    expectMonotonic(g3);
+  });
+
+  test('an edit that leaves the period alone keeps the order', () => {
+    const g = threeEvents();
+    const id = orderedEvents(g)[0].id;
+    expect(editEvent(g, id, { period: 1, type: 'FG3' }, t1).events.find((e) => e.id === id)!.order).toBe(0);
+  });
+
+  test('moveFrom after a missed End Q keeps the order period-monotonic', () => {
+    let g = threeEvents(); // Q1 x3; End Q1 was missed for the last two
+    const [, B] = orderedEvents(g);
+    g = { ...g, currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1' }, t0); // a real Q2 play after End Q1 (late)
+    const g2 = moveFrom(g, B.id, 2, t1);
+    expect(orderedEvents(g2).map((e) => e.period)).toEqual([1, 2, 2, 2]);
+    expect(orderedEvents(g2).map((e) => e.order)).toEqual(orderedEvents(g).map((e) => e.order));
+    expectMonotonic(g2);
+  });
+
+  test('moveFrom backward from mid-period re-slots the moved plays at the end of the target', () => {
+    let g = { ...newGame(info, roster, t0), currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0);
+    for (let i = 0; i < 3; i++) g = appendEvent(g, { type: 'FG3', playerId: 'p1', period: 2 }, t0);
+    const [, , Q2b, Q2c] = orderedEvents(g);
+    const g2 = moveFrom(g, Q2b.id, 1, t1);
+    const o = orderedEvents(g2);
+    expect(o.map((e) => e.period)).toEqual([1, 1, 1, 2]);
+    expect([o[1].id, o[2].id]).toEqual([Q2b.id, Q2c.id]);
+    expectMonotonic(g2);
   });
 
   test('editEvent changes type and sets editedAt', () => {
