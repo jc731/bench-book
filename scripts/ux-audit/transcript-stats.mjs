@@ -48,12 +48,16 @@ export function analyzeTranscript(jsonlText, { appUrl }) {
   let sawTool = false;
   let currentEvent = null;
 
-  for (const raw of jsonlText.split('\n')) {
+  const lines = jsonlText.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
     if (!raw.trim()) continue;
     let entry;
     try {
       entry = JSON.parse(raw);
     } catch {
+      // A line we cannot read might hide a disallowed tool: fail closed.
+      reasons.push(`unparseable transcript line ${i + 1}`);
       continue;
     }
     if (entry?.type !== 'assistant') continue;
@@ -61,10 +65,10 @@ export function analyzeTranscript(jsonlText, { appUrl }) {
     if (!Array.isArray(content)) continue;
 
     for (const block of content) {
-      if (block.type === 'text' && typeof block.text === 'string') {
+      if (block?.type === 'text' && typeof block.text === 'string') {
         const markers = [...block.text.matchAll(/\bEvent\s+(\d+)/g)];
         if (markers.length) currentEvent = Number(markers[markers.length - 1][1]);
-      } else if (block.type === 'tool_use') {
+      } else if (block?.type === 'tool_use') {
         sawTool = true;
         const name = block.name;
         toolCounts[name] = (toolCounts[name] ?? 0) + 1;
@@ -96,12 +100,20 @@ export function analyzeTranscript(jsonlText, { appUrl }) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  // Every failure exits 2, so a caller treats anything but 0 as void.
   const [file, appUrl] = process.argv.slice(2);
   if (!file || !appUrl) {
     console.error('usage: node transcript-stats.mjs <transcript.jsonl> <appUrl>');
-    process.exit(64);
+    process.exit(2);
   }
-  const result = analyzeTranscript(readFileSync(file, 'utf8'), { appUrl });
+  let text;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch (e) {
+    console.error(`cannot read transcript ${file}: ${e.message}`);
+    process.exit(2);
+  }
+  const result = analyzeTranscript(text, { appUrl });
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.void ? 2 : 0);
 }

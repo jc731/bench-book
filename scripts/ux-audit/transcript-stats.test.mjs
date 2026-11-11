@@ -1,4 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { analyzeTranscript, ALLOWED_TOOLS } from './transcript-stats.mjs';
 
 const APP = 'http://localhost:4410/';
@@ -52,7 +56,14 @@ describe('analyzeTranscript', () => {
     expect(r.reasons).toContain('disallowed tool: mcp__ux-browser__browser_evaluate');
   });
 
-  it.each(['file:///home/x', 'http://localhost:4410/_astro/app.js', 'http://evil.test/', 'not a url'])('flags navigation to %s', (url) => {
+  it.each(['file:///home/x', 'http://localhost:4410/_astro/app.js', 'http://evil.test/',
+    'not a url',
+    'http://localhost:4411/',
+    'http://localhost:4410.evil/',
+    'view-source:http://localhost:4410/',
+    'data:text/html,x',
+    'https://localhost:4410/',
+  ])('flags navigation to %s', (url) => {
     const r = analyzeTranscript(line(ux('browser_navigate', { url })), { appUrl: APP });
     expect(r.void).toBe(true);
     expect(r.reasons).toContain(`navigate outside app: ${url}`);
@@ -64,12 +75,31 @@ describe('analyzeTranscript', () => {
     expect(r.navigations).toEqual([url]);
   });
 
+  it('navigate with no url is void', () => {
+    const r = analyzeTranscript(line(ux('browser_navigate', {})), { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain('navigate outside app: ');
+  });
+
   it('empty transcript is void', () => {
-    for (const t of ['', '\n\n', 'not json']) {
+    for (const t of ['', '\n\n']) {
       const r = analyzeTranscript(t, { appUrl: APP });
       expect(r.void).toBe(true);
       expect(r.reasons).toEqual(['no persona tool calls found']);
     }
+  });
+
+  it('garbage transcript is void as unparseable', () => {
+    const r = analyzeTranscript('not json', { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain('unparseable transcript line 1');
+  });
+
+  it('a malformed line next to a valid one is void', () => {
+    const truncated = line(tool('Bash', { command: 'ls' })).slice(0, -8);
+    const r = analyzeTranscript(jsonl(line(ux('browser_snapshot')), truncated), { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain('unparseable transcript line 2');
   });
 
   it('ignores non-assistant lines', () => {
@@ -110,5 +140,37 @@ describe('analyzeTranscript', () => {
     expect(ALLOWED_TOOLS).toContain('browser_click');
     expect(ALLOWED_TOOLS).not.toContain('browser_evaluate');
     expect(ALLOWED_TOOLS).toHaveLength(10);
+  });
+});
+
+describe('CLI', () => {
+  const script = new URL('./transcript-stats.mjs', import.meta.url).pathname;
+  const dir = mkdtempSync(join(tmpdir(), 'ux-stats-'));
+  const run = (file) => spawnSync('node', [script, file, APP], { encoding: 'utf8' });
+
+  it('exits 0 and prints JSON for a clean transcript', () => {
+    const f = join(dir, 'clean.jsonl');
+    writeFileSync(f, line(ux('browser_snapshot')));
+    const r = run(f);
+    expect(r.status).toBe(0);
+    expect(JSON.parse(r.stdout).void).toBe(false);
+  });
+
+  it('exits 2 for a void transcript', () => {
+    const f = join(dir, 'void.jsonl');
+    writeFileSync(f, line(tool('Bash', {})));
+    const r = run(f);
+    expect(r.status).toBe(2);
+    expect(JSON.parse(r.stdout).void).toBe(true);
+  });
+
+  it('exits 2 with a clear error for a missing file', () => {
+    const r = run(join(dir, 'nope.jsonl'));
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain('cannot read transcript');
+  });
+
+  it('exits 2 on missing arguments', () => {
+    expect(spawnSync('node', [script], { encoding: 'utf8' }).status).toBe(2);
   });
 });
