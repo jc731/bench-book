@@ -13,9 +13,10 @@ interface Props {
 }
 
 /**
- * The one feedback line, shared by Live, Log and the quarter check: the last entry on the left, wrapping to a second line rather than cutting its tail (it
- * stays until the next one), a prompt chip on the right. Neither hides the other. The entry text is
- * `#feedback-text`, so a button elsewhere can point `aria-describedby` at it.
+ * The one feedback line, shared by Live, Log and the quarter check: the last entry on the left (it
+ * stays until the next one) and a prompt chip on the right. Neither hides the other. A long entry
+ * wraps to a second line rather than cutting its tail. The entry text is `#feedback-text`, so a
+ * button elsewhere can point `aria-describedby` at it.
  */
 export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo, idleText }: Props) {
   const { entry, prompt } = line;

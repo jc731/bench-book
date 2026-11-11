@@ -161,3 +161,30 @@ test('reconcile can add a play to a period that has none', async ({ page }) => {
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
   await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
 });
+
+test('a long foul-out entry wraps whole beside the check chip and every card still fits', async ({ page }) => {
+  const long = 'Player With A Very Long Nam'; // 27 characters
+  await page.goto('/');
+  await page.getByLabel('Opponent (required)').fill('Test Opp');
+  await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
+  for (let i = 0; i < 7; i++) {
+    if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();
+    await page.getByLabel(`Player ${i + 1} name`).fill(i === 0 ? long : `Player ${i + 1}`);
+    await page.getByLabel(`Player ${i + 1} number`).fill(String(i + 10));
+  }
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click(); // leaves Check Q1 pending
+  await expect(page.getByRole('button', { name: /^Check Q1/ })).toBeVisible();
+  const first = page.getByRole('button', { name: new RegExp(`^#10 ${long},`) });
+  for (let i = 0; i < 5; i++) await tap(page, first, 'Foul');
+
+  const entry = page.getByTestId('feedback-text');
+  await expect(entry).toHaveText(`#10 ${long} foul — 5th, out — bonus`);
+  expect(await entry.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
+  // It wrapped (taller than one text line), and the cards still fit above it.
+  expect((await entry.boundingBox())!.height).toBeGreaterThan(24);
+  const grid = page.getByTestId('player-grid');
+  expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+  const bench = (await page.getByRole('button', { name: 'Bench', exact: true }).boundingBox())!;
+  expect(bench.y + bench.height).toBeLessThanOrEqual((await entry.boundingBox())!.y);
+});

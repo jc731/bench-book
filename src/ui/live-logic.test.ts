@@ -102,6 +102,16 @@ describe('status and toast wording', () => {
   });
 });
 
+describe('feedbackLine prompts', () => {
+  it('start their accessible text with the chip text (WCAG label in name)', () => {
+    const b = reconcileBanner([{ period: 1, status: 'pending' } as never]);
+    const open = feedbackLine(b, null, null).prompt!;
+    expect(open.text.startsWith(open.chip)).toBe(true);
+    const ex = feedbackLine(null, 'Not exported — game data clears in 72 h', null).prompt!;
+    expect(ex.text.startsWith(ex.chip)).toBe(true);
+  });
+});
+
 describe('feedbackLine', () => {
   const banner = { period: 1, text: 'Check Q1 — not checked against the book' };
   const unexported = 'Not exported — game data clears in 72 h';
