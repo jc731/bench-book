@@ -166,7 +166,41 @@ function ui(page: Page) {
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
     tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
     opp: (n: 1 | 2 | 3) => nav().getByRole('button', exact(`Opp +${n}`)).click(),
-    benchTech: () => nav().getByRole('button', exact('Bench tech')).click(),
+    /** The Bench card at the end of the player cards, then its one button. */
+    async benchTech() {
+      await page.getByRole('button', exact('Bench')).click();
+      await dialog().getByRole('button', exact('Bench tech')).click();
+      await expect(dialog()).toHaveCount(0);
+    },
+    /** The bottom bar's last row: Timeout, Undo, Log, the End slot and More, all on one line and at most 48px tall. */
+    async expectBarOneRow() {
+      const names = [exact('Timeout'), { name: /^Undo/ }, exact('Log'), { name: /^End (Q|OT)\d/ }, exact('More')];
+      const boxes = [];
+      for (const n of names) boxes.push((await nav().getByRole('button', n).boundingBox())!);
+      expect(new Set(boxes.map((b) => b.y)).size).toBe(1);
+      for (const b of boxes) expect(b.height).toBeLessThanOrEqual(48);
+      expect(await nav().getByRole('button').filter({ hasNotText: /^Opp \+/ }).count()).toBe(5);
+    },
+    /** Every card, Bench included, shows with no scrolling, above the feedback line. */
+    async expectCardsFit() {
+      const grid = page.getByTestId('player-grid');
+      expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+      const bench = (await page.getByRole('button', exact('Bench')).boundingBox())!;
+      const line = (await page.getByTestId('feedback-text').boundingBox())!;
+      expect(bench.y + bench.height).toBeLessThanOrEqual(line.y);
+    },
+    /** Opens a player's sheet, checks Done is the white primary button, then taps the dimmed backdrop. */
+    async dismissByBackdrop(name: Name) {
+      await card(name).click();
+      await expect(dialog().getByRole('button', exact('Done'))).toHaveClass(/bg-white/);
+      await page.mouse.click(10, 10);
+      await expect(dialog()).toHaveCount(0);
+    },
+    /** The feedback entry shows whole: it wraps rather than cutting its tail. */
+    async expectEntryWhole() {
+      const el = page.getByTestId('feedback-text');
+      expect(await el.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
+    },
     undo: () => nav().getByRole('button', exact('Undo')).click(),
     async timeout(kind: 'Full' | '30' | 'OT') {
       await nav().getByRole('button', exact('Timeout')).click();
@@ -181,7 +215,7 @@ function ui(page: Page) {
       await dialog().getByRole('button', exact(choice)).click();
     },
     /** The check chip on the feedback line, by its full accessible name. */
-    banner: (label: string) => page.getByRole('button', exact(`${label} not checked against the book — Check`)),
+    banner: (label: string) => page.getByRole('button', exact(`Check ${label} — not checked against the book`)),
     /** On the Check view: type the book's numbers (and a note); the comparison updates as you type. */
     async fillCheck(label: string, us: number, opp: number, note?: string) {
       await page.getByLabel(new RegExp(`Our points in ${label}`)).fill(String(us));
@@ -341,6 +375,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.startGame();
     await app.expectStrip({ us: 0, opp: 0, period: 'Q1', fouls: 0, bonus: false, timeouts: FULL_TIMEOUTS });
     await expectNoOverflow(page);
+    await app.expectCardsFit();
+    await app.expectBarOneRow();
   });
 
   await test.step('Q1: scoring, FT pair, an undone mis-tap, a full timeout; check matches', async () => {
@@ -350,6 +386,10 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.score('Player Three', '+3');
     await app.foul('Player Four');
     await app.ft('Player Two', true, false);
+    await app.expectStrip({ us: 6, opp: 2, period: 'Q1', fouls: 1, bonus: false, timeouts: FULL_TIMEOUTS });
+
+    // Tapping outside the sheet closes it and records nothing; Done is the white primary button.
+    await app.dismissByBackdrop('Player One');
     await app.expectStrip({ us: 6, opp: 2, period: 'Q1', fouls: 1, bonus: false, timeouts: FULL_TIMEOUTS });
 
     await app.score('Player One', '+3'); // mis-tap
@@ -426,6 +466,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.opp(3);
     await app.foul('Player Four');
     await app.expectToast('#12 Player Four foul — 5th, out');
+    await app.expectEntryWhole();
+    await app.expectCardsFit();
     await app.expectPlayer('Player Four', 0, 5, true);
     await app.timeout('30');
     await app.tech('Player Five');
@@ -499,7 +541,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
   });
 
   await test.step('OT1: the 5th foul counting Q4 puts them in the bonus; an OT timeout; End game', async () => {
+    await app.expectBarOneRow();
     await app.foul('Player Three');
+    await app.expectEntryWhole(); // with the Check Q4 chip beside it
     await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 1 } });
     await app.timeout('OT');
     await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 0 } });

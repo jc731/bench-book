@@ -60,12 +60,12 @@ test('scripted game reconciles and exports', async ({ page }) => {
   // End Q1, reconcile 3 / 5
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await expect(page.getByText('Q2', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Q1 not checked against the book — Check' }).click();
+  await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
   await page.getByLabel(/Our points in Q1/).fill('3');
   await page.getByLabel(/Opponent points in Q1/).fill('5');
   await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Q1 not checked/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Check Q1 — not checked/ })).toHaveCount(0);
 
   // The book's opponent figure (5) now counts toward the opponent total.
   // Q2: score, end, leave unchecked
@@ -73,7 +73,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await expect(score(6, 5)).toBeVisible();
   await page.getByRole('button', { name: 'End Q2', exact: true }).click();
   await expect(page.getByText('Q3', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Q2 not checked against the book — Check' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Check Q2 — not checked against the book' })).toBeVisible();
 
   // Q3: add then undo
   await tap(page, one, '+2');
@@ -86,7 +86,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await expect(score(6, 5)).toBeVisible();
   // The line shows where it left off, beside the chip for the still-open Q2 check.
   await expect(page.getByTestId('feedback-text')).toHaveText('Last: #0 +3');
-  await expect(page.getByRole('button', { name: 'Q2 not checked against the book — Check', exact: true })).toHaveText('Check Q2');
+  await expect(page.getByRole('button', { name: 'Check Q2 — not checked against the book', exact: true })).toHaveText('Check Q2');
   await expect(
     page.getByRole('navigation').getByRole('button', { name: 'Undo (history clears when the app reloads — fix plays in Log)' }),
   ).toBeDisabled();
@@ -153,7 +153,7 @@ test('reconcile can add a play to a period that has none', async ({ page }) => {
   await page.getByLabel('Player 1 name').fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
-  await page.getByRole('button', { name: 'Q1 not checked against the book — Check' }).click();
+  await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
   await page.getByLabel(/Our points in Q1/).fill('2');
   await expect(page.getByTestId('compare')).not.toHaveText('✓ Matches');
   await page.getByRole('button', { name: 'Add play to Q1' }).click();

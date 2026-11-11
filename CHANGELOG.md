@@ -8,6 +8,9 @@ All notable changes to Bench Book are listed here, in the
 - One line above the bottom bar shows what just happened, for example "#12 +2 — bonus", and stays until the next entry instead of fading. A quarter still to check, or a game not yet exported, shows as a chip at the right of the same line, for example "Check Q1", without hiding the entry. Undo is on the bottom bar.
 - After a reload the line reads "Last: #12 +2".
 - A player's sheet shows only what was entered while it is open.
+- A long entry on the line wraps to a second line instead of cutting off its end, and the Check and Not exported chips read their full text to screen readers, starting with the words on the chip.
+- The bottom bar is one row: Timeout, Undo, Log, End Q and ⋯. All seven player cards fit on an iPhone 13 screen without scrolling.
+- Bench tech moved from the bottom bar to a Bench card at the end of the player cards.
 
 ## [0.2.0] - 2026-11-11
 

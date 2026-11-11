@@ -126,8 +126,8 @@ export function reconcileBanner(issues: PeriodCheck[]): Banner | null {
   const label = periodLabel(oldest.period);
   const text =
     oldest.status === 'unresolved'
-      ? `${label} doesn't match the book — Check`
-      : `${label} not checked against the book — Check`;
+      ? `Check ${label} — doesn't match the book`
+      : `Check ${label} — not checked against the book`;
   return { period: oldest.period, text };
 }
 

@@ -56,10 +56,10 @@ describe('reconcileBanner', () => {
   });
   it('names the oldest period regardless of list order', () => {
     const b = reconcileBanner([issue(3, 'pending'), issue(1, 'pending'), issue(2, 'unresolved')]);
-    expect(b).toEqual({ period: 1, text: 'Q1 not checked against the book — Check' });
+    expect(b).toEqual({ period: 1, text: 'Check Q1 — not checked against the book' });
   });
   it('words an unresolved mismatch differently and labels overtime', () => {
-    expect(reconcileBanner([issue(5, 'unresolved')])?.text).toBe("OT1 doesn't match the book — Check");
+    expect(reconcileBanner([issue(5, 'unresolved')])?.text).toBe("Check OT1 — doesn't match the book");
   });
 });
 
@@ -103,7 +103,7 @@ describe('status and toast wording', () => {
 });
 
 describe('feedbackLine', () => {
-  const banner = { period: 1, text: 'Q1 not checked against the book — Check' };
+  const banner = { period: 1, text: 'Check Q1 — not checked against the book' };
   const unexported = 'Not exported — game data clears in 72 h';
   const toast = { text: '#12 +2 — bonus', canUndo: true };
   const check = { kind: 'check', period: 1, text: banner.text, chip: 'Check Q1' };

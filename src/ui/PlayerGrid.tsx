@@ -6,11 +6,12 @@ interface Props {
   roster: Player[];
   lines: PlayerLine[];
   onPick: (p: Player) => void;
+  onBench: () => void;
 }
 
 const border = { ok: 'border-slate-600', warn: 'border-amber-400', out: 'border-red-500' } as const;
 
-export function PlayerGrid({ roster, lines, onPick }: Props) {
+export function PlayerGrid({ roster, lines, onPick, onBench }: Props) {
   return (
     <div class="grid grid-cols-2 gap-2 p-2 sm:grid-cols-3 lg:grid-cols-4">
       {roster.map((p, i) => {
@@ -45,6 +46,13 @@ export function PlayerGrid({ roster, lines, onPick }: Props) {
           </button>
         );
       })}
+      <button
+        type="button"
+        class="flex min-h-[76px] items-center justify-center rounded-xl border-2 border-dashed border-slate-500 bg-slate-900 p-2 text-xl font-bold active:bg-slate-700"
+        onClick={onBench}
+      >
+        Bench
+      </button>
     </div>
   );
 }

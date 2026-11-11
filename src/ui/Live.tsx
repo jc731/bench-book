@@ -15,10 +15,10 @@ import { PlayerGrid } from './PlayerGrid';
 import { StatusStrip } from './StatusStrip';
 import type { GameStore } from './store';
 
-const bar = 'min-h-12 rounded-lg border border-slate-500 bg-slate-800 px-2 font-semibold active:bg-slate-700 disabled:opacity-40';
+const bar = 'min-h-12 rounded-lg border border-slate-500 bg-slate-800 px-1 text-sm font-semibold active:bg-slate-700 disabled:opacity-40';
 const opt = 'min-h-14 rounded-xl bg-slate-600 text-xl font-bold active:bg-slate-500';
 
-type SheetKind = 'timeout' | 'endPeriod' | 'menu' | null;
+type SheetKind = 'timeout' | 'endPeriod' | 'menu' | 'bench' | null;
 
 export function Live({ store }: { store: GameStore }) {
   const { game, toast, update, undo, canUndo, setView, openReconcile } = store;
@@ -78,8 +78,8 @@ export function Live({ store }: { store: GameStore }) {
   return (
     <div class="flex min-h-0 flex-1 flex-col">
       <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} derived={d} />
-      <div class="min-h-0 flex-1 overflow-y-auto">
-        <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} />
+      <div data-testid="player-grid" class="min-h-0 flex-1 overflow-y-auto">
+        <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} onBench={() => setSheet('bench')} />
       </div>
 
       {/* The last entry, and a chip for the check prompt or else the not-exported warning. The bar's Undo is its Undo. */}
@@ -90,12 +90,18 @@ export function Live({ store }: { store: GameStore }) {
         idleText={gameEnded ? 'Game ended. Entries are still accepted.' : undefined}
       />
 
-      <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-4">
-        <div class="grid grid-cols-3 gap-2">
+      <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-3">
+        {game.trackOpponentTaps && (
+          <div class="grid grid-cols-3 gap-2">
+            {([1, 2, 3] as const).map((n) => (
+              <button key={n} type="button" class={bar} onClick={() => add({ type: 'OPP_PTS', oppPoints: n }, oppLabel(n))}>
+                Opp +{n}
+              </button>
+            ))}
+          </div>
+        )}
+        <div class="grid grid-cols-5 gap-2">
           <button type="button" class={bar} onClick={() => setSheet('timeout')}>Timeout</button>
-          <button type="button" class={bar} onClick={() => add({ type: 'BENCH_TECH' }, foulLabel('BENCH_TECH', { player: null, teamFouls }))}>
-            {BENCH_TECH_TEXT}
-          </button>
           <button
             type="button"
             class={bar}
@@ -106,17 +112,6 @@ export function Live({ store }: { store: GameStore }) {
           >
             Undo
           </button>
-        </div>
-        {game.trackOpponentTaps && (
-          <div class="grid grid-cols-3 gap-2">
-            {([1, 2, 3] as const).map((n) => (
-              <button key={n} type="button" class={bar} onClick={() => add({ type: 'OPP_PTS', oppPoints: n }, oppLabel(n))}>
-                Opp +{n}
-              </button>
-            ))}
-          </div>
-        )}
-        <div class="grid grid-cols-3 gap-2">
           <button type="button" class={bar} onClick={() => setView('log')}>Log</button>
           <button
             type="button"
@@ -131,6 +126,20 @@ export function Live({ store }: { store: GameStore }) {
 
       {picked && (
         <EventSheet player={picked} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onClose={() => setPicked(null)} />
+      )}
+      {sheet === 'bench' && (
+        <Sheet title="Bench" onClose={() => setSheet(null)}>
+          <button
+            type="button"
+            class={`${opt} w-full`}
+            onClick={() => {
+              add({ type: 'BENCH_TECH' }, foulLabel('BENCH_TECH', { player: null, teamFouls }));
+              setSheet(null);
+            }}
+          >
+            {BENCH_TECH_TEXT}
+          </button>
+        </Sheet>
       )}
       {sheet === 'timeout' && (
         <Sheet title="Timeout" onClose={() => setSheet(null)}>

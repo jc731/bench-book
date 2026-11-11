@@ -13,7 +13,7 @@ interface Props {
 }
 
 /**
- * The one feedback line, shared by Live, Log and the quarter check: the last entry on the left (it
+ * The one feedback line, shared by Live, Log and the quarter check: the last entry on the left, wrapping to a second line rather than cutting its tail (it
  * stays until the next one), a prompt chip on the right. Neither hides the other. The entry text is
  * `#feedback-text`, so a button elsewhere can point `aria-describedby` at it.
  */
@@ -22,12 +22,12 @@ export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo, idleText
   const text = entry ? entry.text : idleText ?? '';
   return (
     <div
-      class={`flex min-h-11 items-center gap-2 px-3 font-semibold ${entry || idleText ? 'bg-slate-700' : ''} ${
+      class={`flex min-h-11 items-center gap-2 px-3 py-0.5 font-semibold ${entry || idleText ? 'bg-slate-700' : ''} ${
         entry ? '' : 'text-sm'
       } ${cls}`}
       role="status"
     >
-      <span id="feedback-text" data-testid="feedback-text" class="min-w-0 flex-1 truncate">{text}</span>
+      <span id="feedback-text" data-testid="feedback-text" class="min-w-0 flex-1 break-words leading-tight">{text}</span>
       {entry?.undoable && onUndo && (
         <button type="button" class="-mr-3 min-h-11 shrink-0 px-3 font-bold text-amber-300" onClick={onUndo}>
           Undo
