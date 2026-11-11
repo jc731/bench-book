@@ -44,7 +44,8 @@ runs as `/ux-audit`.
 - `pnpm howto:shots`: refreshes the How-to screenshots, `public/howto/*.png`, from the
   full-game fixture. `pnpm release` runs it and commits the images, so they stay current.
   An image made by hand gets a new filename and is referenced from `src/ui/howto-content.ts`;
-  the script writes only its own three filenames, so a release never overwrites it.
+  the script writes only its own three filenames, so a release never overwrites it. A
+  hand-made image also needs the screenshot map in `src/ui/howto-content.test.ts` updated.
 
 ## Style
 

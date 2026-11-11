@@ -17,7 +17,7 @@ describe('service worker', () => {
     },
   );
   it.skipIf(text === undefined)(
-    'precaches the three How-to screenshots (Workbox skips any file over 2 MiB)',
+    'precaches the three How-to screenshots, since Workbox skips any file over 2 MiB (skipped: dist/sw.js absent, run `pnpm build` first; a stale dist/ gives a false red, which `pnpm build` fixes)',
     () => {
       for (const f of ['reading-the-screen', 'mistakes', 'end-of-quarter']) expect(text).toContain(`howto/${f}.png`);
     },

@@ -79,7 +79,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
       'Foul dots turn amber at 4 and red at OUT. The strip at the top shows the bonus and timeouts left.',
       MARK_LEGEND,
     ],
-    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: the score and timeouts left at the top, and #12 with four amber foul dots.' },
+    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: the score, team fouls 5 with the bonus, and timeouts left at the top, and #12 with four amber foul dots.' },
   },
   {
     id: 'wrong',
