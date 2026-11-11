@@ -7,7 +7,7 @@ import type { EventDraft, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, endChoices, endPeriodLabel, feedbackLine, foulLabel, mayEndGame, oppLabel, playLabel, reconcileBanner,
+  BENCH_TECH_TEXT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, oppLabel, playLabel, reconcileBanner,
   timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
@@ -65,19 +65,20 @@ export function Live({ store }: { store: GameStore }) {
     update((g, now) => startOvertime(g, now), 'Start overtime');
     setSheet(null);
   };
+  // Only opens Final; the game ends from the Q4/OT sheet or Final's End game early.
   const openEnd = () => {
     setSheet(null);
     setView('end');
   };
 
   const timeoutKinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
-  const gameEnded = Boolean(game.endedAt);
+  const end = endSlot(period, Boolean(game.endedAt));
   const unexported = notExportedText(game, new Date());
   const line = feedbackLine(banner, unexported, toast);
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
-      <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} derived={d} />
+      <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} ended={Boolean(game.endedAt)} derived={d} />
       <div data-testid="player-grid" class="min-h-0 flex-1 overflow-y-auto">
         <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} onBench={() => setSheet('bench')} />
       </div>
@@ -87,7 +88,6 @@ export function Live({ store }: { store: GameStore }) {
         line={line}
         class="shrink-0 border-t border-slate-600"
         onPrompt={(p) => (p.kind === 'check' ? openReconcile(p.period, 'live') : openEnd())}
-        idleText={gameEnded ? 'Game ended. Entries are still accepted.' : undefined}
       />
 
       <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-3">
@@ -116,9 +116,9 @@ export function Live({ store }: { store: GameStore }) {
           <button
             type="button"
             class={bar}
-            onClick={() => (mayEndGame(period) ? setSheet('endPeriod') : doEndPeriod())}
+            onClick={() => (end.opens === 'final' ? openEnd() : end.opens === 'endSheet' ? setSheet('endPeriod') : doEndPeriod())}
           >
-            {endPeriodLabel(period)}{mayEndGame(period) ? '…' : ''}
+            {end.text}
           </button>
           <button type="button" class={bar} aria-label="More" onClick={() => setSheet('menu')}>⋯</button>
         </div>
@@ -166,7 +166,7 @@ export function Live({ store }: { store: GameStore }) {
       {sheet === 'menu' && (
         <Sheet title="More" onClose={() => setSheet(null)}>
           <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
-          <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>End game / export</button>
+          <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>Final / export</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('setup'); }}>New game</button>
         </Sheet>
       )}

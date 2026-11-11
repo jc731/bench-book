@@ -11,6 +11,9 @@ All notable changes to Bench Book are listed here, in the
 - A long entry on the line wraps to a second line instead of cutting off its end, and the Check and Not exported chips read their full text to screen readers, starting with the words on the chip.
 - The bottom bar is one row: Timeout, Undo, Log, End Q and ⋯. All seven player cards fit on an iPhone 13 screen without scrolling.
 - Bench tech moved from the bottom bar to a Bench card at the end of the player cards.
+- After End game the status strip reads Final and the End Q button becomes Final ▸. The separate "Game ended" bar is gone.
+- The ⋯ menu's "Final / export" opens the Final screen without ending the game. Final offers "End game early" (with a confirm) while the game is live, and "Reopen game" once it has ended, even after a reload.
+- The Final screen's footer is "Back to game" and "New game".
 
 ## [0.2.0] - 2026-11-11
 

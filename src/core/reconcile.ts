@@ -71,6 +71,13 @@ export function endGame(g: Game, now: Date): Game {
   return { ...touch(g, now), endedAt: now.toISOString() };
 }
 
+/** Undoes End game, even after a reload: clears the end and goes back to the period it ended in. */
+export function reopenGame(g: Game, now: Date): Game {
+  if (!g.endedAt) return g;
+  const { endedAt: _ended, ...open } = g;
+  return touch(open, now);
+}
+
 /** Records that one CSV was exported. Never blocks and is safe to repeat; refreshes updatedAt like every edit. */
 export function markExported(g: Game, kind: ExportKind, now: Date): Game {
   return { ...touch(g, now), exported: { ...g.exported, [kind]: now.toISOString() } };

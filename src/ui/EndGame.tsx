@@ -3,9 +3,10 @@ import { derive } from '../core/derive';
 import { exportFilename, playsCsv } from '../core/export-plays';
 import { bookCsv } from '../core/export-book';
 import { periodLabel } from '../core/periods';
-import { checkPeriod, endGame, isExported, markExported, openIssues, oppTotal, saveReconcile } from '../core/reconcile';
+import { checkPeriod, endGame, markExported, openIssues, oppTotal, reopenGame, saveReconcile } from '../core/reconcile';
 import type { ExportKind } from '../core/types';
 import { download } from './download';
+import { Sheet } from './EventSheet';
 import { EXPORT_DESCRIPTION, EXPORT_NAME, exportStateText, issueAction, statusChipText } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -13,11 +14,16 @@ const btn = 'min-h-12 w-full rounded-xl px-4 text-lg font-bold';
 
 export function EndGame({ store }: { store: GameStore }) {
   const { game, update, setView, openReconcile } = store;
-  // Fixed on arrival so a row does not vanish under the scorer's thumb once it gets a note.
-  const issuePeriods = useRef<number[] | null>(null);
+  // Fixed on arrival so a row does not vanish under the scorer's thumb once it gets a note. Ending the
+  // game early makes the current quarter count, so the list is taken again when that changes.
+  const issuePeriods = useRef<{ endedAt: string | undefined; periods: number[] } | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [confirmEnd, setConfirmEnd] = useState(false);
   if (!game) return null;
-  if (issuePeriods.current === null) issuePeriods.current = openIssues(game).map((i) => i.period);
+  if (!issuePeriods.current || issuePeriods.current.endedAt !== game.endedAt) {
+    issuePeriods.current = { endedAt: game.endedAt, periods: openIssues(game).map((i) => i.period) };
+  }
+  const periods = issuePeriods.current.periods;
   const d = derive(game);
 
   const saveNote = (period: number) => {
@@ -32,19 +38,18 @@ export function EndGame({ store }: { store: GameStore }) {
     // A saved file is a fact, not an edit: no undo step.
     update((g, now) => markExported(g, kind, now), `Exported ${EXPORT_NAME[kind]}`, { undoable: false });
   };
-  const finish = () => {
-    if (!game.endedAt) update((g, now) => endGame(g, now), 'End game');
+  const endNow = () => {
+    update((g, now) => endGame(g, now), 'End game');
+    setConfirmEnd(false);
+  };
+  const reopenNow = () => {
+    update((g, now) => reopenGame(g, now), 'Reopened game');
     setView('live');
   };
 
   return (
     <main class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pb-24">
-      <div class="flex items-center gap-3">
-        <button type="button" class="min-h-11 rounded-lg border border-slate-500 px-4 font-semibold" onClick={() => setView('live')}>
-          Back
-        </button>
-        <h1 class="text-2xl font-bold">{game.endedAt ? 'Final' : 'End game / export'}</h1>
-      </div>
+      <h1 class="text-2xl font-bold">Final</h1>
 
       <p class="text-3xl font-bold" data-testid="final-score">
         {game.info.team || 'Us'} {d.usTotal} – {oppTotal(game)} {game.info.opponent}
@@ -70,15 +75,12 @@ export function EndGame({ store }: { store: GameStore }) {
             </p>
           </div>
         ))}
-        <p class="text-sm text-slate-300">
-          {isExported(game) ? 'Exported.' : 'Not exported yet.'} The paper book stays official.
-        </p>
       </section>
 
-      {issuePeriods.current.length > 0 && (
+      {periods.length > 0 && (
         <section aria-label="Open issues" class="space-y-3">
           <h2 class="text-lg font-bold">Not checked, or doesn't match the book</h2>
-          {issuePeriods.current.map((p) => {
+          {periods.map((p) => {
             const c = checkPeriod(game, p);
             return (
               <div key={p} class="space-y-2 rounded-xl border border-slate-700 bg-slate-800 p-3">
@@ -99,14 +101,28 @@ export function EndGame({ store }: { store: GameStore }) {
               </div>
             );
           })}
-          <p class="text-sm text-slate-300">Anything still open is exported as it shows here: “not checked” as pending, “doesn't match” as unresolved.</p>
         </section>
       )}
 
+      {game.endedAt ? (
+        <button type="button" class={`${btn} border border-slate-400`} onClick={reopenNow}>Reopen game</button>
+      ) : (
+        <button type="button" class={`${btn} border border-slate-400`} onClick={() => setConfirmEnd(true)}>End game early</button>
+      )}
 
-      <button type="button" class={`${btn} border border-slate-400`} onClick={finish}>
-        {game.endedAt ? 'Done' : 'Finish game'}
-      </button>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" class={`${btn} border border-slate-500`} onClick={() => setView('live')}>Back to game</button>
+        <button type="button" class={`${btn} border border-slate-500`} onClick={() => setView('setup')}>New game</button>
+      </div>
+
+      {confirmEnd && (
+        <Sheet title="End the game now?" onClose={() => setConfirmEnd(false)}>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class={`${btn} bg-white text-slate-900`} onClick={endNow}>End game</button>
+            <button type="button" class={`${btn} bg-slate-600`} onClick={() => setConfirmEnd(false)}>Cancel</button>
+          </div>
+        </Sheet>
+      )}
     </main>
   );
 }

@@ -172,9 +172,11 @@ function ui(page: Page) {
       await dialog().getByRole('button', exact('Bench tech')).click();
       await expect(dialog()).toHaveCount(0);
     },
-    /** The bottom bar's last row: Timeout, Undo, Log, the End slot and More, all on one line and at most 48px tall. */
-    async expectBarOneRow() {
-      const names = [exact('Timeout'), { name: /^Undo/ }, exact('Log'), { name: /^End (Q|OT)\d/ }, exact('More')];
+    /** The bottom bar's last row: Timeout, Undo, Log, the End slot and More, all on one line and at most 48px tall.
+     *  The End slot reads `End Qn` while the game is live, or the given text (`Final ▸` once it has ended). */
+    async expectBarOneRow(endSlot?: string) {
+      const end = endSlot === undefined ? { name: /^End (Q|OT)\d/ } : exact(endSlot);
+      const names = [exact('Timeout'), { name: /^Undo/ }, exact('Log'), end, exact('More')];
       const boxes = [];
       for (const n of names) boxes.push((await nav().getByRole('button', n).boundingBox())!);
       expect(new Set(boxes.map((b) => b.y)).size).toBe(1);
@@ -281,7 +283,7 @@ function ui(page: Page) {
     chip: (label: string, status: Status) => page.getByRole('region', exact(label)).getByRole('button', exact(STATUS[status])),
     openEnd: async () => {
       await page.getByRole('button', exact('More')).click();
-      await dialog().getByRole('button', exact('End game / export')).click();
+      await dialog().getByRole('button', exact('Final / export')).click();
     },
     issues: () => page.getByRole('region', exact('Open issues')),
     issue: (label: string, status: Status) =>
@@ -298,7 +300,6 @@ function ui(page: Page) {
     async expectExportState(book: boolean, plays: boolean) {
       await expect(page.getByTestId('export-state-book')).toHaveText(book ? 'Book CSV ✓ saved' : 'Book CSV — not saved yet');
       await expect(page.getByTestId('export-state-plays')).toHaveText(plays ? 'Plays CSV ✓ saved' : 'Plays CSV — not saved yet');
-      await expect(page.getByRole('region', exact('Export'))).toContainText(book && plays ? 'Exported.' : 'Not exported yet.');
     },
     /** The opponent box starts blank, with the tap total only as a hint. */
     expectOppHint: (label: string, taps: number) =>
@@ -338,9 +339,9 @@ function ui(page: Page) {
       await dialog().getByRole('button', exact('Done')).click();
       await expect(dialog()).toHaveCount(0);
     },
-    /** From the Final screen to Live and straight back. */
+    /** From the Final screen to Live. */
     async backToLive() {
-      await page.getByRole('button', exact('Back')).click();
+      await page.getByRole('button', exact('Back to game')).click();
     },
     /** The 4-foul warning, which shows only as the card's amber border. */
     expectWarning: (name: Name) => expect(card(name)).toHaveClass(/border-amber-400/),
@@ -590,6 +591,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectExportState(true, false);
     // Saving a file is not an edit: its entry (shown on Live) has no Undo.
     await app.backToLive();
+    // The game has ended, so the strip reads Final and the End slot opens Final.
+    await app.expectStrip({ us: 32, opp: 31, period: 'Final', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 0 } });
+    await app.expectBarOneRow('Final ▸');
     await app.expectToast('Exported Book CSV');
     await app.expectToastNoUndo('Q4');
     await app.openEnd();

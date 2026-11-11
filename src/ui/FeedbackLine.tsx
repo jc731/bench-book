@@ -8,8 +8,6 @@ interface Props {
   onPrompt?: (prompt: Prompt) => void;
   /** Given, an undoable entry gets its own Undo (Log and the check). Live passes none: its bar's Undo is the line's. */
   onUndo?: () => void;
-  /** Shown on the left when there is no entry. */
-  idleText?: string;
 }
 
 /**
@@ -18,12 +16,12 @@ interface Props {
  * wraps to a second line rather than cutting its tail. The entry text is `#feedback-text`, so a
  * button elsewhere can point `aria-describedby` at it.
  */
-export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo, idleText }: Props) {
+export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo }: Props) {
   const { entry, prompt } = line;
-  const text = entry ? entry.text : idleText ?? '';
+  const text = entry ? entry.text : '';
   return (
     <div
-      class={`flex min-h-11 items-center gap-2 px-3 py-0.5 font-semibold ${entry || idleText ? 'bg-slate-700' : ''} ${
+      class={`flex min-h-11 items-center gap-2 px-3 py-0.5 font-semibold ${entry ? 'bg-slate-700' : ''} ${
         entry ? '' : 'text-sm'
       } ${cls}`}
       role="status"

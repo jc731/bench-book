@@ -42,6 +42,20 @@ export function endPeriodLabel(period: number): string {
   return `End ${periodLabel(period)}`;
 }
 
+/** The status strip's period: `Final` once the game has ended. */
+export function stripPeriodText(period: number, ended: boolean): string {
+  return ended ? 'Final' : periodLabel(period);
+}
+
+/** The bar's End slot: ends a quarter, opens the Q4/OT sheet that can end the game, or, once ended, opens Final. */
+export type EndSlot = { text: string; opens: 'endPeriod' | 'endSheet' | 'final' };
+
+export function endSlot(period: number, ended: boolean): EndSlot {
+  if (ended) return { text: 'Final ▸', opens: 'final' };
+  if (mayEndGame(period)) return { text: `${endPeriodLabel(period)}…`, opens: 'endSheet' };
+  return { text: endPeriodLabel(period), opens: 'endPeriod' };
+}
+
 /** Whether ending this period could end the game (after Q4 or any OT) rather than just advance. */
 export function mayEndGame(period: number): boolean {
   return period >= 4;

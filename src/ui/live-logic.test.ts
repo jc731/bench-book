@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  BONUS_TEXT, UNDO_CLEARED_LABEL, countText, endChoices, endPeriodLabel, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
-  undoAriaLabel,
+  BONUS_TEXT, UNDO_CLEARED_LABEL, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
+  stripPeriodText, undoAriaLabel,
 } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
@@ -29,6 +29,19 @@ describe('labels', () => {
   it('offers end game from Q4 on only', () => {
     expect([1, 2, 3].some(mayEndGame)).toBe(false);
     expect([4, 5, 6].every(mayEndGame)).toBe(true);
+  });
+});
+
+describe('a finished game looks finished', () => {
+  it('endSlot', () => {
+    expect(endSlot(2, false)).toEqual({ text: 'End Q2', opens: 'endPeriod' });
+    expect(endSlot(4, false)).toEqual({ text: 'End Q4…', opens: 'endSheet' });
+    expect(endSlot(6, false)).toEqual({ text: 'End OT2…', opens: 'endSheet' });
+    expect(endSlot(5, true)).toEqual({ text: 'Final ▸', opens: 'final' });
+  });
+  it('stripPeriodText', () => {
+    expect(stripPeriodText(5, false)).toBe('OT1');
+    expect(stripPeriodText(5, true)).toBe('Final');
   });
 });
 

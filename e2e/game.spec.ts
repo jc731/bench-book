@@ -92,9 +92,9 @@ test('scripted game reconciles and exports', async ({ page }) => {
   ).toBeDisabled();
   await expect(page.getByText('Q3', { exact: true })).toBeVisible();
 
-  // End game / export
+  // Final / export opens Final without ending the game.
   await page.getByRole('button', { name: 'More' }).click();
-  await page.getByRole('button', { name: 'End game / export' }).click();
+  await page.getByRole('button', { name: 'Final / export' }).click();
   const issues = page.getByRole('region', { name: 'Open issues' });
   await expect(issues).toContainText('Q2');
   await expect(issues).not.toContainText('Q1');
@@ -109,7 +109,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   expect(block.find((r) => r[0] === 'Q1')?.[4]).toBe('matched');
 
   // A second game from the same device: New game -> discard -> roster prefilled -> 0-0.
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back to game' }).click();
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(page.getByText(/A game is in progress/)).toBeVisible();
@@ -187,4 +187,91 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
   const bench = (await page.getByRole('button', { name: 'Bench', exact: true }).boundingBox())!;
   expect(bench.y + bench.height).toBeLessThanOrEqual((await entry.boundingBox())!.y);
+});
+
+async function onePlayerGame(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('Opponent (required)').fill('Test Opp');
+  await page.getByLabel('Player 1 number').fill('4');
+  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByRole('button', { name: 'Start game' }).click();
+}
+
+const stripPeriod = (page: Page, text: string) => page.getByRole('banner').getByText(text, { exact: true });
+const endSlotButton = (page: Page, text: string) => page.getByRole('navigation').getByRole('button', { name: text, exact: true });
+const notExportedChip = (page: Page) => page.getByRole('button', { name: /^Not exported/ });
+
+/** Checks a quarter against a book that also reads 0, from wherever its Check button is. */
+async function checkZero(page: Page, check: Locator, label: string) {
+  await check.click();
+  await page.getByLabel(new RegExp(`Our points in ${label}`)).fill('0');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+}
+
+test('ended game: Final, reload, Reopen game', async ({ page }) => {
+  await onePlayerGame(page);
+  // Every quarter checked, so the only prompt left for an ended game is the not-exported one.
+  for (const q of ['Q1', 'Q2', 'Q3']) {
+    await page.getByRole('button', { name: `End ${q}`, exact: true }).click();
+    await checkZero(page, page.getByRole('button', { name: `Check ${q} — not checked against the book` }), q);
+  }
+  await endSlotButton(page, 'End Q4…').click();
+  await page.getByRole('dialog').getByRole('button', { name: 'End game (no overtime)' }).click();
+  await expect(page.getByRole('heading', { name: 'Final' })).toBeVisible();
+  await checkZero(page, page.getByRole('region', { name: 'Open issues' }).getByRole('button', { name: 'Check', exact: true }), 'Q4');
+  await page.getByRole('button', { name: 'Back to game' }).click();
+
+  await expect(stripPeriod(page, 'Final')).toBeVisible();
+  await expect(stripPeriod(page, 'Q4')).toHaveCount(0);
+  await expect(endSlotButton(page, 'Final ▸')).toBeVisible();
+  await expect(page.getByText('Game ended', { exact: false })).toHaveCount(0);
+  // The not-exported chip opens Final.
+  await expect(notExportedChip(page)).toHaveText('Not exported');
+  await notExportedChip(page).click();
+  await expect(page.getByRole('heading', { name: 'Final' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to game' }).click();
+
+  // After a reload Undo is gone, but Final can still reopen the game.
+  await page.reload();
+  await expect(stripPeriod(page, 'Final')).toBeVisible();
+  await expect(notExportedChip(page)).toBeVisible();
+  await endSlotButton(page, 'Final ▸').click();
+  await expect(page.getByRole('button', { name: 'End game early' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Reopen game' }).click();
+
+  await expect(stripPeriod(page, 'Q4')).toBeVisible();
+  await expect(stripPeriod(page, 'Final')).toHaveCount(0);
+  await expect(endSlotButton(page, 'End Q4…')).toBeVisible();
+  await expect(endSlotButton(page, 'Final ▸')).toHaveCount(0);
+  await expect(notExportedChip(page)).toHaveCount(0);
+  await expect(page.getByTestId('feedback-text')).toHaveText('Reopened game');
+});
+
+test('a live game: Final / export, then End game early with a confirm', async ({ page }) => {
+  await onePlayerGame(page);
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Final / export' }).click();
+  await expect(page.getByRole('heading', { name: 'Final' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reopen game' })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'End game early' }).click();
+  await expect(page.getByRole('dialog', { name: 'End the game now?' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back to game' }).click();
+  await expect(stripPeriod(page, 'Q1')).toBeVisible();
+  await expect(endSlotButton(page, 'End Q1')).toBeVisible();
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Final / export' }).click();
+  await page.getByRole('button', { name: 'End game early' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'End game', exact: true }).click();
+  // It stays on Final, which now offers Reopen instead.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Reopen game' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'End game early' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Open issues' })).toContainText('Q1');
+  await page.getByRole('button', { name: 'Back to game' }).click();
+  await expect(stripPeriod(page, 'Final')).toBeVisible();
+  await expect(endSlotButton(page, 'Final ▸')).toBeVisible();
 });

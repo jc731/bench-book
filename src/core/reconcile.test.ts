@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { appendEvent, deleteEvent, insertEventBefore, newGame, orderedEvents } from './events';
 import {
-  checkPeriod, endGame, endPeriod, isExported, markExported, openIssues, oppTotal, saveReconcile, startOvertime,
+  checkPeriod, endGame, endPeriod, isExported, markExported, openIssues, oppTotal, reopenGame, saveReconcile,
+  startOvertime,
 } from './reconcile';
 import type { Game, GameInfo, Player } from './types';
 
@@ -12,6 +13,7 @@ const info: GameInfo = {
 const roster: Player[] = [{ id: 'p1', number: '1', name: 'Player One', pos: 'G' }];
 const t0 = new Date('2026-11-10T10:00:00Z');
 const t1 = new Date('2026-11-10T10:30:00Z');
+const t2 = new Date('2026-11-10T11:00:00Z');
 
 // App at 10 in Q1: five FG2.
 function tenInQ1(): Game {
@@ -199,6 +201,24 @@ describe('period flow', () => {
     expect(g1.updatedAt).toBe(t1.toISOString());
     expect(g0.endedAt).toBeUndefined();
     expect(openIssues(g1).map((x) => x.period)).toEqual([1, 2]);
+  });
+
+  test('reopenGame clears the end and keeps the period', () => {
+    let g = tenInQ1();
+    for (let i = 0; i < 4; i++) g = endPeriod(g, t0); // in OT1
+    const ended = endGame(g, t1);
+    expect(openIssues(ended).map((i) => i.period)).toContain(5);
+    const back = reopenGame(ended, t2);
+    expect(back.endedAt).toBeUndefined();
+    expect(back.currentPeriod).toBe(5);
+    expect(back.updatedAt).toBe(t2.toISOString());
+    expect(back.events).toBe(ended.events);
+    expect(openIssues(back).map((i) => i.period)).not.toContain(5);
+  });
+
+  test('reopenGame leaves a live game alone', () => {
+    const g = tenInQ1();
+    expect(reopenGame(g, t1)).toBe(g);
   });
 
   test('after endGame the current period only appears if it has an issue status', () => {
