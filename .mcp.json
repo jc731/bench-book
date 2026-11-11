@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ux-browser": {
+      "command": "pnpm",
+      "args": ["exec", "playwright-mcp", "--browser", "chromium", "--isolated", "--headless", "--device", "iPhone 13"]
+    }
+  }
+}

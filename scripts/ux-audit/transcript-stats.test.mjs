@@ -1,0 +1,114 @@
+import { describe, it, expect } from 'vitest';
+import { analyzeTranscript, ALLOWED_TOOLS } from './transcript-stats.mjs';
+
+const APP = 'http://localhost:4410/';
+const line = (...content) => JSON.stringify({ type: 'assistant', message: { role: 'assistant', content } });
+const text = (t) => ({ type: 'text', text: t });
+const tool = (name, input = {}) => ({ type: 'tool_use', id: 't1', name, input });
+const ux = (bare, input) => tool(`mcp__ux-browser__${bare}`, input);
+const jsonl = (...lines) => lines.join('\n');
+
+describe('analyzeTranscript', () => {
+  it('allowed-only transcript is not void and counts tools', () => {
+    const r = analyzeTranscript(
+      jsonl(
+        line(ux('browser_navigate', { url: APP })),
+        line(ux('browser_snapshot')),
+        line(ux('browser_click', { ref: 'a' })),
+        line(ux('browser_click', { ref: 'b' })),
+      ),
+      { appUrl: APP },
+    );
+    expect(r.void).toBe(false);
+    expect(r.reasons).toEqual([]);
+    expect(r.toolCounts).toEqual({
+      'mcp__ux-browser__browser_navigate': 1,
+      'mcp__ux-browser__browser_snapshot': 1,
+      'mcp__ux-browser__browser_click': 2,
+    });
+    expect(r.navigations).toEqual([APP]);
+  });
+
+  it('flags a disallowed tool', () => {
+    const r = analyzeTranscript(jsonl(line(ux('browser_snapshot')), line(tool('Bash', { command: 'ls' }))), { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain('disallowed tool: Bash');
+  });
+
+  it('flags an allowed bare name on a different server', () => {
+    const r = analyzeTranscript(line(tool('mcp__other__browser_click', {})), { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain('disallowed tool: mcp__other__browser_click');
+  });
+
+  it('flags a same-length look-alike server name', () => {
+    const r = analyzeTranscript(line(tool('mcp__ux-browsex__browser_click', {})), { appUrl: APP });
+    expect(r.void).toBe(true);
+  });
+
+  it('flags a ux-browser tool that is not on the allowlist', () => {
+    const r = analyzeTranscript(line(ux('browser_evaluate', {})), { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain('disallowed tool: mcp__ux-browser__browser_evaluate');
+  });
+
+  it.each(['file:///home/x', 'http://localhost:4410/_astro/app.js', 'http://evil.test/', 'not a url'])('flags navigation to %s', (url) => {
+    const r = analyzeTranscript(line(ux('browser_navigate', { url })), { appUrl: APP });
+    expect(r.void).toBe(true);
+    expect(r.reasons).toContain(`navigate outside app: ${url}`);
+  });
+
+  it.each([APP, `${APP}#/game`, `${APP}?x=1`, 'http://localhost:4410'])('allows navigation to %s', (url) => {
+    const r = analyzeTranscript(line(ux('browser_navigate', { url })), { appUrl: APP });
+    expect(r.void).toBe(false);
+    expect(r.navigations).toEqual([url]);
+  });
+
+  it('empty transcript is void', () => {
+    for (const t of ['', '\n\n', 'not json']) {
+      const r = analyzeTranscript(t, { appUrl: APP });
+      expect(r.void).toBe(true);
+      expect(r.reasons).toEqual(['no persona tool calls found']);
+    }
+  });
+
+  it('ignores non-assistant lines', () => {
+    const user = JSON.stringify({ type: 'user', message: { content: [tool('Bash')] } });
+    const r = analyzeTranscript(jsonl(user, line(ux('browser_snapshot'))), { appUrl: APP });
+    expect(r.void).toBe(false);
+  });
+
+  it('attributes actions to the most recent Event marker; snapshots and waits are not actions', () => {
+    const r = analyzeTranscript(
+      jsonl(
+        line(text('Event 3: tap the thing'), ux('browser_click', { ref: 'a' })),
+        line(ux('browser_click', { ref: 'b' })),
+        line(ux('browser_snapshot')),
+        line(ux('browser_wait_for', { time: 1 })),
+        line(text('Event 4: next'), ux('browser_type', { ref: 'c', text: 'x' })),
+        line(ux('browser_take_screenshot')),
+      ),
+      { appUrl: APP },
+    );
+    expect(r.perEvent[3]).toEqual({ actions: 2 });
+    expect(r.perEvent[4]).toEqual({ actions: 1 });
+    expect(r.totalActions).toBe(3);
+  });
+
+  it('uses the last Event marker when one text block mentions several', () => {
+    const r = analyzeTranscript(line(text('Done with Event 1. Event 2: go'), ux('browser_click', {})), { appUrl: APP });
+    expect(r.perEvent).toEqual({ 2: { actions: 1 } });
+  });
+
+  it('actions before any Event marker count toward the total only', () => {
+    const r = analyzeTranscript(line(ux('browser_click', {})), { appUrl: APP });
+    expect(r.perEvent).toEqual({});
+    expect(r.totalActions).toBe(1);
+  });
+
+  it('exports the allowlist', () => {
+    expect(ALLOWED_TOOLS).toContain('browser_click');
+    expect(ALLOWED_TOOLS).not.toContain('browser_evaluate');
+    expect(ALLOWED_TOOLS).toHaveLength(10);
+  });
+});

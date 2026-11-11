@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "release": "node scripts/release.mjs",
-    "check": "astro check && tsc --noEmit && vitest run"
+    "check": "astro check && tsc --noEmit && vitest run",
+    "ux:stats": "node scripts/ux-audit/transcript-stats.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^6.1.4",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@playwright/mcp": "0.0.85",
     "@playwright/test": "^1.65.0",
     "@vite-pwa/astro": "2.0.2",
     "typescript": "^5.9.3",
