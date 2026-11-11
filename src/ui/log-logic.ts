@@ -170,7 +170,7 @@ export function addedLabel(type: PlayType, number: string, period: number): stri
 /** The feedback line on reopening a game in progress: `Last: #3 +2`; null with no plays or once ended. */
 export function resumeText(g: Game): string | null {
   if (g.endedAt || g.events.length === 0) return null;
-  // The most recently entered play, which is where the scorer left off (an insert may sort earlier).
+  // The most recently entered play, which is where the scorer left off (a play added to an earlier quarter sorts earlier).
   const last = g.events.reduce((a, b) => (b.enteredAt > a.enteredAt || (b.enteredAt === a.enteredAt && b.order > a.order) ? b : a));
   return `Last: ${eventLabel(g, last)}`;
 }

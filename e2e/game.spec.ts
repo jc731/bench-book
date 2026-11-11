@@ -331,3 +331,49 @@ test("the check's Add-play sheet shows only what was added while it is open, and
   await expect(rows.first()).toHaveAccessibleName('#4 Player One · +2');
   await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · FT made');
 });
+
+test('Log: a fix that changes the player and the quarter, with the plays after it, is one Undo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Opponent (required)').fill('Test Opp');
+  await page.getByLabel('Player 1 number').fill('4');
+  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByRole('button', { name: 'Add player' }).click();
+  await page.getByLabel('Player 2 number').fill('00');
+  await page.getByLabel('Player 2 name').fill('Player Two');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  const one = card(page, '4', 'Player One');
+  await tap(page, one, '+2');
+  await tap(page, one, 'Foul');
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+
+  const q1 = page.getByRole('region', { name: 'Q1', exact: true });
+  const q2 = page.getByRole('region', { name: 'Q2', exact: true });
+  await q1.getByRole('button', { name: /^#4 Player One · \+2/ }).click();
+  const fix = page.getByRole('dialog');
+  const quarter = fix.getByRole('group', { name: 'Quarter', exact: true });
+  const also = fix.getByRole('checkbox', { name: 'Also move the 1 play after it in Q1', exact: true });
+  await expect(also).toHaveCount(0);
+  await quarter.getByRole('button', { name: 'Q2', exact: true }).click();
+  await also.check();
+  // Back to its own quarter, the box goes and the tick with it.
+  await quarter.getByRole('button', { name: 'Q1', exact: true }).click();
+  await expect(also).toHaveCount(0);
+  await quarter.getByRole('button', { name: 'Q2', exact: true }).click();
+  await expect(also).not.toBeChecked();
+  await also.check();
+  await fix.getByRole('group', { name: 'Player', exact: true }).getByRole('button', { name: '#00 Player Two', exact: true }).click();
+  await fix.getByRole('button', { name: 'Save', exact: true }).click();
+
+  await expect(page.getByTestId('feedback-text')).toHaveText('Edited #4 +2 → #00 +2; moved 2 plays to Q2');
+  await expect(q1).toHaveCount(0);
+  await expect(q2.getByRole('listitem')).toHaveCount(2);
+  await expect(q2.getByRole('button', { name: /^#00 Player Two · \+2/ })).toBeVisible();
+
+  // One Undo restores both the player and the quarter.
+  await page.getByRole('status').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(q2).toHaveCount(0);
+  await expect(q1.getByRole('listitem')).toHaveCount(2);
+  await expect(q1.getByRole('button', { name: '#4 Player One · +2', exact: true })).toBeVisible();
+  await expect(q1.getByRole('button', { name: '#4 Player One · Foul', exact: true })).toBeVisible();
+});

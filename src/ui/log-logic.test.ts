@@ -207,12 +207,10 @@ describe('editSave', () => {
       [2, 3, 4, 5].map((i) => g.events[i].id),
     );
   });
-  it('is one undo step that restores the game as it was', () => {
+  it('undoes back to the game as it was', () => {
     const s = editSave(g, e, { ...draftOf(e), playerId: 'b', period: 4 }, true)!;
     const after = applyUpdate({ game: g, stack: [] }, s.apply, s.label, NOW);
-    expect(after.stack).toHaveLength(1);
     const back = applyUndo(after);
-    expect(back.label).toBe(s.label);
     expect(back.state.game).toEqual(g);
     expect(back.state.stack).toEqual([]);
   });
@@ -255,7 +253,7 @@ describe('resumeText', () => {
     let g = game([{ type: 'FG2', playerId: 'b' }]);
     g = appendEvent(g, { type: 'FG2', playerId: 'a' }, new Date(NOW.getTime() + 1000));
     expect(resumeText(g)).toBe('Last: #4 +2');
-    // An insert that sorts first but was entered last is still "last".
+    // A play that sorts first but was entered last is still "last".
     const early = { ...g, events: g.events.map((e, i) => (i === 1 ? { ...e, order: -1 } : e)) };
     expect(resumeText(early)).toBe('Last: #4 +2');
   });

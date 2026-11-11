@@ -269,7 +269,10 @@ function ui(page: Page) {
     async moveFrom(rowScope: Locator, fromLabel: string, rowText: string, toLabel: string, after: number) {
       await this.logRow(rowScope, rowText).click();
       await dialog().getByRole('group', exact('Quarter')).getByRole('button', exact(toLabel)).click();
-      await dialog().getByRole('checkbox', exact(`Also move the ${after} play${after === 1 ? '' : 's'} after it in ${fromLabel}`)).check();
+      const also = dialog().getByRole('checkbox', exact(`Also move the ${after} play${after === 1 ? '' : 's'} after it in ${fromLabel}`));
+      // In view as soon as the quarter is picked (.check() would scroll to it, hiding a below-the-fold box).
+      await expect(also).toBeInViewport({ ratio: 1 });
+      await also.check();
       await dialog().getByRole('button', exact('Save')).click();
       await expect(dialog()).toHaveCount(0);
       await this.expectToast(`Moved ${after + 1} plays to ${toLabel}`);

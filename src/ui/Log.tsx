@@ -192,24 +192,25 @@ function EditSheet({ game, event, draft, setDraft, alsoMove, setAlsoMove, onSave
         {periods.length > 1 && (
           <Group label="Quarter" cols="grid-cols-4">
             {periods.map((p) => (
-              <button key={p} type="button" class={`${btn} ${draft.period === p ? on : ''}`} onClick={() => setDraft({ ...draft, period: p })}>
+              <button key={p} type="button" class={`${btn} ${draft.period === p ? on : ''}`} onClick={() => { setDraft({ ...draft, period: p }); if (p === event.period) setAlsoMove(false); }}>
                 {periodLabel(p)}
               </button>
             ))}
           </Group>
         )}
-        {draft.period !== event.period && followers > 0 && (
-          <label class="flex min-h-11 items-center gap-3 font-semibold">
-            <input
-              type="checkbox"
-              class="h-6 w-6 shrink-0 accent-amber-400"
-              checked={alsoMove}
-              onChange={(e) => setAlsoMove(e.currentTarget.checked)}
-            />
-            {alsoMoveText(followers, event.period)}
-          </label>
-        )}
       </div>
+      {/* Outside the scroller, just above Save: picking a quarter must never hide it below the fold. */}
+      {draft.period !== event.period && followers > 0 && (
+        <label class="mt-3 flex min-h-11 items-center gap-3 font-semibold">
+          <input
+            type="checkbox"
+            class="h-6 w-6 shrink-0 accent-amber-400"
+            checked={alsoMove}
+            onChange={(e) => setAlsoMove(e.currentTarget.checked)}
+          />
+          {alsoMoveText(followers, event.period)}
+        </label>
+      )}
       <div class="mt-3 flex gap-2">
         <button type="button" class="min-h-12 rounded-lg border border-red-400 px-4 font-semibold text-red-300" onClick={onDelete}>Delete</button>
         <button type="button" class="ml-auto min-h-12 rounded-lg border border-slate-400 px-5 font-semibold" onClick={onClose}>Cancel</button>
