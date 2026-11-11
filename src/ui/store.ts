@@ -73,6 +73,16 @@ export function useGameStore() {
     [commit],
   );
 
+  /** A change that is neither an edit nor news (a check draft): no undo step and no toast. */
+  const quiet = useCallback(
+    (fn: (g: Game, now: Date) => Game) => {
+      if (!state.current.game) return;
+      const next = applyUpdate(state.current, fn, '', new Date(), false);
+      if (next !== state.current) commit(next);
+    },
+    [commit],
+  );
+
   const undo = useCallback((): string | null => {
     const r = applyUndo(state.current);
     if (r.label === null) return null;
@@ -119,7 +129,7 @@ export function useGameStore() {
   const canUndo = state.current.stack.length > 0;
 
   return {
-    game, saving, view, setView, update, undo, canUndo, toast, clearToast, start, discard,
+    game, saving, view, setView, update, quiet, undo, canUndo, toast, clearToast, start, discard,
     reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile,
   };
 }

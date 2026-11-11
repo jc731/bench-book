@@ -58,6 +58,19 @@ export interface Game {
   endedAt?: string;
   /** When each CSV was last downloaded; the game counts as exported only when both were. */
   exported?: ExportState;
+  /**
+   * What the scorer typed on a quarter check and left with Later, by period. Not a check: nothing
+   * reads it but the check screen, and it is never exported. Absent in games saved before drafts.
+   */
+  checkDrafts?: Record<number, CheckDraft>;
+}
+
+/** The check screen's fields as typed, plus the app's count when that check was first opened. */
+export interface CheckDraft {
+  us: string;
+  opp: string;
+  note: string;
+  appAtOpen: number;
 }
 
 export type ExportKind = 'book' | 'plays';

@@ -24,6 +24,7 @@ All notable changes to Bench Book are listed here, in the
 - In the Book CSV's score by period, an opponent figure taken from the taps because the book box was left blank is now marked `*`, as our own estimates are, and so is the opponent total.
 - The Book CSV's `Timer` column is renamed `Timekeeper`, to match Setup.
 - The resume note no longer shows when reopening a game that has already ended.
+- On the quarter check, `Later` keeps what you typed as a draft, even through a reload, and reopening that quarter fills it back in. A draft is not a check: the quarter still reads Not checked, the Book CSV ignores it, and only Save records the check. A quarter fixed before a Later still saves as Fixed.
 
 ## [0.1.0] - 2026-11-10
 

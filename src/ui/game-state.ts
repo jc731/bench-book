@@ -23,12 +23,15 @@ export function applyUpdate(
   };
 }
 
-/** Undo restores the snapshot, but a file already downloaded stays downloaded, so export marks carry over. */
+/**
+ * Undo restores the snapshot, but two things are not edits and carry over from the current game:
+ * export marks (a file already downloaded stays downloaded) and check drafts (Later is not undoable).
+ */
 export function applyUndo(state: GameState): { state: GameState; label: string | null } {
   const { entry, stack } = popUndo(state.stack);
   if (!entry) return { state, label: null };
-  const { exported: _was, ...snapshot } = entry.snapshot;
-  const exported = state.game?.exported;
-  const game: Game = exported ? { ...snapshot, exported } : snapshot;
+  const { exported: _was, checkDrafts: _drafts, ...snapshot } = entry.snapshot;
+  const { exported, checkDrafts } = state.game ?? {};
+  const game: Game = { ...snapshot, ...(exported ? { exported } : {}), ...(checkDrafts ? { checkDrafts } : {}) };
   return { state: { game, stack }, label: entry.label };
 }

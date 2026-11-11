@@ -62,3 +62,18 @@ describe('export marks', () => {
     expect(u.state.game?.exported).toEqual({ plays: now.toISOString() });
   });
 });
+
+describe('check drafts and undo', () => {
+  it('undo neither brings back nor drops a draft', () => {
+    const draft = { us: '9', opp: '', note: '', appAtOpen: 8 };
+    let s: GameState = { game: base, stack: [] };
+    s = applyUpdate(s, setOpp('X'), 'x', now);
+    s = applyUpdate(s, (g) => ({ ...g, checkDrafts: { 1: draft } }), 'draft', now, false);
+    expect(applyUndo(s).state.game?.checkDrafts).toEqual({ 1: draft });
+    // A draft present in the snapshot but cleared since stays cleared.
+    let t: GameState = { game: { ...base, checkDrafts: { 1: draft } }, stack: [] };
+    t = applyUpdate(t, setOpp('Y'), 'y', now);
+    t = applyUpdate(t, (g) => ({ ...g, checkDrafts: undefined }), 'clear', now, false);
+    expect(applyUndo(t).state.game?.checkDrafts).toBeUndefined();
+  });
+});

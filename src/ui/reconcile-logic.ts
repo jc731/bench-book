@@ -29,10 +29,7 @@ export function appHasText(g: Game, period: number): string {
   return `App has ${label}: Us ${us} · Them ${d.oppByPeriod[period] ?? 0} (game ${usGame}–${oppGame})`;
 }
 
-/** Whether the book number disagreed with the app as it stood when the check opened. */
-export function sawMismatch(bookUs: number | null, appUsAtOpen: number | null): boolean {
-  return bookUs !== null && appUsAtOpen !== null && bookUs !== appUsAtOpen;
-}
+export { sawMismatch } from '../core/drafts';
 
 /** Our points from the opening tip through the end of `period`. */
 export function cumulativeThrough(g: Game, period: number): number {

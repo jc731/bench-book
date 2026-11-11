@@ -203,6 +203,8 @@ function ui(page: Page) {
     expectShort: (book: number, app: number) =>
       expect(page.getByTestId('compare')).toHaveText(`Book ${book} · App ${app} — app is ${book - app} short`),
     saveCheck: () => page.getByRole('button', exact('Save')).click(),
+    later: () => page.getByRole('button', exact('Later')).click(),
+    ourPoints: (label: string) => page.getByLabel(new RegExp(`Our points in ${label}`)),
     /** Check a quarter from the Live banner (the caller saves). */
     async checkQuarter(label: string, us: number, opp: number, note?: string) {
       await this.banner(label).click();
@@ -468,6 +470,18 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.endPeriodThen('Q4', 'Start overtime');
     // OT bonus counting continues from Q4's 4.
     await app.expectStrip({ us: 28, opp: 28, period: 'OT1', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 1, ot: 1 } });
+    await expect(app.banner('Q4')).toBeVisible();
+
+    // Later keeps a typed number as a draft, through a reload; a draft is not a check, so Q4
+    // stays unchecked here and in both CSVs below.
+    await app.banner('Q4').click();
+    await app.ourPoints('Q4').fill('6');
+    await app.later();
+    await expect(app.banner('Q4')).toBeVisible();
+    await page.reload();
+    await app.banner('Q4').click();
+    await expect(app.ourPoints('Q4')).toHaveValue('6');
+    await app.later();
     await expect(app.banner('Q4')).toBeVisible();
     await expectNoOverflow(page);
   });

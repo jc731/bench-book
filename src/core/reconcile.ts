@@ -61,7 +61,10 @@ export function saveReconcile(
     hadMismatch: (prev?.hadMismatch ?? false) || sawMismatch || (bookUs !== null && bookUs !== appUs),
   };
   const periods = prev ? g.periods.map((p) => (p === prev ? rec : p)) : [...g.periods, rec];
-  return { ...touch(g, now), periods };
+  // Saving a check retires the draft Later left for it.
+  const { [period]: _draft, ...drafts } = g.checkDrafts ?? {};
+  const checkDrafts = Object.keys(drafts).length ? drafts : undefined;
+  return { ...touch(g, now), periods, checkDrafts };
 }
 
 export function endGame(g: Game, now: Date): Game {

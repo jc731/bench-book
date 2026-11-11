@@ -3,6 +3,7 @@ import { derive } from '../core/derive';
 import { periodLabel } from '../core/periods';
 import { checkPeriod, saveReconcile } from '../core/reconcile';
 import { appendEvent } from '../core/events';
+import { checkSeed, setCheckDraft } from '../core/drafts';
 import type { Player } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { addedLabel } from './log-logic';
@@ -37,10 +38,9 @@ export function StatusChip({ store, period }: { store: GameStore; period: number
   );
 }
 
-const asText = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n));
 
 export function Reconcile({ store }: { store: GameStore }) {
-  const { game, reconcilePeriod, reconcileReturn, update, undo, toast, clearToast, setView } = store;
+  const { game, reconcilePeriod, reconcileReturn, update, quiet, undo, toast, clearToast, setView } = store;
   const period = reconcilePeriod ?? 1;
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
@@ -49,19 +49,19 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
   const [addPlayer, setAddPlayer] = useState<Player | null>(null);
   const seeded = useRef<number | null>(null);
-  // The app's count when the check opened: a book number that disagreed with it was a mismatch,
-  // even if the plays were fixed on this screen before Save.
+  // The app's count when the check was first opened (kept through Later in the draft): a book number
+  // that disagreed with it was a mismatch, even if the plays were fixed before Save.
   const appAtOpen = useRef<number | null>(null);
 
-  // Seed the drafts once per period from the saved record. The opponent box is never prefilled
-  // from taps: a number in it must be one the scorer read off the book.
+  // Seed the fields once per period from the draft Later left, else the saved record. The opponent
+  // box is never prefilled from taps: a number in it must be one the scorer read off the book.
   if (game && seeded.current !== period) {
     seeded.current = period;
-    const c = checkPeriod(game, period);
-    appAtOpen.current = c.appUs;
-    setUsText(asText(c.bookUs));
-    setNote(c.note);
-    setOppText(asText(c.bookOpp));
+    const seed = checkSeed(game, period);
+    appAtOpen.current = seed.appAtOpen;
+    setUsText(seed.us);
+    setNote(seed.note);
+    setOppText(seed.opp);
   }
 
   useEffect(() => {
@@ -89,6 +89,8 @@ export function Reconcile({ store }: { store: GameStore }) {
     if (invalid) return false;
     const draft = { bookUs, bookOpp, note };
     const saw = sawMismatch(bookUs, appAtOpen.current);
+    // Save retires any draft, even when the record itself does not change.
+    quiet((g, now) => setCheckDraft(g, period, null, now));
     update(
       (g, now) => {
         const rec = reconcileDraftToSave(g.periods.find((p) => p.period === period), draft);
@@ -106,6 +108,12 @@ export function Reconcile({ store }: { store: GameStore }) {
   const closeAdd = () => { setAddStep('closed'); setAddPlayer(null); };
   const saveAndClose = () => {
     if (save()) setView(reconcileReturn);
+  };
+  // Later keeps what was typed as a draft (not a check); with every field blank it keeps nothing.
+  const later = () => {
+    const draft = { us: usText, opp: oppText, note, appAtOpen: appAtOpen.current ?? c.appUs };
+    quiet((g, now) => setCheckDraft(g, period, draft, now));
+    setView(reconcileReturn);
   };
 
   return (
@@ -221,7 +229,7 @@ export function Reconcile({ store }: { store: GameStore }) {
         </div>
       )}
       <div class="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-slate-700 bg-slate-950 p-2">
-        <button type="button" class="min-h-12 flex-1 rounded-lg border border-slate-400 font-semibold" onClick={() => setView(reconcileReturn)}>
+        <button type="button" class="min-h-12 flex-1 rounded-lg border border-slate-400 font-semibold" onClick={later}>
           Later
         </button>
         <button type="button" class="min-h-12 flex-1 rounded-lg bg-white font-semibold text-slate-900 disabled:opacity-40" disabled={invalid} onClick={saveAndClose}>
