@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import preact from '@astrojs/preact';
 import tailwindcss from '@tailwindcss/vite';
 import { AstroPWAIntegration as AstroPWA } from '@vite-pwa/astro';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 export default defineConfig({
   output: 'static',
@@ -32,5 +35,8 @@ export default defineConfig({
       },
     }),
   ],
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  },
 });

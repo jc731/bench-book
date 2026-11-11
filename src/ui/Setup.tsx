@@ -113,6 +113,7 @@ export function Setup({ store }: { store: GameStore }) {
             </button>
           </div>
         </div>
+        <p class="mt-6 text-center text-xs text-slate-400">v{__APP_VERSION__}</p>
       </main>
     );
   }
@@ -253,6 +254,7 @@ export function Setup({ store }: { store: GameStore }) {
           </button>
         )}
       </div>
+      <p class="mt-6 text-center text-xs text-slate-400">v{__APP_VERSION__}</p>
     </main>
   );
 }

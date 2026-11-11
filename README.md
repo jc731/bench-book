@@ -43,6 +43,15 @@ pnpm check      # the gate: astro check, tsc, unit tests
 
 The first `pnpm test:e2e` run needs the browser once: `pnpm exec playwright install chromium`.
 
+## Releases
+
+Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
+`pnpm release <patch|minor|major>`, which never pushes.
+
+## Backlog
+
+- Tablet-size release test (after 1.0)
+
 ## Deploy
 
 Connect the repo in Netlify (build `pnpm build`, publish `dist`).

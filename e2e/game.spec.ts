@@ -1,3 +1,4 @@
+import pkg from '../package.json' with { type: 'json' };
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Invented names only: the roster is personal data about minors.
@@ -49,6 +50,7 @@ function parseCsv(text: string): string[][] {
 
 test('scripted game reconciles and exports', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByText(`v${pkg.version}`)).toBeVisible();
 
   // Setup
   await page.getByLabel('Opponent (required)').fill('Test Opp');
