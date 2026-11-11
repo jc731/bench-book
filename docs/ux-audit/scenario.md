@@ -80,6 +80,10 @@ Every name here is invented.
 Worked out by hand from the events above, after the persona's corrections (event 18's
 basket on #3, event 24's basket on #7, and the event 28 free throw on #12 in Q2).
 
+**How to compare.** Q2's check may read matched or fixed. Unchecked quarters, or a missing
+opponent score, are hesitated/blocked findings, not wrong entries. Only an entry that
+disagrees with an event counts as a wrong entry.
+
 **Score per quarter**
 
 | | Q1 | Q2 | Q3 | Q4 | Total |

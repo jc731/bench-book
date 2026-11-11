@@ -16,11 +16,14 @@ Part 2):
   the `## Expected end state`, never a repo path, never a button name or a hint.
 - **Never edit app code.** The audit writes a report and its screenshots, nothing else.
 - No push and no deploy.
-- Run this in a **fresh Claude Code session**: the `ux-browser` server starts with an
-  isolated, empty browser profile once per session, so an earlier run in the same session
-  would leave a saved game behind. Do not use the `ux-browser` tools yourself before step 3.
-- If the `mcp__ux-browser__*` tools are not available, stop and ask the owner to approve the
-  project's `ux-browser` MCP server (`.mcp.json`).
+- Run this in a **fresh Claude Code session started inside the repo**
+  (`cd ~/Dev/bench-book && claude`): the project's `.mcp.json` and `.claude/agents/` load
+  from the session's start directory, and the `ux-browser` server starts with an isolated,
+  empty browser profile once per session, so an earlier run in the same session would leave
+  a saved game behind. Do not use the `ux-browser` tools yourself before step 3.
+- If the `mcp__ux-browser__*` tools are not available, first check the session's working
+  directory (it must be the repo root; if not, tell the owner to restart from there). Only
+  then ask the owner to approve the project's `ux-browser` MCP server (`.mcp.json`).
 
 All paths below are relative to the repo root.
 
@@ -86,11 +89,12 @@ ls ~/.claude/projects/*/*/subagents/agent-<id>.jsonl
 ## 4. Check the transcript
 
 ```bash
-pnpm ux:stats <transcript.jsonl> http://localhost:4410/
+pnpm ux:stats <transcript.jsonl> http://localhost:4410/ --prompt <built prompt file>
 ```
 
 - **Any non-zero exit: the run is void.** Exit 2 means a disallowed tool was used, the
-  persona navigated off the app, or the transcript is empty or unreadable; exit 1 means
+  persona navigated off the app, the persona's received prompt differs from the built
+  prompt file, or the transcript is empty or unreadable; exit 1 means
   the check itself crashed (for example on a malformed tool call), which voids the run too.
   Never treat a non-zero exit as a pass. Write a short report at the chosen path saying
   the run was void and why (the `reasons`, or the error output), at the void path from
@@ -119,7 +123,10 @@ persona's game is in that browser's storage). Do not navigate away from the app 
 3. Compare them with `## Expected end state` in `docs/ux-audit/scenario.md`: the score per
    quarter, each player's points and fouls (and the other columns given), team fouls,
    timeouts used and the check results. **Each difference is a `wrong entry` finding**,
-   whether or not the persona noticed it.
+   whether or not the persona noticed it. How to compare: Q2's check may read matched or
+   fixed; unchecked quarters, or a missing opponent score, are `hesitated`/`blocked`
+   findings, not wrong entries; only an entry that disagrees with an event counts as a
+   wrong entry.
 
 Copy the screenshots that findings will cite into `docs/ux-audit/reports/<run>/`, and only
 those. Look at each one: they may show only the scenario's invented names.
@@ -184,7 +191,8 @@ Rules for the content:
 Never edit app code. Stage only the report and its screenshot dir, and commit:
 
 ```bash
-git add docs/ux-audit/reports/<run>.md docs/ux-audit/reports/<run>/
+git add docs/ux-audit/reports/<run>.md
+[ -d docs/ux-audit/reports/<run> ] && git add docs/ux-audit/reports/<run>/   # void runs have no screenshots
 git commit -m "docs: UX audit <run>"
 ```
 

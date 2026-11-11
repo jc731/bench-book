@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- The Setup screen shows the app version.
+
 ## [0.1.0] - 2026-11-10
 
 - Setup with a roster that is remembered on the device for the next game.

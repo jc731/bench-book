@@ -18,6 +18,9 @@ export const ALLOWED_TOOLS = [
   'browser_handle_dialog',
 ];
 
+// Deferred tool loading only returns schemas: allowed, never an action, never in ALLOWED_TOOLS.
+export const HARMLESS_TOOLS = ['ToolSearch'];
+
 // Looking and waiting are not actions.
 const NON_ACTIONS = new Set(['browser_snapshot', 'browser_take_screenshot', 'browser_wait_for']);
 
@@ -39,7 +42,18 @@ function isAppUrl(url, appUrl) {
   }
 }
 
-export function analyzeTranscript(jsonlText, { appUrl }) {
+const norm = (t) => String(t).replace(/\s+/g, ' ').trim();
+
+/** Text of a user message's content: a string, or an array of text blocks. */
+function userText(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('\n');
+  }
+  return '';
+}
+
+export function analyzeTranscript(jsonlText, { appUrl, prompt }) {
   const reasons = [];
   const toolCounts = {};
   const navigations = [];
@@ -47,6 +61,7 @@ export function analyzeTranscript(jsonlText, { appUrl }) {
   let totalActions = 0;
   let sawTool = false;
   let currentEvent = null;
+  let firstUserText = null;
 
   const lines = jsonlText.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -60,17 +75,21 @@ export function analyzeTranscript(jsonlText, { appUrl }) {
       reasons.push(`unparseable transcript line ${i + 1}`);
       continue;
     }
+    if (entry?.type === 'user' && firstUserText === null) {
+      firstUserText = userText(entry.message?.content);
+    }
     if (entry?.type !== 'assistant') continue;
     const content = entry.message?.content;
     if (!Array.isArray(content)) continue;
 
     for (const block of content) {
       if (block?.type === 'text' && typeof block.text === 'string') {
-        const markers = [...block.text.matchAll(/\bEvent\s+(\d+)/g)];
+        const markers = [...block.text.matchAll(/\bEvent\s+(\d+):/g)];
         if (markers.length) currentEvent = Number(markers[markers.length - 1][1]);
       } else if (block?.type === 'tool_use') {
         sawTool = true;
         const name = block.name;
+        if (HARMLESS_TOOLS.includes(name)) continue;
         toolCounts[name] = (toolCounts[name] ?? 0) + 1;
         const bare = allowedBareName(name);
         if (!bare) {
@@ -95,15 +114,25 @@ export function analyzeTranscript(jsonlText, { appUrl }) {
     }
   }
 
+  if (prompt !== undefined && (firstUserText === null || norm(firstUserText) !== norm(prompt))) {
+    reasons.push('prompt differs from built prompt');
+  }
   if (!sawTool) reasons.push('no persona tool calls found');
   return { void: reasons.length > 0, reasons, toolCounts, navigations, perEvent, totalActions };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   // Every failure exits 2, so a caller treats anything but 0 as void.
-  const [file, appUrl] = process.argv.slice(2);
-  if (!file || !appUrl) {
-    console.error('usage: node transcript-stats.mjs <transcript.jsonl> <appUrl>');
+  const args = process.argv.slice(2);
+  let promptFile;
+  const pi = args.indexOf('--prompt');
+  if (pi !== -1) {
+    promptFile = args[pi + 1];
+    args.splice(pi, 2);
+  }
+  const [file, appUrl] = args;
+  if (!file || !appUrl || (pi !== -1 && !promptFile)) {
+    console.error('usage: node transcript-stats.mjs <transcript.jsonl> <appUrl> [--prompt <file>]');
     process.exit(2);
   }
   let text;
@@ -113,7 +142,22 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     console.error(`cannot read transcript ${file}: ${e.message}`);
     process.exit(2);
   }
-  const result = analyzeTranscript(text, { appUrl });
+  let prompt;
+  if (promptFile) {
+    try {
+      prompt = readFileSync(promptFile, 'utf8');
+    } catch (e) {
+      console.error(`cannot read prompt ${promptFile}: ${e.message}`);
+      process.exit(2);
+    }
+  }
+  let result;
+  try {
+    result = analyzeTranscript(text, { appUrl, prompt });
+  } catch (e) {
+    console.error(`transcript check crashed: ${e.message}`);
+    process.exit(2);
+  }
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.void ? 2 : 0);
 }

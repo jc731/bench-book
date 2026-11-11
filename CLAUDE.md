@@ -24,6 +24,9 @@ The product is built in phases, called **Phase 1/2/3**. Version numbers follow t
   `version` in `package.json`.
 - Minor for a batch of fixes or features, patch for a single bug fix, major only when the
   owner declares a phase milestone.
+- `CHANGELOG.md` follows Keep a Changelog, in US English. `pnpm release` moves the
+  Unreleased bullets under `## [X.Y.Z] - YYYY-MM-DD`, and the full-game release test runs
+  on every release (via `pnpm release`).
 - `pnpm release` runs the full-game test and never pushes. Pushing deploys to Netlify, so
   do not push without the owner's go-ahead.
 

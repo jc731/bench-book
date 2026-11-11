@@ -137,7 +137,8 @@ A Claude Code skill committed in the repo at `.claude/skills/ux-audit/`, invoked
 1. builds the app and serves it with `astro preview --ignore-lock` on its own port, using a
    fresh browser profile for each run, so no service worker or saved game carries over;
 2. hands the audit to a **fresh subagent** that plays the persona and drives a real
-   phone-sized browser;
+   phone-sized browser through the `ux-browser` MCP tools (the session must be started
+   inside `bench-book`, so `.mcp.json` and `.claude/agents/` load);
 3. writes the report.
 
 The repo is public, and a committed skill is fine there.
@@ -171,21 +172,25 @@ These are binding. The audit is worthless without them.
   would have done next, but it must not open the code to find out.
 
 **How these rules are enforced** *(my call)*:
-- The persona runs as a dedicated agent definition (`.claude/agents/ux-persona.md`) with
-  its tools limited to Bash. Its working directory is a temp folder **outside the repo**
-  that holds only the driver script and its output.
-- Its only interface is the driver: `node driver.mjs <action>`. The actions are tap by
-  visible text, type into a field by its label, read the screen and screenshot. Each
-  action returns the visible text, the accessibility tree and a screenshot path.
-- Its prompt forbids reading anything else, and the controller checks the persona's
-  command log afterwards. Any command other than the driver voids that run.
+- The persona runs as a dedicated agent definition (`.claude/agents/ux-persona.md`) whose
+  tools are only the 10 `ux-browser` MCP tools (snapshot, screenshot, click, type, fill
+  form, press key, wait, navigate, select option, handle dialog), plus `ToolSearch`, which
+  only returns tool schemas.
+- The MCP server is pinned in `.mcp.json`: `@playwright/mcp` 0.0.85 with
+  `--browser chromium --isolated --headless --device "iPhone 13"`, so every session gets
+  a fresh, empty profile.
+- After the run, `pnpm ux:stats <transcript> <appUrl> --prompt <built prompt file>` reads
+  the persona's transcript and checks the tools used, any navigation off the app, and that
+  the persona received exactly the built prompt. Any non-zero exit voids the run; a void
+  run writes `v<ver>-void.md` and no findings.
+- Per-event action counts from the same script serve as a hesitation signal.
 - Seeing button names in the accessibility tree is fine: that is what's on screen. The
   thing forbidden is a cheat sheet handed over in advance (a list of buttons or steps).
 
 **Catching wrong entries the persona didn't notice** *(my call)*: `scenario.md` ends with
 the **expected end state**, meaning the final score per quarter, each player's points and
-fouls, and the timeouts used. After the run, the controller exports the CSVs through the
-driver and compares them with that state. Each difference becomes a **wrong entry**
+fouls, and the timeouts used. After the run, the controller exports the CSVs with the
+`ux-browser` tools on the same browser session and compares them with that state. Each difference becomes a **wrong entry**
 finding, even if the persona never noticed it. The completed / hesitated / failed counts
 come from the persona's narration, checked against this comparison.
 
@@ -267,15 +272,12 @@ because that needs the previous report, which the persona must not see beforehan
 | Audit persona (now) | knows bookkeeping and the stats, never seen the app | owner |
 | Release gate | `pnpm release` script, not a git hook; doesn't push | my call (owner prefers opt-in checks; a push deploys) |
 | Version visible in app | small text on Setup | my call (ties reports to versions) |
-| Audit mechanism | an in-repo Claude Code skill plus a fresh persona subagent driving the repo's Playwright Chromium | my call |
-| Browser for the audit | the repo's installed Playwright Chromium. The Playwright MCP server here expects Google Chrome, which isn't installed. | my call |
+| Audit mechanism | an in-repo Claude Code skill plus a fresh persona subagent limited to the `ux-browser` MCP tools | my call |
+| Browser for the audit | the repo's Playwright Chromium via the pinned `@playwright/mcp` 0.0.85 server (`--browser chromium --isolated --headless --device "iPhone 13"`). The earlier note that Chrome isn't installed no longer applies. | my call |
 
 ## Left to the builder
 
-- How the persona agent drives the browser: small Playwright scripts it writes and runs
-  step by step, or a tiny driver script that takes one action, saves a screenshot and the
-  accessibility tree, and returns them. The driver script is preferred: it keeps the
-  persona from writing code against the app's internals, and it makes the rule above
-  enforceable.
+- ~~How the persona agent drives the browser (driver script or ad hoc Playwright)~~
+  Resolved: the persona uses the `ux-browser` MCP tools only; no driver script exists.
 - Exact wording of the persona and scenario files, within the rules above.
 - How `pnpm release` is implemented (a small Node script is fine).

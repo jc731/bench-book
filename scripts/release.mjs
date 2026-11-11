@@ -20,7 +20,7 @@ try {
     version: pkg.version,
     kind,
     changelog,
-    date: new Date().toISOString().slice(0, 10),
+    date: new Date().toLocaleDateString('en-CA'),
   });
 } catch (e) {
   console.error(`${e.message}\nUsage: pnpm release <major|minor|patch>`);

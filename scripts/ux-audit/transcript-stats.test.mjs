@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { analyzeTranscript, ALLOWED_TOOLS } from './transcript-stats.mjs';
+import { analyzeTranscript, ALLOWED_TOOLS, HARMLESS_TOOLS } from './transcript-stats.mjs';
 
 const APP = 'http://localhost:4410/';
 const line = (...content) => JSON.stringify({ type: 'assistant', message: { role: 'assistant', content } });
@@ -136,6 +136,54 @@ describe('analyzeTranscript', () => {
     expect(r.totalActions).toBe(1);
   });
 
+  it('a back-reference such as "Event 15\'s" does not change the current event', () => {
+    const r = analyzeTranscript(
+      line(text("Event 28: fixing Event 15's play"), ux('browser_click', {})),
+      { appUrl: APP },
+    );
+    expect(r.perEvent).toEqual({ 28: { actions: 1 } });
+  });
+
+  it('ToolSearch is allowed, not an action, and not on the allowlist', () => {
+    const r = analyzeTranscript(jsonl(line(tool('ToolSearch', { query: 'x' })), line(ux('browser_snapshot'))), { appUrl: APP });
+    expect(r.void).toBe(false);
+    expect(r.totalActions).toBe(0);
+    expect(ALLOWED_TOOLS).not.toContain('ToolSearch');
+    expect(HARMLESS_TOOLS).toEqual(['ToolSearch']);
+  });
+
+  describe('prompt check', () => {
+    const P = 'You are a bookkeeper.\n\nPlay the game.';
+    const user = (content) => JSON.stringify({ type: 'user', message: { role: 'user', content } });
+    const body = line(ux('browser_snapshot'));
+
+    it('identical prompt (string content, whitespace differences) is not void', () => {
+      const r = analyzeTranscript(jsonl(user('You are a bookkeeper.  Play\nthe game.'), body), { appUrl: APP, prompt: P });
+      expect(r.void).toBe(false);
+    });
+
+    it('identical prompt as text blocks is not void', () => {
+      const r = analyzeTranscript(jsonl(user([{ type: 'text', text: P }]), body), { appUrl: APP, prompt: P });
+      expect(r.void).toBe(false);
+    });
+
+    it('a changed word is void', () => {
+      const r = analyzeTranscript(jsonl(user('You are a bookkeeper. Play the match.'), body), { appUrl: APP, prompt: P });
+      expect(r.void).toBe(true);
+      expect(r.reasons).toContain('prompt differs from built prompt');
+    });
+
+    it('missing prompt text is void', () => {
+      const r = analyzeTranscript(body, { appUrl: APP, prompt: P });
+      expect(r.void).toBe(true);
+      expect(r.reasons).toContain('prompt differs from built prompt');
+    });
+
+    it('is not checked when no prompt is given', () => {
+      expect(analyzeTranscript(body, { appUrl: APP }).void).toBe(false);
+    });
+  });
+
   it('exports the allowlist', () => {
     expect(ALLOWED_TOOLS).toContain('browser_click');
     expect(ALLOWED_TOOLS).not.toContain('browser_evaluate');
@@ -168,6 +216,33 @@ describe('CLI', () => {
     const r = run(join(dir, 'nope.jsonl'));
     expect(r.status).toBe(2);
     expect(r.stderr).toContain('cannot read transcript');
+  });
+
+  it('exits 2 when the analysis throws (numeric tool name)', () => {
+    const f = join(dir, 'crash.jsonl');
+    writeFileSync(f, line({ type: 'tool_use', id: 't', name: 5, input: {} }));
+    const r = run(f);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain('crashed');
+  });
+
+  it('--prompt: exits 0 on a match and 2 on a mismatch', () => {
+    const f = join(dir, 'p.jsonl');
+    writeFileSync(f, [JSON.stringify({ type: 'user', message: { content: 'hello  world' } }), line(ux('browser_snapshot'))].join('\n'));
+    const good = join(dir, 'good.txt');
+    const bad = join(dir, 'bad.txt');
+    writeFileSync(good, 'hello world\n');
+    writeFileSync(bad, 'hello there\n');
+    expect(spawnSync('node', [script, f, APP, '--prompt', good], { encoding: 'utf8' }).status).toBe(0);
+    const r = spawnSync('node', [script, f, APP, '--prompt', bad], { encoding: 'utf8' });
+    expect(r.status).toBe(2);
+    expect(r.stdout).toContain('prompt differs from built prompt');
+  });
+
+  it('exits 2 when --prompt has no file', () => {
+    const f = join(dir, 'np.jsonl');
+    writeFileSync(f, line(ux('browser_snapshot')));
+    expect(spawnSync('node', [script, f, APP, '--prompt'], { encoding: 'utf8' }).status).toBe(2);
   });
 
   it('exits 2 on missing arguments', () => {
