@@ -37,4 +37,4 @@ export function buildCells(marks: Mark[]): Cell[] {
 
 /** One line under the Running score header, and the same words in the How-to's "Reading the screen". */
 export const MARK_LEGEND =
-  'X is a 2, ● is a 3, / is a made free throw; shaded cells were skipped by a 2 or 3; an amber edge ends a quarter.';
+  'X is a 2. ● is a 3. / is a made free throw. Shaded cells were skipped by a 2 or 3. An amber edge ends a quarter.';

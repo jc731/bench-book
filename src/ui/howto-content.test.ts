@@ -27,10 +27,11 @@ describe('how-to content', () => {
   });
   it('covers the 72-hour clear and open quarters', () => {
     expect(text('Export')).toMatch(/72 hours/);
-    expect(text('Export')).toMatch(/pending/);
-    expect(text('Export')).toMatch(/unresolved/);
+    expect(text('Export')).toMatch(/Not checked.*pending/);
+    expect(text('Export')).toMatch(/Mismatch.*unresolved/);
   });
   it('carries the running-score legend', () => expect(text('Reading the screen')).toContain(MARK_LEGEND));
+  it('points to the Setup update button', () => expect(text("If something's wrong")).toMatch(/Setup shows .*Update available/));
   it('covers the banner and what a reload clears', () => {
     expect(text("If something's wrong")).toMatch(/Not saving/);
     expect(text("If something's wrong")).toMatch(/reload keeps your plays but clears Undo/);

@@ -39,26 +39,26 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
   {
     id: 'theirs',
     title: 'Their points',
-    body: ['Turn them on in Game details; then Opp +1, +2 and +3 sit above the players.'],
+    body: ['Turn them on in Game details; then Opp +1, +2 and +3 appear in the bar at the bottom, above Timeout.'],
   },
   {
     id: 'mistakes',
     title: 'Mistakes',
-    body: ['Tap Undo right away, or open Log and tap the line to fix or delete it.'],
+    body: ['Tap Undo right away, or open Log and tap the line to fix or delete it. Fix can also move the plays after it.'],
   },
   {
     id: 'quarter',
     title: 'End of quarter',
     body: [
-      "Tap End Qn, then type the book's Score by Qtr box into the check. Save when it matches; Later keeps what you typed for afterward.",
-      'If it does not match, tap the line that is off in Log, or use Add play to Qn for a play you missed.',
+      "Tap End Q1 (End Q2 and so on), then type the book's Score by Qtr box into the check.",
+      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed one. Later keeps what you typed.',
     ],
   },
   {
     id: 'overtime',
     title: 'Overtime and end of game',
     body: [
-      'After Q4, End Q4 offers Start overtime or End game. To stop sooner, open ⋯, Final / export, then End game early.',
+      'End Q4 offers Start overtime or End game. To stop sooner, tap ⋯ (the three-dot button), then Final / export, then End game early.',
       'Reopen game on the Final screen puts an ended game back in play.',
     ],
   },
@@ -66,15 +66,15 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'export',
     title: 'Export',
     body: [
-      'Final / export in ⋯ saves the plays and book files, and never ends the game. Saved games clear from this phone after 72 hours.',
-      'Quarters still open export as pending, and unresolved if their check was not finished.',
+      'Final / export, under the ⋯ button, saves the plays and book files, and never ends the game. Saved games clear from this phone after 72 hours.',
+      'A quarter marked Not checked exports as pending. One marked Mismatch, with no note, exports as unresolved.',
     ],
   },
   {
     id: 'screen',
     title: 'Reading the screen',
     body: [
-      'Foul dots turn amber at 4 and red at OUT; the bonus and timeouts left show in the strip at the top.',
+      'Foul dots turn amber at 4 and red at OUT. The strip at the top shows the bonus and timeouts left.',
       MARK_LEGEND,
     ],
   },
@@ -83,7 +83,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     title: "If something's wrong",
     body: [
       'A banner saying Not saving means this phone cannot store the game: keep the paper book current. A reload keeps your plays but clears Undo.',
-      'The app updates itself when online.',
+      'When an update is ready, Setup shows an "Update available — reload" button.',
     ],
   },
 ];
