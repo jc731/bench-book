@@ -84,7 +84,11 @@ test('scripted game reconciles and exports', async ({ page }) => {
   // Reload: state persisted, with a one-time note of where it left off. The undo history is gone.
   await page.reload();
   await expect(score(6, 5)).toBeVisible();
-  await expect(page.getByRole('status')).toHaveText('Resumed · last: #0 Player Three +3');
+  // Live's line leads with the open Q2 check, which outranks the entry; Log's line shows where it left off.
+  await expect(page.getByTestId('feedback-text')).toHaveText('Q2 not checked against the book — Check');
+  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+  await expect(page.getByTestId('feedback-text')).toHaveText('Last: #0 +3');
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(
     page.getByRole('navigation').getByRole('button', { name: 'Undo (history clears when the app reloads — fix plays in Log)' }),
   ).toBeDisabled();

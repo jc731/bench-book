@@ -1,35 +1,35 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { appendEvent } from '../core/events';
 import { periodLabel, isOvertime } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
 import type { EventDraft, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
+import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, endChoices, endPeriodLabel, foulLabel, mayEndGame, oppLabel, playLabel, reconcileBanner,
-  timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType,
+  BENCH_TECH_TEXT, endChoices, endPeriodLabel, feedbackLine, foulLabel, mayEndGame, oppLabel, playLabel, reconcileBanner,
+  timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
 import { PlayerGrid } from './PlayerGrid';
 import { StatusStrip } from './StatusStrip';
 import type { GameStore } from './store';
 
-const TOAST_MS = 4000;
 const bar = 'min-h-12 rounded-lg border border-slate-500 bg-slate-800 px-2 font-semibold active:bg-slate-700 disabled:opacity-40';
 const opt = 'min-h-14 rounded-xl bg-slate-600 text-xl font-bold active:bg-slate-500';
 
 type SheetKind = 'timeout' | 'endPeriod' | 'menu' | null;
 
 export function Live({ store }: { store: GameStore }) {
-  const { game, toast, clearToast, update, undo, canUndo, setView, openReconcile } = store;
+  const { game, toast, update, undo, canUndo, setView, openReconcile } = store;
   const [picked, setPicked] = useState<Player | null>(null);
   const [sheet, setSheet] = useState<SheetKind>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(clearToast, TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast, clearToast]);
+  // The feedback present when a player's sheet opened: the sheet shows only what came after it.
+  const sheetOpenedWith = useRef<Toast | null>(null);
+  const pick = (p: Player) => {
+    sheetOpenedWith.current = toast;
+    setPicked(p);
+  };
 
   if (!game) return null;
   const d = derive(game);
@@ -73,48 +73,23 @@ export function Live({ store }: { store: GameStore }) {
   const timeoutKinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
   const gameEnded = Boolean(game.endedAt);
   const unexported = notExportedText(game, new Date());
+  const line = feedbackLine(banner, unexported, toast);
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
       <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} derived={d} />
-      <div class="h-11 shrink-0">
-        {banner ? (
-          <button
-            type="button"
-            class="h-full w-full bg-amber-400 px-3 text-left text-sm font-semibold text-slate-900"
-            onClick={() => openReconcile(banner.period, 'live')}
-          >
-            {banner.text}
-          </button>
-        ) : (
-          unexported ? (
-            <button type="button" class="h-full w-full bg-amber-400 px-3 text-left text-sm font-semibold text-slate-900" onClick={openEnd}>
-              {unexported}
-            </button>
-          ) : (
-            gameEnded && (
-              <div class="flex h-full items-center bg-slate-700 px-3 text-sm font-semibold">
-                Game ended. Entries are still accepted.
-              </div>
-            )
-          )
-        )}
-      </div>
-      <div class="min-h-0 flex-1 overflow-y-auto pb-16">
-        <PlayerGrid roster={game.roster} lines={d.players} onPick={setPicked} />
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} />
       </div>
 
-      <div class="relative shrink-0">
-      {toast && (
-        <div class="absolute inset-x-0 bottom-full flex items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
-          <span class="truncate font-semibold">{toast.text}</span>
-          {toast.canUndo && (
-            <button type="button" class="min-h-11 px-3 font-bold text-amber-300" onClick={undo}>
-              Undo
-            </button>
-          )}
-        </div>
-      )}
+      {/* The check prompt, else the not-exported warning, else the last entry. The bar's Undo is its Undo. */}
+      <FeedbackLine
+        line={line}
+        class="shrink-0 border-t border-slate-600"
+        onPrompt={(p) => openReconcile(p, 'live')}
+        onExport={openEnd}
+        idleText={gameEnded ? 'Game ended. Entries are still accepted.' : undefined}
+      />
 
       <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-4">
         <div class="grid grid-cols-3 gap-2">
@@ -127,6 +102,7 @@ export function Live({ store }: { store: GameStore }) {
             class={bar}
             disabled={!canUndo}
             aria-label={undoAriaLabel(canUndo, game.events.length > 0)}
+            aria-describedby={line.kind === 'entry' && line.undoable ? 'feedback-text' : undefined}
             onClick={undo}
           >
             Undo
@@ -153,10 +129,9 @@ export function Live({ store }: { store: GameStore }) {
           <button type="button" class={bar} aria-label="More" onClick={() => setSheet('menu')}>⋯</button>
         </div>
       </nav>
-      </div>
 
       {picked && (
-        <EventSheet player={picked} toast={toast} onPlay={play} onUndo={undo} onClose={() => setPicked(null)} />
+        <EventSheet player={picked} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onClose={() => setPicked(null)} />
       )}
       {sheet === 'timeout' && (
         <Sheet title="Timeout" onClose={() => setSheet(null)}>

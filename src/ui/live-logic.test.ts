@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  BONUS_TEXT, UNDO_CLEARED_LABEL, countText, endChoices, endPeriodLabel, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
+  BONUS_TEXT, UNDO_CLEARED_LABEL, countText, endChoices, endPeriodLabel, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
   undoAriaLabel,
 } from './live-logic';
 
@@ -100,4 +100,19 @@ describe('status and toast wording', () => {
     const c = endChoices(4);
     expect(`${c.endGameMain} ${c.endGameNote}`).toBe(c.endGame);
   });
+});
+
+describe('feedbackLine', () => {
+  const banner = { period: 1, text: 'Q1 not checked against the book — Check' };
+  const toast = { text: '#12 +2 — bonus', canUndo: true };
+  it('puts the check prompt first', () =>
+    expect(feedbackLine(banner, 'Not exported — game data clears in 72 h', toast)).toEqual({ kind: 'prompt', ...banner }));
+  it('puts the export warning before the last entry', () =>
+    expect(feedbackLine(null, 'Not exported — game data clears in 72 h', toast))
+      .toEqual({ kind: 'export', text: 'Not exported — game data clears in 72 h' }));
+  it('shows the last entry and whether it can be undone', () => {
+    expect(feedbackLine(null, null, toast)).toEqual({ kind: 'entry', text: '#12 +2 — bonus', undoable: true });
+    expect(feedbackLine(null, null, { text: 'Undid #12 +2', canUndo: false })).toEqual({ kind: 'entry', text: 'Undid #12 +2', undoable: false });
+  });
+  it('is empty with nothing to say', () => expect(feedbackLine(null, null, null)).toEqual({ kind: 'empty' }));
 });

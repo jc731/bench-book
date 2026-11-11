@@ -1,10 +1,11 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { deleteEvent, editEvent, insertEventBefore, moveFrom } from '../core/events';
 import { periodLabel } from '../core/periods';
 import type { EventType, GameEvent, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
-import { BENCH_TECH_TEXT, playButtonText, timeoutKindText, type PlayType } from './live-logic';
+import { FeedbackLine } from './FeedbackLine';
+import { BENCH_TECH_TEXT, feedbackLine, playButtonText, timeoutKindText, type PlayType } from './live-logic';
 import {
   compatibleTypes, draftOf, editLabel, editPatch, eventLabel, eventRowText, groupByPeriod,
   insertLabel, isPlayType, moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, playsCount, timeoutKindsFor,
@@ -12,7 +13,6 @@ import {
 } from './log-logic';
 import type { GameStore } from './store';
 
-const TOAST_MS = 4000;
 const btn = 'min-h-12 rounded-xl bg-slate-600 px-3 text-lg font-bold active:bg-slate-500';
 const on = 'bg-white text-slate-900';
 const action = 'min-h-12 w-full rounded-xl bg-slate-600 px-4 text-left text-lg font-semibold active:bg-slate-500';
@@ -26,24 +26,18 @@ interface Props {
   onClose?: () => void;
   /** Slot in each period header, e.g. status chips. */
   headerExtra?: (period: number) => ComponentChildren;
-  /** Draw the toast bar; an embedding view that draws its own passes false. */
+  /** Draw the feedback line; an embedding view that draws its own passes false. */
   showToast?: boolean;
   /** Inside another screen (the quarter check): no header and no Back of its own. */
   embedded?: boolean;
 }
 
 export function Log({ store, period, onClose, headerExtra, showToast = true, embedded = false }: Props) {
-  const { game, toast, clearToast, update, undo, setView } = store;
+  const { game, toast, update, undo, setView } = store;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('actions');
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [insertPlayer, setInsertPlayer] = useState<Player | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(clearToast, TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast, clearToast]);
 
   if (!game) return null;
   const selected = game.events.find((e) => e.id === selectedId) ?? null;
@@ -116,14 +110,7 @@ export function Log({ store, period, onClose, headerExtra, showToast = true, emb
       </div>
 
       {showToast && toast && (
-        <div class="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
-          <span class="truncate font-semibold">{toast.text}</span>
-          {toast.canUndo && (
-            <button type="button" class="min-h-11 px-3 font-bold text-amber-300" onClick={undo}>
-              Undo
-            </button>
-          )}
-        </div>
+        <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-0 z-10 border-t border-slate-600" onUndo={undo} />
       )}
 
       {selected && step === 'actions' && (

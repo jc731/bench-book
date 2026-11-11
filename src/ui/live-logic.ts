@@ -17,7 +17,7 @@ export const BENCH_TECH_TEXT = 'Bench tech';
 
 const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30', ot: 'OT' };
 
-/** Toast / undo label for a player entry, e.g. `#4 +2`. */
+/** Feedback / undo label for a player entry, e.g. `#4 +2`. */
 export function playLabel(type: PlayType, number: string): string {
   return `#${number} ${PLAY_TEXT[type]}`;
 }
@@ -129,6 +129,24 @@ export function reconcileBanner(issues: PeriodCheck[]): Banner | null {
       ? `${label} doesn't match the book — Check`
       : `${label} not checked against the book — Check`;
   return { period: oldest.period, text };
+}
+
+/** What was just entered or undone; `canUndo` is false for facts (a file was saved) and after an undo. */
+export type Toast = { text: string; canUndo: boolean };
+
+/** The one feedback line on Live, Log and the check. */
+export type Feedback =
+  | { kind: 'prompt'; text: string; period: number }
+  | { kind: 'export'; text: string }
+  | { kind: 'entry'; text: string; undoable: boolean }
+  | { kind: 'empty' };
+
+/** What the feedback line shows: the check prompt, then the not-exported warning, then the last entry. */
+export function feedbackLine(banner: Banner | null, unexported: string | null, toast: Toast | null): Feedback {
+  if (banner) return { kind: 'prompt', text: banner.text, period: banner.period };
+  if (unexported) return { kind: 'export', text: unexported };
+  if (toast) return { kind: 'entry', text: toast.text, undoable: toast.canUndo };
+  return { kind: 'empty' };
 }
 
 export const UNDO_CLEARED_LABEL = 'Undo (history clears when the app reloads — fix plays in Log)';

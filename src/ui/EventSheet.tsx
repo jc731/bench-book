@@ -1,8 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect } from 'preact/hooks';
 import type { Player } from '../core/types';
-import type { Toast } from './store';
-import { playButtonText, type PlayType } from './live-logic';
+import { playButtonText, type PlayType, type Toast } from './live-logic';
 
 /** Bottom sheet over a dimmed backdrop; tapping the backdrop or pressing Escape closes it. */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ComponentChildren }) {
@@ -31,6 +30,7 @@ const ROW2: PlayType[] = ['FTX', 'FOUL', 'TECH'];
 
 interface Props {
   player: Player;
+  /** Only feedback produced while this sheet is open; the caller passes null for anything older. */
   toast: Toast | null;
   onPlay: (type: PlayType) => void;
   onUndo: () => void;
@@ -56,7 +56,7 @@ export function EventSheet({ player, toast, onPlay, onUndo, onClose }: Props) {
         {ROW2.map(btn)}
       </div>
       <div class="mt-3 flex min-h-11 items-center justify-between gap-2">
-        <span class="truncate text-sm text-slate-300" aria-live="polite">
+        <span class="truncate text-sm text-slate-300" aria-live="polite" data-testid="sheet-status">
           {toast ? toast.text : ''}
         </span>
         <div class="flex gap-2">

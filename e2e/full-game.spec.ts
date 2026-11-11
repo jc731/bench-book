@@ -281,16 +281,31 @@ function ui(page: Page) {
       await expect(h.getByText('Bonus: they shoot FTs', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
       await expect(h.getByText(timeoutsText(s.timeouts), { exact: true })).toBeVisible();
     },
-    /** The Live toast line. */
-    expectToast: (text: string) => expect(page.getByRole('status').locator('span').first()).toHaveText(text),
-    /** The toast offers Undo (the check's Save does; an export does not). */
-    expectToastUndo: () => expect(page.getByRole('status').getByRole('button', exact('Undo'))).toBeVisible(),
-    /** Checked once, while the toast is up: a retrying toHaveCount(0) would pass when the toast times out. */
-    async expectToastNoUndo() {
-      const toast = page.getByRole('status');
-      await expect(toast).toBeVisible();
-      expect(await toast.getByRole('button', exact('Undo')).count()).toBe(0);
-      await expect(toast).toBeVisible(); // still the same toast, so the count above was not of an empty bar
+    /** The feedback line above the bottom bar (it stays until the next entry). */
+    expectToast: (text: string) => expect(page.getByTestId('feedback-text')).toHaveText(text),
+    /** The line shows `text` and the bar's Undo undoes it: the Undo is described by the line. */
+    async expectToastUndo(text: string) {
+      await expect(page.getByTestId('feedback-text')).toHaveText(text);
+      await expect(nav().getByRole('button', exact('Undo'))).toHaveAccessibleDescription(text);
+    },
+    /** Saving a file is not an edit. On Live a quarter still to check outranks the entry on the line
+     *  (the check prompt comes first) and the bar's Undo describes nothing; Log's own line shows the
+     *  entry with no Undo, counted once because the line no longer fades. */
+    async expectToastNoUndo(pendingLabel: string) {
+      await expect(page.getByTestId('feedback-text')).toHaveText(`${pendingLabel} not checked against the book — Check`);
+      await expect(nav().getByRole('button', exact('Undo'))).toHaveAccessibleDescription('');
+      await this.openLog();
+      await expect(page.getByTestId('feedback-text')).toHaveText('Exported Book CSV');
+      expect(await page.getByRole('status').getByRole('button', exact('Undo')).count()).toBe(0);
+      await this.back();
+    },
+    /** A player's sheet shows only what was entered while it is open: no stale entry, no Undo. */
+    async expectFreshSheet(name: Name) {
+      await card(name).click();
+      await expect(dialog().getByTestId('sheet-status')).toHaveText('');
+      await expect(dialog().getByRole('button', exact('Undo'))).toHaveCount(0);
+      await dialog().getByRole('button', exact('Done')).click();
+      await expect(dialog()).toHaveCount(0);
     },
     /** From the Final screen to Live and straight back. */
     async backToLive() {
@@ -333,6 +348,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
   await test.step('Q1: scoring, FT pair, an undone mis-tap, a full timeout; check matches', async () => {
     await app.score('Player One', '+2');
+    await app.expectFreshSheet('Player Three');
     await app.opp(2);
     await app.score('Player Three', '+3');
     await app.foul('Player Four');
@@ -403,8 +419,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.insertBefore(app.fixRegion(), app.playText('Player Seven', '+2'), 'Player Six', '+2');
     await app.expectMatches();
     await app.saveCheck();
-    await app.expectToast('Saved Q2 check');
-    await app.expectToastUndo();
+    await app.expectToastUndo('Saved Q2 check');
     await app.expectStrip({ us: 17, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.expectPlayer('Player Six', 5, 0);
   });
@@ -532,10 +547,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectExportState(false, false);
     const rows = await downloadCsv(page, app.exportButton('Book CSV'));
     await app.expectExportState(true, false);
-    // Saving a file is not an edit: its toast (shown on Live) has no Undo.
+    // Saving a file is not an edit: back on Live, nothing offers to undo it.
     await app.backToLive();
-    await app.expectToast('Exported Book CSV');
-    await app.expectToastNoUndo();
+    await app.expectToastNoUndo('Q4');
     await app.openEnd();
     await app.expectExportState(true, false);
     const at = (first: string) => rows.findIndex((r) => r[0] === first);

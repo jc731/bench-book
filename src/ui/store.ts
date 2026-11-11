@@ -2,10 +2,11 @@ import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
 import { applyUndo, applyUpdate, type GameState } from './game-state';
+import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
 
 export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end';
-export type Toast = { text: string; canUndo: boolean };
+export type { Toast } from './live-logic';
 
 function memoryStorage(): Storage {
   const m = new Map<string, string>();
@@ -60,20 +61,20 @@ export function useGameStore() {
     [storage, persistent],
   );
 
-  /** `undoable: false` is for facts, not edits (a file was saved): no undo step and no Undo on the toast. */
+  /** `undoable: false` is for facts, not edits (a file was saved): no undo step and no Undo on the feedback line. */
   const update = useCallback(
     (fn: (g: Game, now: Date) => Game, label: string, opts: { undoable?: boolean } = {}) => {
       if (!state.current.game) return;
       const undoable = opts.undoable ?? true;
       const next = applyUpdate(state.current, fn, label, new Date(), undoable);
-      if (next === state.current) return; // no change, so no toast either
+      if (next === state.current) return; // no change, so no feedback either
       commit(next);
       setToast({ text: label, canUndo: undoable });
     },
     [commit],
   );
 
-  /** A change that is neither an edit nor news (a check draft): no undo step and no toast. */
+  /** A change that is neither an edit nor news (a check draft): no undo step and no feedback. */
   const quiet = useCallback(
     (fn: (g: Game, now: Date) => Game) => {
       if (!state.current.game) return;
@@ -124,12 +125,10 @@ export function useGameStore() {
     setView('reconcile');
   }, []);
 
-  const clearToast = useCallback(() => setToast(null), []);
-
   const canUndo = state.current.stack.length > 0;
 
   return {
-    game, saving, view, setView, update, quiet, undo, canUndo, toast, clearToast, start, discard,
+    game, saving, view, setView, update, quiet, undo, canUndo, toast, start, discard,
     reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile,
   };
 }

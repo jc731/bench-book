@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { periodLabel } from '../core/periods';
 import { checkPeriod, saveReconcile } from '../core/reconcile';
@@ -6,15 +6,15 @@ import { appendEvent } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
 import type { Player } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
+import { FeedbackLine } from './FeedbackLine';
 import { addedLabel } from './log-logic';
-import type { PlayType } from './live-logic';
+import { feedbackLine, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
   MISMATCH_HINT, appHasText, compareText, oppCompareText, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
-const TOAST_MS = 4000;
 const field =
   'min-h-12 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-xl text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none';
 
@@ -40,7 +40,7 @@ export function StatusChip({ store, period }: { store: GameStore; period: number
 
 
 export function Reconcile({ store }: { store: GameStore }) {
-  const { game, reconcilePeriod, reconcileReturn, update, quiet, undo, toast, clearToast, setView } = store;
+  const { game, reconcilePeriod, reconcileReturn, update, quiet, undo, toast, setView } = store;
   const period = reconcilePeriod ?? 1;
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
@@ -49,6 +49,8 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
   const [addPlayer, setAddPlayer] = useState<Player | null>(null);
   const seeded = useRef<number | null>(null);
+  // The feedback present when Add play opened: its sheet shows only what came after it.
+  const addOpenedWith = useRef<Toast | null>(null);
   // The app's count when the check was first opened (kept through Later in the draft): a book number
   // that disagreed with it was a mismatch, even if the plays were fixed before Save.
   const appAtOpen = useRef<number | null>(null);
@@ -63,12 +65,6 @@ export function Reconcile({ store }: { store: GameStore }) {
     setNote(seed.note);
     setOppText(seed.opp);
   }
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(clearToast, TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast, clearToast]);
 
   if (!game) return null;
   const d = derive(game);
@@ -166,7 +162,7 @@ export function Reconcile({ store }: { store: GameStore }) {
             <button
               type="button"
               class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
-              onClick={() => setAddStep('player')}
+              onClick={() => { addOpenedWith.current = toast; setAddStep('player'); }}
             >
               Add play to {periodLabel(period)}
             </button>
@@ -217,16 +213,11 @@ export function Reconcile({ store }: { store: GameStore }) {
         </Sheet>
       )}
       {addStep === 'play' && addPlayer && (
-        <EventSheet player={addPlayer} toast={toast} onPlay={addPlay} onUndo={undo} onClose={closeAdd} />
+        <EventSheet player={addPlayer} toast={toast === addOpenedWith.current ? null : toast} onPlay={addPlay} onUndo={undo} onClose={closeAdd} />
       )}
 
       {toast && (
-        <div class="fixed inset-x-0 bottom-16 z-10 flex items-center justify-between gap-2 border-t border-slate-600 bg-slate-700 px-3 py-1" role="status">
-          <span class="truncate font-semibold">{toast.text}</span>
-          {toast.canUndo && (
-            <button type="button" class="min-h-11 px-3 font-bold text-amber-300" onClick={undo}>Undo</button>
-          )}
-        </div>
+        <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-16 z-10 border-t border-slate-600" onUndo={undo} />
       )}
       <div class="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-slate-700 bg-slate-950 p-2">
         <button type="button" class="min-h-12 flex-1 rounded-lg border border-slate-400 font-semibold" onClick={later}>

@@ -3,7 +3,7 @@ import { appendEvent, moveFrom, newGame } from '../core/events';
 import type { EventDraft, Game, GameEvent } from '../core/types';
 import {
   addedLabel, compatibleTypes, draftOf, editLabel, editPatch, eventRowText, groupByPeriod, insertLabel,
-  moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, namedEventLabel, playsCount, resumeText,
+  moveFromCount, moveFromLabel, moveFromSubtitle, moveFromTargets, playsCount, resumeText,
 } from './log-logic';
 
 const info = { team: 'T', opponent: 'O', date: '2026-11-10', homeAway: 'home' as const, coach: '', scorer: '', timer: '' };
@@ -163,16 +163,15 @@ describe('resumeText', () => {
     expect(resumeText(g)).not.toBeNull();
     expect(resumeText({ ...g, endedAt: NOW.toISOString() })).toBeNull();
   });
-  it('names the most recently entered play, with the player name', () => {
+  it('names the most recently entered play, by number', () => {
     let g = game([{ type: 'FG2', playerId: 'b' }]);
     g = appendEvent(g, { type: 'FG2', playerId: 'a' }, new Date(NOW.getTime() + 1000));
-    expect(resumeText(g)).toBe('Resumed · last: #4 Player One +2');
+    expect(resumeText(g)).toBe('Last: #4 +2');
     // An insert that sorts first but was entered last is still "last".
     const early = { ...g, events: g.events.map((e, i) => (i === 1 ? { ...e, order: -1 } : e)) };
-    expect(resumeText(early)).toBe('Resumed · last: #4 Player One +2');
+    expect(resumeText(early)).toBe('Last: #4 +2');
   });
-  it('drops a blank name and words non-player events like the toasts', () => {
-    expect(namedEventLabel(game([]), { ...first(game([{ type: 'FOUL', playerId: 'b' }])) })).toBe('#7 Foul');
-    expect(resumeText(game([{ type: 'OPP_PTS', oppPoints: 3 }]))).toBe('Resumed · last: Opp +3');
+  it('words non-player events like the feedback line', () => {
+    expect(resumeText(game([{ type: 'OPP_PTS', oppPoints: 3 }]))).toBe('Last: Opp +3');
   });
 });
