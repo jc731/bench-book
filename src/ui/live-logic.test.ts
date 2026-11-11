@@ -104,15 +104,23 @@ describe('status and toast wording', () => {
 
 describe('feedbackLine', () => {
   const banner = { period: 1, text: 'Q1 not checked against the book — Check' };
+  const unexported = 'Not exported — game data clears in 72 h';
   const toast = { text: '#12 +2 — bonus', canUndo: true };
-  it('puts the check prompt first', () =>
-    expect(feedbackLine(banner, 'Not exported — game data clears in 72 h', toast)).toEqual({ kind: 'prompt', ...banner }));
-  it('puts the export warning before the last entry', () =>
-    expect(feedbackLine(null, 'Not exported — game data clears in 72 h', toast))
-      .toEqual({ kind: 'export', text: 'Not exported — game data clears in 72 h' }));
-  it('shows the last entry and whether it can be undone', () => {
-    expect(feedbackLine(null, null, toast)).toEqual({ kind: 'entry', text: '#12 +2 — bonus', undoable: true });
-    expect(feedbackLine(null, null, { text: 'Undid #12 +2', canUndo: false })).toEqual({ kind: 'entry', text: 'Undid #12 +2', undoable: false });
+  const check = { kind: 'check', period: 1, text: banner.text, chip: 'Check Q1' };
+  it('shows the last entry beside the check prompt, which outranks the export warning', () =>
+    expect(feedbackLine(banner, unexported, toast)).toEqual({ entry: { text: '#12 +2 — bonus', undoable: true }, prompt: check }));
+  it('shows the export warning as the chip when no check is open', () =>
+    expect(feedbackLine(null, unexported, { text: 'Exported Book CSV', canUndo: false })).toEqual({
+      entry: { text: 'Exported Book CSV', undoable: false },
+      prompt: { kind: 'export', text: unexported, chip: 'Not exported' },
+    }));
+  it('shows the entry alone, and whether it can be undone', () => {
+    expect(feedbackLine(null, null, toast)).toEqual({ entry: { text: '#12 +2 — bonus', undoable: true }, prompt: null });
+    expect(feedbackLine(null, null, { text: 'Undid #12 +2', canUndo: false })).toEqual({
+      entry: { text: 'Undid #12 +2', undoable: false }, prompt: null,
+    });
   });
-  it('is empty with nothing to say', () => expect(feedbackLine(null, null, null)).toEqual({ kind: 'empty' }));
+  it('shows the prompt alone with no entry', () =>
+    expect(feedbackLine(banner, null, null)).toEqual({ entry: null, prompt: check }));
+  it('is empty with nothing to say', () => expect(feedbackLine(null, null, null)).toEqual({ entry: null, prompt: null }));
 });

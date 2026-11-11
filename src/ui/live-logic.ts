@@ -134,19 +134,28 @@ export function reconcileBanner(issues: PeriodCheck[]): Banner | null {
 /** What was just entered or undone; `canUndo` is false for facts (a file was saved) and after an undo. */
 export type Toast = { text: string; canUndo: boolean };
 
-/** The one feedback line on Live, Log and the check. */
-export type Feedback =
-  | { kind: 'prompt'; text: string; period: number }
-  | { kind: 'export'; text: string }
-  | { kind: 'entry'; text: string; undoable: boolean }
-  | { kind: 'empty' };
+/** The prompt chip on the feedback line: `chip` is what it shows, `text` the full prompt (its accessible name). */
+export type Prompt =
+  | { kind: 'check'; period: number; text: string; chip: string }
+  | { kind: 'export'; text: string; chip: string };
 
-/** What the feedback line shows: the check prompt, then the not-exported warning, then the last entry. */
+/**
+ * The one feedback line on Live, Log and the check: the last entry on the left, a prompt chip on the
+ * right. Neither hides the other, so deferring a check never hides what was just tapped.
+ */
+export type Feedback = { entry: { text: string; undoable: boolean } | null; prompt: Prompt | null };
+
+export const NOT_EXPORTED_CHIP = 'Not exported';
+
+/** The line's two parts. The chip is the check prompt, else the not-exported warning. */
 export function feedbackLine(banner: Banner | null, unexported: string | null, toast: Toast | null): Feedback {
-  if (banner) return { kind: 'prompt', text: banner.text, period: banner.period };
-  if (unexported) return { kind: 'export', text: unexported };
-  if (toast) return { kind: 'entry', text: toast.text, undoable: toast.canUndo };
-  return { kind: 'empty' };
+  const entry = toast ? { text: toast.text, undoable: toast.canUndo } : null;
+  const prompt: Prompt | null = banner
+    ? { kind: 'check', period: banner.period, text: banner.text, chip: `Check ${periodLabel(banner.period)}` }
+    : unexported
+      ? { kind: 'export', text: unexported, chip: NOT_EXPORTED_CHIP }
+      : null;
+  return { entry, prompt };
 }
 
 export const UNDO_CLEARED_LABEL = 'Undo (history clears when the app reloads — fix plays in Log)';

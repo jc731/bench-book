@@ -82,12 +82,11 @@ export function Live({ store }: { store: GameStore }) {
         <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} />
       </div>
 
-      {/* The check prompt, else the not-exported warning, else the last entry. The bar's Undo is its Undo. */}
+      {/* The last entry, and a chip for the check prompt or else the not-exported warning. The bar's Undo is its Undo. */}
       <FeedbackLine
         line={line}
         class="shrink-0 border-t border-slate-600"
-        onPrompt={(p) => openReconcile(p, 'live')}
-        onExport={openEnd}
+        onPrompt={(p) => (p.kind === 'check' ? openReconcile(p.period, 'live') : openEnd())}
         idleText={gameEnded ? 'Game ended. Entries are still accepted.' : undefined}
       />
 
@@ -102,7 +101,7 @@ export function Live({ store }: { store: GameStore }) {
             class={bar}
             disabled={!canUndo}
             aria-label={undoAriaLabel(canUndo, game.events.length > 0)}
-            aria-describedby={line.kind === 'entry' && line.undoable ? 'feedback-text' : undefined}
+            aria-describedby={line.entry?.undoable ? 'feedback-text' : undefined}
             onClick={undo}
           >
             Undo

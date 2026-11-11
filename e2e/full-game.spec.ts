@@ -180,6 +180,7 @@ function ui(page: Page) {
       await nav().getByRole('button', exact(`End ${label}…`)).click();
       await dialog().getByRole('button', exact(choice)).click();
     },
+    /** The check chip on the feedback line, by its full accessible name. */
     banner: (label: string) => page.getByRole('button', exact(`${label} not checked against the book — Check`)),
     /** On the Check view: type the book's numbers (and a note); the comparison updates as you type. */
     async fillCheck(label: string, us: number, opp: number, note?: string) {
@@ -288,16 +289,12 @@ function ui(page: Page) {
       await expect(page.getByTestId('feedback-text')).toHaveText(text);
       await expect(nav().getByRole('button', exact('Undo'))).toHaveAccessibleDescription(text);
     },
-    /** Saving a file is not an edit. On Live a quarter still to check outranks the entry on the line
-     *  (the check prompt comes first) and the bar's Undo describes nothing; Log's own line shows the
-     *  entry with no Undo, counted once because the line no longer fades. */
+    /** Saving a file is not an edit: the bar's Undo describes no entry. The chip for the quarter
+     *  still to check sits beside the entry, which it does not hide. */
     async expectToastNoUndo(pendingLabel: string) {
-      await expect(page.getByTestId('feedback-text')).toHaveText(`${pendingLabel} not checked against the book — Check`);
       await expect(nav().getByRole('button', exact('Undo'))).toHaveAccessibleDescription('');
-      await this.openLog();
-      await expect(page.getByTestId('feedback-text')).toHaveText('Exported Book CSV');
-      expect(await page.getByRole('status').getByRole('button', exact('Undo')).count()).toBe(0);
-      await this.back();
+      await expect(this.banner(pendingLabel)).toHaveText(`Check ${pendingLabel}`);
+      expect((await this.banner(pendingLabel).boundingBox())!.height).toBeGreaterThanOrEqual(44);
     },
     /** A player's sheet shows only what was entered while it is open: no stale entry, no Undo. */
     async expectFreshSheet(name: Name) {
@@ -547,8 +544,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectExportState(false, false);
     const rows = await downloadCsv(page, app.exportButton('Book CSV'));
     await app.expectExportState(true, false);
-    // Saving a file is not an edit: back on Live, nothing offers to undo it.
+    // Saving a file is not an edit: its entry (shown on Live) has no Undo.
     await app.backToLive();
+    await app.expectToast('Exported Book CSV');
     await app.expectToastNoUndo('Q4');
     await app.openEnd();
     await app.expectExportState(true, false);
