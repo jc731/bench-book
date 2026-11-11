@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { appendEvent, deleteEvent, insertEventBefore, newGame, orderedEvents } from './events';
 import {
-  checkPeriod, endGame, endPeriod, markExported, openIssues, oppTotal, saveReconcile,
+  checkPeriod, endGame, endPeriod, markExported, openIssues, oppTotal, saveReconcile, startOvertime,
 } from './reconcile';
 import type { Game, GameInfo, Player } from './types';
 
@@ -172,6 +172,16 @@ describe('period flow', () => {
     expect(openIssues(g).map((x) => [x.period, x.status])).toEqual([
       [1, 'unresolved'], [2, 'unresolved'], [3, 'unresolved'],
     ]);
+  });
+
+  test('startOvertime advances the period and clears endedAt', () => {
+    const g0 = endPeriod(tenInQ1(), t1);
+    const ended = endGame(g0, t1);
+    expect(ended.endedAt).toBeDefined();
+    const ot = startOvertime(ended, t1);
+    expect(ot.endedAt).toBeUndefined();
+    expect(ot.currentPeriod).toBe(g0.currentPeriod + 1);
+    expect(startOvertime(g0, t1).currentPeriod).toBe(g0.currentPeriod + 1);
   });
 
   test('endGame sets endedAt without advancing the period, and makes the current period count', () => {

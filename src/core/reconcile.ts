@@ -40,6 +40,12 @@ export function endPeriod(g: Game, now: Date): Game {
   return { ...touch(g, now), currentPeriod: g.currentPeriod + 1 };
 }
 
+/** Start overtime; also undoes a mistaken End game, since the game is no longer over. */
+export function startOvertime(g: Game, now: Date): Game {
+  const { endedAt: _ended, ...open } = g;
+  return endPeriod(open, now);
+}
+
 export function saveReconcile(
   g: Game, period: number, bookUs: number | null, bookOpp: number | null, note: string, now: Date,
 ): Game {
