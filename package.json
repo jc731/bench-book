@@ -21,6 +21,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@playwright/test": "^1.65.0",
+    "@vite-pwa/astro": "2.0.2",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
   }

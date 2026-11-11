@@ -1,10 +1,11 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { newGame } from '../core/events';
 import { clearRoster, loadRoster, saveRoster } from '../core/storage';
 import type { GameInfo, Player } from '../core/types';
 import { notExportedText } from './reconcile-logic';
 import { MAX_PLAYERS, validateRoster } from './roster';
 import { getStorage, type GameStore } from './store';
+import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
 
 const input =
   'min-h-11 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-base text-white placeholder:text-slate-400 focus:border-amber-400 focus:outline-none';
@@ -24,6 +25,17 @@ function blankPlayer(): Player {
 function isIos(): boolean {
   const nav = navigator as Navigator & { standalone?: boolean };
   return /iPad|iPhone|iPod/.test(nav.userAgent) && !nav.standalone;
+}
+
+function UpdateBanner() {
+  const [ready, setReady] = useState(updateWaiting());
+  useEffect(() => onUpdateWaiting(() => setReady(true)), []);
+  if (!ready) return null;
+  return (
+    <button class={`${secondary} mb-4 w-full border-amber-400 text-amber-300`} onClick={applyUpdate}>
+      Update available — reload
+    </button>
+  );
 }
 
 export function Setup({ store }: { store: GameStore }) {
@@ -107,6 +119,7 @@ export function Setup({ store }: { store: GameStore }) {
   return (
     <main class="mx-auto max-w-xl p-4 pb-24">
       <h1 class="mb-4 text-2xl font-bold">New game</h1>
+      <UpdateBanner />
 
       <section class="mb-6 flex flex-col gap-3">
         <label class="flex flex-col gap-1">

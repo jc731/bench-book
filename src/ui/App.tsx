@@ -4,6 +4,9 @@ import { Log } from './Log';
 import { Reconcile, StatusChip } from './Reconcile';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
+import { registerUpdates } from './sw-update';
+
+registerUpdates();
 
 export function App() {
   const store = useGameStore();
