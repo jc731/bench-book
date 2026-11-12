@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-12
+
 - The quarter check asks for the game score after the quarter, the running score the book's Score by Qtr box holds, instead of the points scored in it. The app works out the quarter's own points and checks those, so a gap already noted in an earlier quarter is named but not counted again, and a quarter skipped earlier is checked together with the next one (for example "Q2–Q3").
 - A typed score lower than an earlier quarter's, or higher than a later one's, is flagged and can't be saved.
 - The Book CSV's score by period shows the running score after each period, as the book does, ending in Final. A period with nothing typed is the last typed score plus the app's points since, marked `*`, so it never runs backward. The Reconcile rows add Book total, App total and the periods each check compared.
