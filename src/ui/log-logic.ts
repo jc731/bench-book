@@ -37,12 +37,14 @@ export interface PeriodGroup {
  * newest play first; `oldest` (the quarter check, walked beside the book) lists both oldest first.
  * `period` filters to one. Empty periods are omitted.
  */
-export function groupByPeriod(g: Game, period?: number, order: 'newest' | 'oldest' = 'newest'): PeriodGroup[] {
+export function groupByPeriod(
+  g: Game, period?: number, order: 'newest' | 'oldest' = 'newest', fromPeriod: number = period ?? 1,
+): PeriodGroup[] {
   const by = new Map<number, GameEvent[]>();
   const events = orderedEvents(g);
   if (order === 'newest') events.reverse();
   for (const e of events) {
-    if (period !== undefined && e.period !== period) continue;
+    if (period !== undefined && (e.period < fromPeriod || e.period > period)) continue;
     by.set(e.period, [...(by.get(e.period) ?? []), e]);
   }
   const dir = order === 'newest' ? -1 : 1;

@@ -38,11 +38,35 @@ function safeWrite(s: Storage, key: string, value: unknown): boolean {
  * old screen called that game exported.
  */
 export function migrateGame(g: Game): Game {
+  return migrateChecks(migrateExport(g));
+}
+
+function migrateExport(g: Game): Game {
   const legacy = g as Game & { exportedAt?: unknown };
   if (legacy.exportedAt === undefined) return g;
   const { exportedAt, ...rest } = legacy;
   if (typeof exportedAt !== 'string' || rest.exported) return rest;
   return { ...rest, exported: { book: exportedAt, plays: exportedAt } };
+}
+
+/**
+ * Checks saved before 0.3 typed points scored IN the quarter (`bookUs`/`bookOpp`); checks now type the
+ * game total. The old numbers mean something else, so they are dropped and those quarters read Not
+ * checked again; notes stay. Drafts from then (no `appSpanAtOpen`) are dropped the same way.
+ */
+function migrateChecks(g: Game): Game {
+  const legacyRec = (p: object) => 'bookUs' in p || 'bookOpp' in p;
+  const oldPeriods = g.periods.some(legacyRec);
+  const drafts = g.checkDrafts ?? {};
+  const oldDrafts = Object.values(drafts).some((d) => typeof (d as { appSpanAtOpen?: unknown }).appSpanAtOpen !== 'number');
+  if (!oldPeriods && !oldDrafts) return g;
+  const periods = g.periods.map((p) => {
+    if (!legacyRec(p)) return p;
+    const { bookUs: _u, bookOpp: _o, ...rest } = p as typeof p & { bookUs?: unknown; bookOpp?: unknown };
+    return { ...rest, bookUsTotal: null, bookOppTotal: null, hadMismatch: false };
+  });
+  const { checkDrafts: _d, ...rest } = g;
+  return { ...rest, periods, ...(oldDrafts || !g.checkDrafts ? {} : { checkDrafts: g.checkDrafts }) };
 }
 
 export function loadGame(s: Storage, now: Date): Game | null {

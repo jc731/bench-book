@@ -44,14 +44,14 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
   {
     id: 'mistakes',
     title: 'Mistakes',
-    body: ['Tap Undo right away, or open Log and tap the line to fix or delete it. Fix can also move the plays after it.'],
+    body: ['Tap Undo right away, or open Log and tap the line to fix or delete it. Fix can also move the plays after it.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
     image: { src: '/howto/mistakes.png', alt: 'The Log with one play tapped: its fix sheet offers another play or player, Delete, Cancel and Save.' },
   },
   {
     id: 'quarter',
     title: 'End of quarter',
     body: [
-      "Tap End Q1 (End Q2 and so on), then type the book's Score by Qtr box into the check.",
+      "Tap End Q1 (End Q2 and so on; it's outlined in amber, and in red once it can end the game), then type the game score after that quarter, the running score in the book's Score by Qtr box. The app checks the quarter's own points, so a gap you noted earlier isn't counted twice.",
       'Tap Save when it matches. If not, fix the plays in the list below, or add a missed one. Later keeps what you typed.',
     ],
     image: { src: '/howto/end-of-quarter.png', alt: "Check Q1 with the book's 8 and 5 typed in, showing Matches above the Later and Save buttons." },

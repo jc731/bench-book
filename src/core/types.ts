@@ -38,8 +38,12 @@ export interface GameEvent {
 
 export interface PeriodRecord {
   period: number;
-  bookUs: number | null; // null = not entered yet (deferred)
-  bookOpp: number | null;
+  /**
+   * The game score at the end of this period as the scorer typed it from the book's running total
+   * (not the points scored in the period). null = not entered yet (deferred).
+   */
+  bookUsTotal: number | null;
+  bookOppTotal: number | null;
   note: string;
   hadMismatch: boolean;
 }
@@ -68,12 +72,15 @@ export interface Game {
   checkDrafts?: Record<number, CheckDraft>;
 }
 
-/** The check screen's fields as typed, plus the app's count when that check was first opened. */
+/**
+ * The check screen's fields as typed (game totals), plus the app's points over the checked span when
+ * that check was first opened.
+ */
 export interface CheckDraft {
   us: string;
   opp: string;
   note: string;
-  appAtOpen: number;
+  appSpanAtOpen: number;
 }
 
 export type ExportKind = 'book' | 'plays';

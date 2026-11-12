@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
-import { applyUndo, applyUpdate, type GameState } from './game-state';
+import { applyRedo, applyUndo, applyUpdate, type GameState } from './game-state';
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
 
@@ -89,7 +89,16 @@ export function useGameStore() {
     const r = applyUndo(state.current);
     if (r.label === null) return null;
     commit(r.state);
-    setToast({ text: 'Undid ' + r.label, canUndo: false });
+    setToast({ text: 'Undid ' + r.label, canUndo: false, canRedo: true });
+    return r.label;
+  }, [commit]);
+
+  /** Steps forward over the last Undo. Offered only on the line an Undo just left, until the next edit. */
+  const redo = useCallback((): string | null => {
+    const r = applyRedo(state.current);
+    if (r.label === null) return null;
+    commit(r.state);
+    setToast({ text: 'Redid ' + r.label, canUndo: true, canRedo: (r.state.redo?.length ?? 0) > 0 });
     return r.label;
   }, [commit]);
 
@@ -135,7 +144,7 @@ export function useGameStore() {
   const canUndo = state.current.stack.length > 0;
 
   return {
-    game, saving, view, setView, update, quiet, undo, canUndo, toast, start, discard,
+    game, saving, view, setView, update, quiet, undo, redo, canUndo, toast, start, discard,
     reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile, howtoReturn, openHowto,
   };
 }

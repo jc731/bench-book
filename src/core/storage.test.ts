@@ -245,6 +245,24 @@ describe('migrateGame (per-file export state)', () => {
   });
 });
 
+describe('migrateGame (checks typed per quarter before game totals)', () => {
+  const oldRec = { period: 2, bookUs: 8, bookOpp: 6, note: 'ref', hadMismatch: true };
+  it('drops the old per-quarter numbers but keeps the note, so the quarter reads Not checked or Noted', () => {
+    const m = migrateGame({ ...game(), periods: [oldRec] } as unknown as Game);
+    expect(m.periods).toEqual([{ period: 2, bookUsTotal: null, bookOppTotal: null, note: 'ref', hadMismatch: false }]);
+  });
+  it('drops a check draft from before game totals, and keeps a current one', () => {
+    const old = { ...game(), checkDrafts: { 1: { us: '8', opp: '', note: '', appAtOpen: 8 } } } as unknown as Game;
+    expect(migrateGame(old).checkDrafts).toBeUndefined();
+    const cur = { ...game(), checkDrafts: { 1: { us: '8', opp: '', note: '', appSpanAtOpen: 8 } } };
+    expect(migrateGame(cur)).toBe(cur);
+  });
+  it('leaves a current record untouched', () => {
+    const g = { ...game(), periods: [{ period: 1, bookUsTotal: 8, bookOppTotal: null, note: '', hadMismatch: false }] };
+    expect(migrateGame(g)).toBe(g);
+  });
+});
+
 describe('prefs', () => {
   it('defaults to not keeping the opponent score', () => {
     expect(loadPrefs(new FakeStorage())).toEqual({ trackOpponentTaps: false });

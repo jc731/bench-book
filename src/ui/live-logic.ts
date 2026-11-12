@@ -49,12 +49,16 @@ export function stripPeriodText(period: number, ended: boolean): string {
 
 /** The bar's End slot: ends a quarter, opens the Q4/OT sheet that can end the game, or, once ended, opens Final. */
 /** `mark` is decoration after the text, hidden from screen readers so it is not part of the button's name. */
-export type EndSlot = { text: string; mark?: string; opens: 'endPeriod' | 'endSheet' | 'final' };
+/**
+ * `tone` sets the button's color so the End slot stands apart from the rest of the bar: amber when it
+ * ends a quarter, red when it can end the game (Q4 and OT), plain once the game is over.
+ */
+export type EndSlot = { text: string; mark?: string; opens: 'endPeriod' | 'endSheet' | 'final'; tone: 'quarter' | 'game' | 'final' };
 
 export function endSlot(period: number, ended: boolean): EndSlot {
-  if (ended) return { text: 'Final', mark: '▸', opens: 'final' };
-  if (mayEndGame(period)) return { text: `${endPeriodLabel(period)}…`, opens: 'endSheet' };
-  return { text: endPeriodLabel(period), opens: 'endPeriod' };
+  if (ended) return { text: 'Final', mark: '▸', opens: 'final', tone: 'final' };
+  if (mayEndGame(period)) return { text: `${endPeriodLabel(period)}…`, opens: 'endSheet', tone: 'game' };
+  return { text: endPeriodLabel(period), opens: 'endPeriod', tone: 'quarter' };
 }
 
 /** Whether ending this period could end the game (after Q4 or any OT) rather than just advance. */
@@ -146,8 +150,11 @@ export function reconcileBanner(issues: PeriodCheck[]): Banner | null {
   return { period: oldest.period, text };
 }
 
-/** What was just entered or undone; `canUndo` is false for facts (a file was saved) and after an undo. */
-export type Toast = { text: string; canUndo: boolean };
+/**
+ * What was just entered, undone or redone. `canUndo` is false for facts (a file was saved) and after an
+ * undo; `canRedo` is true after an undo (or a redo with more left), until the next edit replaces the toast.
+ */
+export type Toast = { text: string; canUndo: boolean; canRedo?: boolean };
 
 /** The prompt chip on the feedback line: `chip` is what it shows, `text` the full prompt (its accessible name). */
 export type Prompt =
@@ -158,13 +165,13 @@ export type Prompt =
  * The one feedback line on Live, Log and the check: the last entry on the left, a prompt chip on the
  * right. Neither hides the other, so deferring a check never hides what was just tapped.
  */
-export type Feedback = { entry: { text: string; undoable: boolean } | null; prompt: Prompt | null };
+export type Feedback = { entry: { text: string; undoable: boolean; redoable: boolean } | null; prompt: Prompt | null };
 
 export const NOT_EXPORTED_CHIP = 'Not exported';
 
 /** The line's two parts. The chip is the check prompt, else the not-exported warning. */
 export function feedbackLine(banner: Banner | null, unexported: string | null, toast: Toast | null): Feedback {
-  const entry = toast ? { text: toast.text, undoable: toast.canUndo } : null;
+  const entry = toast ? { text: toast.text, undoable: toast.canUndo, redoable: Boolean(toast.canRedo) } : null;
   const prompt: Prompt | null = banner
     ? { kind: 'check', period: banner.period, text: banner.text, chip: `Check ${periodLabel(banner.period)}` }
     : unexported

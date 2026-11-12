@@ -1,7 +1,7 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
-import { periodLabel } from '../core/periods';
-import { checkPeriod, saveReconcile } from '../core/reconcile';
+import { periodLabel, spanLabel } from '../core/periods';
+import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
 import { appendEvent } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
 import type { Player } from '../core/types';
@@ -11,7 +11,7 @@ import { addedLabel } from './log-logic';
 import { feedbackLine, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
-  MISMATCH_HINT, appHasText, compareText, oppCompareText, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, oppCompareText, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -40,7 +40,7 @@ export function StatusChip({ store, period }: { store: GameStore; period: number
 
 
 export function Reconcile({ store }: { store: GameStore }) {
-  const { game, reconcilePeriod, reconcileReturn, update, quiet, undo, toast, setView } = store;
+  const { game, reconcilePeriod, reconcileReturn, update, quiet, undo, redo, toast, setView } = store;
   const period = reconcilePeriod ?? 1;
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
@@ -50,8 +50,8 @@ export function Reconcile({ store }: { store: GameStore }) {
   const seeded = useRef<number | null>(null);
   // The feedback present when Add play opened: its sheet shows only what came after it.
   const addOpenedWith = useRef<Toast | null>(null);
-  // The app's count when the check was first opened (kept through Later in the draft): a book number
-  // that disagreed with it was a mismatch, even if the plays were fixed before Save.
+  // The app's points over the checked span when the check was first opened (kept through Later in the
+  // draft): a book number that disagreed with it was a mismatch, even if the plays were fixed before Save.
   const appAtOpen = useRef<number | null>(null);
 
   // Seed the fields once per period from the draft Later left, else the saved record. The opponent
@@ -59,7 +59,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   if (game && seeded.current !== period) {
     seeded.current = period;
     const seed = checkSeed(game, period);
-    appAtOpen.current = seed.appAtOpen;
+    appAtOpen.current = seed.appSpanAtOpen;
     setUsText(seed.us);
     setNote(seed.note);
     setOppText(seed.opp);
@@ -71,25 +71,30 @@ export function Reconcile({ store }: { store: GameStore }) {
   const us = parseScore(usText);
   const opp = parseScore(oppText);
   const invalid = us.kind === 'invalid' || opp.kind === 'invalid';
-  const bookUs = us.kind === 'ok' ? us.value : null;
-  const bookOpp = opp.kind === 'ok' ? opp.value : null;
-  const live = compareText(bookUs, c.appUs);
-  const oppLive = live || bookOpp !== null ? oppCompareText(bookOpp, c.oppTapped, game.trackOpponentTaps) : null;
-  const mismatch = bookUs !== null && bookUs !== c.appUs;
+  const bookUsTotal = us.kind === 'ok' ? us.value : null;
+  const bookOppTotal = opp.kind === 'ok' ? opp.value : null;
+  // A running score never goes down: a total below an earlier quarter's (or above a later one's) is a typo.
+  const usProblem = totalProblem(game, period, bookUsTotal, 'bookUsTotal');
+  const oppProblem = totalProblem(game, period, bookOppTotal, 'bookOppTotal');
+  const blocked = invalid || usProblem !== null || oppProblem !== null;
+  const live = usProblem ? null : compareText(bookUsTotal, c);
+  const oppLive = oppProblem ? null : live || bookOppTotal !== null ? oppCompareText(bookOppTotal, c, game.trackOpponentTaps) : null;
+  const mismatch = !usProblem && isMismatch(bookUsTotal, c);
+  const span = spanLabel(c.spanFrom, period);
   const byId = new Map(game.roster.map((p) => [p.id, p]));
 
   // Only Save saves; the comparison above it is live. A save that would change nothing is skipped,
   // so repeating it adds no undo step.
   const save = (): boolean => {
-    if (invalid) return false;
-    const draft = { bookUs, bookOpp, note };
-    const saw = sawMismatch(bookUs, appAtOpen.current);
+    if (blocked) return false;
+    const draft = { bookUsTotal, bookOppTotal, note };
+    const saw = sawMismatch(bookUsTotal === null ? null : bookUsTotal - c.anchorBook, appAtOpen.current);
     // Save retires any draft, even when the record itself does not change.
     quiet((g, now) => setCheckDraft(g, period, null, now));
     update(
       (g, now) => {
         const rec = reconcileDraftToSave(g.periods.find((p) => p.period === period), draft);
-        return rec ? saveReconcile(g, period, rec.bookUs, rec.bookOpp, rec.note, now, saw) : g;
+        return rec ? saveReconcile(g, period, rec.bookUsTotal, rec.bookOppTotal, rec.note, now, saw) : g;
       },
       `Saved ${periodLabel(period)} check`,
     );
@@ -106,7 +111,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   };
   // Later keeps what was typed as a draft (not a check); with every field blank it keeps nothing.
   const later = () => {
-    const draft = { us: usText, opp: oppText, note, appAtOpen: appAtOpen.current ?? c.appUs };
+    const draft = { us: usText, opp: oppText, note, appSpanAtOpen: appAtOpen.current ?? c.appSpan };
     quiet((g, now) => setCheckDraft(g, period, draft, now));
     setView(reconcileReturn);
   };
@@ -123,7 +128,7 @@ export function Reconcile({ store }: { store: GameStore }) {
         <p class="font-semibold text-white" data-testid="app-has">{appHasText(game, period)}</p>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm text-slate-300">Our points in {periodLabel(period)} (book's Score by Qtr box)</span>
+          <span class="text-sm text-slate-300">Our game score after {periodLabel(period)} (the book's running score)</span>
           <input
             class={field}
             inputMode="numeric"
@@ -132,16 +137,21 @@ export function Reconcile({ store }: { store: GameStore }) {
           />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-sm text-slate-300">Opponent points in {periodLabel(period)}</span>
+          <span class="text-sm text-slate-300">Their game score after {periodLabel(period)}</span>
           <input
             class={field}
             inputMode="numeric"
-            placeholder={oppPlaceholder(c.oppTapped, game.trackOpponentTaps)}
+            placeholder={oppPlaceholder(c, game.trackOpponentTaps)}
             value={oppText}
             onInput={(e) => setOppText(e.currentTarget.value)}
           />
         </label>
         {invalid && <p class="font-semibold text-red-300" role="alert">Whole numbers only, no minus sign.</p>}
+        {!invalid && (usProblem || oppProblem) && (
+          <p class="font-semibold text-red-300" role="alert">
+            {usProblem ? `Ours: ${usProblem}.` : ''} {oppProblem ? `Theirs: ${oppProblem}.` : ''}
+          </p>
+        )}
 
         {live && (
           <div class={`rounded-lg px-3 py-3 ${mismatch ? 'bg-amber-400 text-slate-900' : 'bg-emerald-800'}`}>
@@ -153,7 +163,7 @@ export function Reconcile({ store }: { store: GameStore }) {
 
         {mismatch && (
           <section aria-label="Plays to fix">
-            <h2 class="mb-2 font-bold">Fix the plays</h2>
+            <h2 class="mb-2 font-bold">Fix the plays{span !== periodLabel(period) && ` in ${span}`}</h2>
             <button
               type="button"
               class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
@@ -162,7 +172,7 @@ export function Reconcile({ store }: { store: GameStore }) {
               Add play to {periodLabel(period)}
             </button>
             <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
-              <Log store={store} period={period} order="oldest" showToast={false} embedded />
+              <Log store={store} period={period} fromPeriod={c.spanFrom} order="oldest" showToast={false} embedded />
             </div>
           </section>
         )}
@@ -206,17 +216,17 @@ export function Reconcile({ store }: { store: GameStore }) {
         </Sheet>
       )}
       {addStep === 'play' && addPlayer && (
-        <EventSheet player={addPlayer} toast={toast === addOpenedWith.current ? null : toast} onPlay={addPlay} onUndo={undo} onClose={closeAdd} />
+        <EventSheet player={addPlayer} toast={toast === addOpenedWith.current ? null : toast} onPlay={addPlay} onUndo={undo} onRedo={redo} onClose={closeAdd} />
       )}
 
       {toast && (
-        <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-16 z-10 border-t border-slate-600" onUndo={undo} />
+        <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-16 z-10 border-t border-slate-600" onUndo={undo} onRedo={redo} />
       )}
       <div class="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-slate-700 bg-slate-950 p-2">
         <button type="button" class="min-h-12 flex-1 rounded-lg border border-slate-400 font-semibold" onClick={later}>
           Later
         </button>
-        <button type="button" class="min-h-12 flex-1 rounded-lg bg-white font-semibold text-slate-900 disabled:opacity-40" disabled={invalid} onClick={saveAndClose}>
+        <button type="button" class="min-h-12 flex-1 rounded-lg bg-white font-semibold text-slate-900 disabled:opacity-40" disabled={blocked} onClick={saveAndClose}>
           Save
         </button>
       </div>

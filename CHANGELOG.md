@@ -5,6 +5,13 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- The quarter check asks for the game score after the quarter, the running score the book's Score by Qtr box holds, instead of the points scored in it. The app works out the quarter's own points and checks those, so a gap already noted in an earlier quarter is named but not counted again, and a quarter skipped earlier is checked together with the next one (for example "Q2–Q3").
+- A typed score lower than an earlier quarter's, or higher than a later one's, is flagged and can't be saved.
+- The Book CSV's score by period shows the running score after each period, as the book does, ending in Final. A period with nothing typed is the last typed score plus the app's points since, marked `*`, so it never runs backward. The Reconcile rows add Book total, App total and the periods each check compared.
+- A check saved before this version loses its numbers and reads Not checked again; its note stays.
+- Redo: after an Undo, the line above the bar (and the player sheet) offers Redo, which steps forward again one entry at a time. Entering anything new ends it.
+- The End button is outlined in amber when it ends a quarter, and in red once it can end the game (Q4 and overtime). On the end-of-Q4 sheet, Start overtime is amber and End game is red.
+
 ## [0.3.0] - 2026-11-11
 
 - A "How to use" page, from the ⋯ menu, explains the app in short sections, with three screenshots that are refreshed on every release. It works offline, screenshots included, and opening it keeps the game and Undo.

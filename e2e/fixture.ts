@@ -130,30 +130,31 @@ export function ui(page: Page) {
     },
     /** The check chip on the feedback line, by its full accessible name. */
     banner: (label: string) => page.getByRole('button', exact(`Check ${label} — not checked against the book`)),
-    /** On the Check view: type the book's numbers (and a note); the comparison updates as you type. */
+    /** On the Check view: type the book's running score after the quarter (and a note); the comparison updates as you type. */
     async fillCheck(label: string, us: number, opp: number, note?: string) {
-      await page.getByLabel(new RegExp(`Our points in ${label}`)).fill(String(us));
-      await page.getByLabel(new RegExp(`Opponent points in ${label}`)).fill(String(opp));
+      await page.getByLabel(new RegExp(`Our game score after ${label}`)).fill(String(us));
+      await page.getByLabel(new RegExp(`Their game score after ${label}`)).fill(String(opp));
       if (note !== undefined) await page.getByLabel('Note', { exact: true }).fill(note);
       // Leaving a field saves nothing: only Save does. Every field above was left at least once
       // (each fill blurs the one before, and this focus blurs the last). A blur-save would turn
       // the store-driven status chip from "Not checked" at once, so wait two frames for any such
       // render, then the chip must still say unchecked.
-      await page.getByLabel(new RegExp(`Our points in ${label}`)).focus();
+      await page.getByLabel(new RegExp(`Our game score after ${label}`)).focus();
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       expect(await page.getByTestId('check-status').textContent()).toBe(STATUS.pending);
     },
-    /** The check's top line, quarter first. */
+    /** The check's top line: the app's game score after the quarter, then the quarter's own points. */
     expectAppHas: (label: string, us: number, them: number, gameUs: number, gameThem: number) =>
-      expect(page.getByTestId('app-has')).toHaveText(`App has ${label}: Us ${us} · Them ${them} (game ${gameUs}–${gameThem})`),
+      expect(page.getByTestId('app-has')).toHaveText(`App after ${label}: Us ${gameUs} · Them ${gameThem} (${label}: ${us}–${them})`),
     expectMismatchHint: () =>
       expect(page.getByTestId('compare-hint')).toHaveText('Add the missing play, fix one below, or write a note and Save.'),
-    expectMatches: () => expect(page.getByTestId('compare')).toHaveText('✓ Matches'),
-    expectShort: (book: number, app: number) =>
-      expect(page.getByTestId('compare')).toHaveText(`Book ${book} · App ${app} — app is ${book - app} short`),
+    expectMatches: (text = '✓ Matches') => expect(page.getByTestId('compare')).toHaveText(text),
+    /** Totals as typed and as the app has them; the gap is graded within the quarter. */
+    expectShort: (label: string, bookTotal: number, appTotal: number, gap: number) =>
+      expect(page.getByTestId('compare')).toHaveText(`Book ${bookTotal} · App ${appTotal} — app is ${gap} short in ${label}`),
     saveCheck: () => page.getByRole('button', exact('Save')).click(),
     later: () => page.getByRole('button', exact('Later')).click(),
-    ourPoints: (label: string) => page.getByLabel(new RegExp(`Our points in ${label}`)),
+    ourPoints: (label: string) => page.getByLabel(new RegExp(`Our game score after ${label}`)),
     /** Check a quarter from the Live banner (the caller saves). */
     async checkQuarter(label: string, us: number, opp: number, note?: string) {
       await this.banner(label).click();
@@ -218,7 +219,7 @@ export function ui(page: Page) {
     },
     /** The opponent box starts blank, with the tap total only as a hint. */
     expectOppHint: (label: string, taps: number) =>
-      expect(page.getByLabel(new RegExp(`Opponent points in ${label}`))).toHaveAttribute('placeholder', `${taps} from taps`),
+      expect(page.getByLabel(new RegExp(`Their game score after ${label}`))).toHaveAttribute('placeholder', `${taps} from taps`),
 
     /** The status strip: score, period, team fouls, bonus chip, timeouts left. */
     async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {

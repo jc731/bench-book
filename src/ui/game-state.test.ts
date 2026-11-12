@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { appendEvent, deleteEvent, editEvent, moveFrom, newGame } from '../core/events';
 import { endGame, isExported, markExported, reopenGame, saveReconcile } from '../core/reconcile';
 import type { Game, GameInfo } from '../core/types';
-import { applyUndo, applyUpdate, type GameState } from './game-state';
+import { applyRedo, applyUndo, applyUpdate, type GameState } from './game-state';
 
 const info: GameInfo = { team: '', opponent: 'Test', date: '2026-11-10', homeAway: 'home', coach: '', scorer: '', timer: '' };
 const now = new Date('2026-11-10T12:00:00Z');
@@ -98,7 +98,7 @@ describe('an export counts only until the game changes after it', () => {
     expect(s.game?.exported).toBeUndefined();
   });
   it('a check draft or another export is not a change to the files', () => {
-    const draft = { us: '9', opp: '', note: '', appAtOpen: 8 };
+    const draft = { us: '9', opp: '', note: '', appSpanAtOpen: 8 };
     let s = applyUpdate(exported(), (g) => ({ ...g, checkDrafts: { 1: draft } }), '', later, false);
     expect(isExported(s.game!)).toBe(true);
     s = applyUpdate(s, (g, t) => markExported(g, 'book', t), 'Exported Book CSV', later, false);
@@ -115,7 +115,7 @@ describe('an export counts only until the game changes after it', () => {
 
 describe('check drafts and undo', () => {
   it('undo neither brings back nor drops a draft', () => {
-    const draft = { us: '9', opp: '', note: '', appAtOpen: 8 };
+    const draft = { us: '9', opp: '', note: '', appSpanAtOpen: 8 };
     let s: GameState = { game: base, stack: [] };
     s = applyUpdate(s, setOpp('X'), 'x', now);
     s = applyUpdate(s, (g) => ({ ...g, checkDrafts: { 1: draft } }), 'draft', now, false);
@@ -125,5 +125,61 @@ describe('check drafts and undo', () => {
     t = applyUpdate(t, setOpp('Y'), 'y', now);
     t = applyUpdate(t, (g) => ({ ...g, checkDrafts: undefined }), 'clear', now, false);
     expect(applyUndo(t).state.game?.checkDrafts).toBeUndefined();
+  });
+});
+
+describe('redo', () => {
+  const step = (n: number) => (g: Game): Game => ({ ...g, currentPeriod: n });
+  const five = (): GameState => {
+    let s: GameState = { game: base, stack: [] };
+    for (let n = 2; n <= 6; n++) s = applyUpdate(s, step(n), `p${n}`, now);
+    return s;
+  };
+
+  it('undo five times then redo once lands one step forward, with that step\'s label', () => {
+    let s = five();
+    for (let i = 0; i < 5; i++) s = applyUndo(s).state;
+    expect(s.game?.currentPeriod).toBe(1);
+    const r = applyRedo(s);
+    expect(r.label).toBe('p2');
+    expect(r.state.game?.currentPeriod).toBe(2);
+  });
+  it('redo walks forward in order and stops at the newest state', () => {
+    let s = five();
+    for (let i = 0; i < 3; i++) s = applyUndo(s).state;
+    expect(s.game?.currentPeriod).toBe(3);
+    s = applyRedo(s).state;
+    s = applyRedo(s).state;
+    expect(s.game?.currentPeriod).toBe(5);
+    s = applyRedo(s).state;
+    expect(s.game?.currentPeriod).toBe(6);
+    const end = applyRedo(s);
+    expect(end.label).toBeNull();
+    expect(end.state).toBe(s);
+  });
+  it('undo after redo undoes the redone step again', () => {
+    let s = applyUndo(five()).state;
+    s = applyRedo(s).state;
+    const u = applyUndo(s);
+    expect(u.label).toBe('p6');
+    expect(u.state.game?.currentPeriod).toBe(5);
+  });
+  it('a new edit after an undo forks the history: nothing left to redo', () => {
+    let s = applyUndo(five()).state;
+    s = applyUpdate(s, setOpp('X'), 'x', now);
+    expect(applyRedo(s).label).toBeNull();
+  });
+  it('a fact (an export) does not fork the history, and redo drops the export marks it made stale', () => {
+    let s = applyUndo(five()).state;
+    s = applyUpdate(s, exportBoth, 'Exported both', now, false);
+    const r = applyRedo(s);
+    expect(r.label).toBe('p6');
+    expect(r.state.game?.exported).toBeUndefined();
+  });
+  it('redo keeps check drafts left after the undo', () => {
+    let s = applyUndo(five()).state;
+    const draft = { us: '9', opp: '', note: '', appSpanAtOpen: 0 };
+    s = applyUpdate(s, (g) => ({ ...g, checkDrafts: { 1: draft } }), '', now, false);
+    expect(applyRedo(s).state.game?.checkDrafts).toEqual({ 1: draft });
   });
 });

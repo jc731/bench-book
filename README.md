@@ -18,11 +18,11 @@ page after the game.
    Bench technicals are on the **Bench** card after the players. Timeout, **Undo**, **Log** and
    **End Q** are on the bottom bar. One line above the bar shows what was just entered and stays
    until the next entry, with a chip at its right for a quarter still to check.
-3. **Fix mistakes.** Undo right away, or open **Log** and tap a row: it opens the fix, where
-   you change the play, the player or the quarter, or delete it.
+3. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Log** and
+   tap a row: it opens the fix, where you change the play, the player or the quarter, or delete it.
 4. **Check each quarter.** **End Q1** advances at once. When there is time, tap the check chip,
-   enter the book's points for the quarter and see whether the app matches. You can leave it
-   for later.
+   enter the game score after the quarter from the book's running score, and the app checks the
+   quarter's own points against its plays. You can leave it for later.
 5. **Final.** After Q4, choose Start overtime or End game (no overtime). The **Final** screen
    lists any quarter not yet checked, ends a game early with a confirm, and **Reopen game** puts
    an ended game back in play.

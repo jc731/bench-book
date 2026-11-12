@@ -4,6 +4,8 @@ import { popUndo, pushUndo, type UndoEntry } from './undo-stack';
 export interface GameState {
   game: Game | null;
   stack: UndoEntry<Game>[];
+  /** Steps undone since the last edit, newest last. A new edit forks the history and clears it. */
+  redo?: UndoEntry<Game>[];
 }
 
 /** Drops the export marks: the files on the device no longer match the game. */
@@ -28,10 +30,15 @@ export function applyUpdate(
   if (!state.game) return state;
   const next = fn(state.game, now);
   if (next === state.game) return state; // nothing changed: no undo step
-  return {
-    game: undoable ? staleExports(next) : next,
-    stack: undoable ? pushUndo(state.stack, { snapshot: state.game, label }) : state.stack,
-  };
+  if (!undoable) return { ...state, game: next };
+  return { game: staleExports(next), stack: pushUndo(state.stack, { snapshot: state.game, label }), redo: [] };
+}
+
+/** A snapshot restored by Undo or Redo: its export marks dropped, the current check drafts kept. */
+function restore(snapshot: Game, current: Game | null): Game {
+  const { exported: _was, checkDrafts: _drafts, ...rest } = snapshot;
+  const checkDrafts = current?.checkDrafts;
+  return { ...rest, ...(checkDrafts ? { checkDrafts } : {}) };
 }
 
 /**
@@ -42,9 +49,18 @@ export function applyUpdate(
  */
 export function applyUndo(state: GameState): { state: GameState; label: string | null } {
   const { entry, stack } = popUndo(state.stack);
-  if (!entry) return { state, label: null };
-  const { exported: _was, checkDrafts: _drafts, ...snapshot } = entry.snapshot;
-  const checkDrafts = state.game?.checkDrafts;
-  const game: Game = { ...snapshot, ...(checkDrafts ? { checkDrafts } : {}) };
-  return { state: { game, stack }, label: entry.label };
+  if (!entry || !state.game) return { state, label: null };
+  const redo = pushUndo(state.redo ?? [], { snapshot: state.game, label: entry.label });
+  return { state: { game: restore(entry.snapshot, state.game), stack, redo }, label: entry.label };
+}
+
+/**
+ * Steps forward again over an Undo, with the same rules: export marks dropped, drafts kept. The step
+ * goes back on the undo stack under its own label, so Undo after Redo undoes it again.
+ */
+export function applyRedo(state: GameState): { state: GameState; label: string | null } {
+  const { entry, stack: redo } = popUndo(state.redo ?? []);
+  if (!entry || !state.game) return { state, label: null };
+  const stack = pushUndo(state.stack, { snapshot: state.game, label: entry.label });
+  return { state: { game: restore(entry.snapshot, state.game), stack, redo }, label: entry.label };
 }

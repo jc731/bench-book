@@ -30,7 +30,7 @@ export function EndGame({ store }: { store: GameStore }) {
     const c = checkPeriod(game, period);
     const text = notes[period] ?? c.note;
     if (text === c.note) return;
-    update((g, now) => saveReconcile(g, period, c.bookUs, c.bookOpp, text, now), `Noted ${periodLabel(period)}`);
+    update((g, now) => saveReconcile(g, period, c.bookTotal, c.bookOppTotal, text, now), `Noted ${periodLabel(period)}`);
   };
   const reopen = (period: number) => openReconcile(period, 'end');
   const exportOne = (kind: ExportKind) => {

@@ -10,3 +10,8 @@ export function otCount(p: number): number {
 export function periodLabel(p: number): string {
   return isOvertime(p) ? `OT${otCount(p)}` : `Q${p}`;
 }
+
+/** `Q2`, or `Q2–Q3` for a span of periods. */
+export function spanLabel(from: number, to: number): string {
+  return from >= to ? periodLabel(to) : `${periodLabel(from)}–${periodLabel(to)}`;
+}

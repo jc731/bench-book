@@ -17,8 +17,10 @@ const on = 'bg-white text-slate-900';
 
 interface Props {
   store: GameStore;
-  /** Show one period only (Reconcile uses this). */
+  /** Show one period only (Reconcile uses this)... */
   period?: number;
+  /** ...or, with this, every period from `fromPeriod` through `period` (a check that spans skipped quarters). */
+  fromPeriod?: number;
   /** `newest` (the Log) or `oldest` (the quarter check, walked beside the book). */
   order?: 'newest' | 'oldest';
   onClose?: () => void;
@@ -30,15 +32,15 @@ interface Props {
   embedded?: boolean;
 }
 
-export function Log({ store, period, order = 'newest', onClose, headerExtra, showToast = true, embedded = false }: Props) {
-  const { game, toast, update, undo, setView } = store;
+export function Log({ store, period, fromPeriod, order = 'newest', onClose, headerExtra, showToast = true, embedded = false }: Props) {
+  const { game, toast, update, undo, redo, setView } = store;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [alsoMove, setAlsoMove] = useState(false);
 
   if (!game) return null;
   const selected = game.events.find((e) => e.id === selectedId) ?? null;
-  const groups = groupByPeriod(game, period, order);
+  const groups = groupByPeriod(game, period, order, fromPeriod);
   const close = onClose ?? (() => setView('live'));
 
   const open = (e: GameEvent) => {
@@ -98,7 +100,7 @@ export function Log({ store, period, order = 'newest', onClose, headerExtra, sho
       </div>
 
       {showToast && toast && (
-        <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-0 z-10 border-t border-slate-600" onUndo={undo} />
+        <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-0 z-10 border-t border-slate-600" onUndo={undo} onRedo={redo} />
       )}
 
       {selected && draft && (

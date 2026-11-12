@@ -46,7 +46,7 @@ function parse(csv: string): string[][] {
 const rowOf = (rows: string[][], first: string, after = 0) =>
   rows.slice(after).find((r) => r[0] === first)!;
 const scoreRow = (rows: string[][], first: string) =>
-  rowOf(rows, first, rows.findIndex((r) => r[0] === 'Score by period'));
+  rowOf(rows, first, rows.findIndex((r) => r[0].startsWith('Score by period')));
 const withName = (g: Game, id: string, name: string): Game => ({
   ...g, roster: g.roster.map((p) => (p.id === id ? { ...p, name } : p)),
 });
@@ -80,38 +80,44 @@ describe('bookCsv', () => {
     expect(tot[head.indexOf("2'S")]).toBe('2');
   });
 
-  test('score by period: book number as-is, app sum starred, opponent uses book else taps starred', () => {
+  test('score by period is the running score, as the book keeps it: typed totals as-is, estimates starred', () => {
     let g = { ...sample(), trackOpponentTaps: true }; // app Q1 = 8, opp tap Q1 = 2
     g = saveReconcile(g, 1, 8, 5, '', now);
     let rows = parse(bookCsv(g));
-    let us = scoreRow(rows, 'Team A');
-    expect(us.slice(1, 6)).toEqual(['8', '0*', '0*', '0*', '8*']);
-    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['5', '0*', '0*', '0*', '5*']);
-    g = saveReconcile(g, 1, null, null, '', now);
-    g = saveReconcile(g, 2, 0, 0, '', now);
-    g = saveReconcile(g, 3, 0, 0, '', now);
-    g = saveReconcile(g, 4, 0, 0, '', now);
-    g = saveReconcile(g, 1, 8, null, '', now);
+    expect(rows.find((r) => r[0].startsWith('Score by period'))![0]).toBe('Score by period (running score after each)');
+    expect(rowOf(rows, '', rows.findIndex((r) => r[0].startsWith('Score by period'))).slice(1, 6)).toEqual(['Q1', 'Q2', 'Q3', 'Q4', 'Final']);
+    expect(scoreRow(rows, 'Team A').slice(1, 6)).toEqual(['8', '8*', '8*', '8*', '8*']);
+    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['5', '5*', '5*', '5*', '5*']);
+    for (const p of [2, 3, 4]) g = saveReconcile(g, p, 8, 5, '', now);
     rows = parse(bookCsv(g));
-    us = scoreRow(rows, 'Team A');
-    expect(us.slice(1, 6)).toEqual(['8', '0', '0', '0', '8']);
-    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['2*', '0', '0', '0', '2*']);
+    expect(scoreRow(rows, 'Team A').slice(1, 6)).toEqual(['8', '8', '8', '8', '8']);
+    expect(scoreRow(rows, "St. Mary's").slice(1, 6)).toEqual(['5', '5', '5', '5', '5']);
+  });
+
+  test('an estimate builds on the last typed total, so it never runs backward', () => {
+    let g = { ...sample(), trackOpponentTaps: true }; // app Q1 = 8
+    g = saveReconcile(g, 1, 12, null, 'ref', now); // the book says 12
+    g = add(g, 2, { type: 'FG2', playerId: 'p4' }); // app scores 2 in Q2
+    const us = scoreRow(parse(bookCsv(g)), 'Team A');
+    expect(us.slice(1, 6)).toEqual(['12', '14*', '14*', '14*', '14*']);
   });
 
   test('an opponent row typed in every period carries no star', () => {
     let g = { ...sample(), trackOpponentTaps: true }; // opp tap Q1 = 2
-    for (const p of [1, 2, 3, 4]) g = saveReconcile(g, p, null, p === 1 ? 2 : 0, '', now);
-    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '0', '0', '0', '2']);
-    // Clearing one period's box brings the star back, on that cell and the total.
+    for (const p of [1, 2, 3, 4]) g = saveReconcile(g, p, null, 2, '', now);
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '2', '2', '2', '2']);
+    // Clearing one period's box brings the star back on that cell; Q4 is still typed, so Final is not starred.
     g = saveReconcile(g, 3, null, null, '', now);
-    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '0', '0*', '0', '2*']);
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '2', '2*', '2', '2']);
+    g = saveReconcile(g, 4, null, null, '', now);
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['2', '2', '2*', '2*', '2*']);
   });
 
   test('with taps off, an opponent period nobody entered prints blank; an entered one still prints', () => {
     const g = saveReconcile(sample(), 1, 8, null, '', now); // taps off: the Q1 tap of 2 is not a figure anyone counted
-    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 5)).toEqual(['', '', '', '']);
-    const h = saveReconcile(g, 2, 0, 7, '', now);
-    expect(scoreRow(parse(bookCsv(h)), "St. Mary's").slice(1, 5)).toEqual(['', '7', '', '']);
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['', '', '', '', '']);
+    const h = saveReconcile(g, 2, 8, 7, '', now);
+    expect(scoreRow(parse(bookCsv(h)), "St. Mary's").slice(1, 6)).toEqual(['', '7', '', '', '']);
   });
 
   test('OT columns appear only when currentPeriod > 4', () => {
@@ -125,9 +131,15 @@ describe('bookCsv', () => {
     const g = saveReconcile(sample(), 1, 10, 4, '', now); // app 8, book 10
     const rows = parse(bookCsv(g));
     const rec = rows.findIndex((r) => r[0] === 'Reconcile');
-    expect(rows[rec + 1]).toEqual(['Period', 'Book', 'App', 'Diff', 'Status', 'Opp book', 'Opp taps', 'Note']);
-    expect(rows[rec + 2]).toEqual(['Q1', '10', '8', '2', 'unresolved', '4', '2', '']);
-    expect(rows[rec + 3]).toEqual(['Q2', '', '0', '', 'pending', '', '0', '']);
+    expect(rows[rec + 1]).toEqual([
+      'Period', 'Book total', 'App total', 'Compared', 'Book', 'App', 'Diff', 'Status', 'Opp book total', 'Opp taps', 'Note',
+    ]);
+    expect(rows[rec + 2]).toEqual(['Q1', '10', '8', 'Q1', '10', '8', '2', 'unresolved', '4', '2', '']);
+    expect(rows[rec + 3]).toEqual(['Q2', '', '8', 'Q2', '', '0', '', 'pending', '', '0', '']);
+    // Q2 skipped: Q3's check covers both, and says so.
+    const h = saveReconcile(add(g, 3, { type: 'FG2', playerId: 'p4' }), 3, 12, null, '', now);
+    const r3 = parse(bookCsv(h));
+    expect(r3[r3.findIndex((r) => r[0] === 'Reconcile') + 4].slice(0, 8)).toEqual(['Q3', '12', '10', 'Q2–Q3', '2', '2', '0', 'matched']);
   });
 
   test('fouls, bench techs and timeouts blocks', () => {
@@ -150,7 +162,7 @@ describe('bookCsv', () => {
     const rows = parse(bookCsv(g));
     expect(rows.find((r) => r[2] === '#4')![1]).toBe("'=SUM(1)");
     const rec = rows.findIndex((r) => r[0] === 'Reconcile');
-    expect(rows[rec + 2].slice(0, 8)).toEqual(['Q1', '6', '8', '-2', 'noted', '', '2', "'+note"]);
+    expect(rows[rec + 2]).toEqual(['Q1', '6', '8', 'Q1', '6', '8', '-2', 'noted', '', '2', "'+note"]);
   });
 
   test('header block and BOM', () => {

@@ -9,14 +9,14 @@ export function checkDraftFor(g: Game, period: number): CheckDraft | null {
 
 /**
  * What the check screen opens with: the draft left by Later if there is one, else the saved record.
- * `appAtOpen` is the app's count when the check was FIRST opened, kept through a Later, so a quarter
+ * `appSpanAtOpen` is the app's points over the checked span when the check was FIRST opened, kept through a Later, so a quarter
  * fixed before the Later still saves as fixed.
  */
 export function checkSeed(g: Game, period: number): CheckDraft {
   const draft = checkDraftFor(g, period);
   if (draft) return draft;
   const c = checkPeriod(g, period);
-  return { us: asText(c.bookUs), opp: asText(c.bookOpp), note: c.note, appAtOpen: c.appUs };
+  return { us: asText(c.bookTotal), opp: asText(c.bookOppTotal), note: c.note, appSpanAtOpen: c.appSpan };
 }
 
 /**
@@ -27,7 +27,7 @@ export function setCheckDraft(g: Game, period: number, draft: CheckDraft | null,
   const c = checkPeriod(g, period);
   const blank = !draft || (draft.us.trim() === '' && draft.opp.trim() === '' && draft.note.trim() === '');
   const same = draft !== null
-    && draft.us.trim() === asText(c.bookUs) && draft.opp.trim() === asText(c.bookOpp) && draft.note === c.note;
+    && draft.us.trim() === asText(c.bookTotal) && draft.opp.trim() === asText(c.bookOppTotal) && draft.note === c.note;
   const { [period]: _old, ...rest } = g.checkDrafts ?? {};
   if (blank || same) {
     if (!g.checkDrafts?.[period]) return g;
@@ -36,7 +36,10 @@ export function setCheckDraft(g: Game, period: number, draft: CheckDraft | null,
   return { ...g, checkDrafts: { ...rest, [period]: draft }, updatedAt: now.toISOString() };
 }
 
-/** Whether the book number disagreed with the app as it stood when the check first opened. */
-export function sawMismatch(bookUs: number | null, appUsAtOpen: number | null): boolean {
-  return bookUs !== null && appUsAtOpen !== null && bookUs !== appUsAtOpen;
+/**
+ * Whether the book disagreed with the app as it stood when the check first opened, both measured over
+ * the checked span: `bookSpan` is the typed total less the anchor's.
+ */
+export function sawMismatch(bookSpan: number | null, appSpanAtOpen: number | null): boolean {
+  return bookSpan !== null && appSpanAtOpen !== null && bookSpan !== appSpanAtOpen;
 }

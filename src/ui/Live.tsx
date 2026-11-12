@@ -15,13 +15,20 @@ import { PlayerGrid } from './PlayerGrid';
 import { StatusStrip } from './StatusStrip';
 import type { GameStore } from './store';
 
-const bar = 'min-h-12 rounded-lg border border-slate-500 bg-slate-800 px-1 text-sm font-semibold active:bg-slate-700 disabled:opacity-40';
+const barBase = 'min-h-12 rounded-lg bg-slate-800 px-1 text-sm font-semibold active:bg-slate-700 disabled:opacity-40';
+const bar = `${barBase} border border-slate-500`;
 const opt = 'min-h-14 rounded-xl bg-slate-600 text-xl font-bold active:bg-slate-500';
+// The End slot's color says what it ends: amber a quarter, red the game (Q4 and OT). Final is plain.
+const endTone = {
+  quarter: 'border-2 border-amber-400 text-amber-300',
+  game: 'border-2 border-red-500 text-red-300',
+  final: 'border border-slate-500',
+} as const;
 
 type SheetKind = 'timeout' | 'endPeriod' | 'menu' | 'bench' | null;
 
 export function Live({ store }: { store: GameStore }) {
-  const { game, toast, update, undo, canUndo, setView, openReconcile, openHowto } = store;
+  const { game, toast, update, undo, redo, canUndo, setView, openReconcile, openHowto } = store;
   const [picked, setPicked] = useState<Player | null>(null);
   const [sheet, setSheet] = useState<SheetKind>(null);
   // The feedback present when a player's sheet opened: the sheet shows only what came after it.
@@ -88,6 +95,7 @@ export function Live({ store }: { store: GameStore }) {
         line={line}
         class="shrink-0 border-t border-slate-600"
         onPrompt={(p) => (p.kind === 'check' ? openReconcile(p.period, 'live') : openEnd())}
+        onRedo={redo}
       />
 
       <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-3">
@@ -115,7 +123,8 @@ export function Live({ store }: { store: GameStore }) {
           <button type="button" class={bar} onClick={() => setView('log')}>Log</button>
           <button
             type="button"
-            class={bar}
+            class={`${barBase} ${endTone[end.tone]}`}
+            data-tone={end.tone}
             onClick={() => (end.opens === 'final' ? openEnd() : end.opens === 'endSheet' ? setSheet('endPeriod') : doEndPeriod())}
           >
             {end.text}
@@ -126,7 +135,7 @@ export function Live({ store }: { store: GameStore }) {
       </nav>
 
       {picked && (
-        <EventSheet player={picked} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onClose={() => setPicked(null)} />
+        <EventSheet player={picked} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onRedo={redo} onClose={() => setPicked(null)} />
       )}
       {sheet === 'bench' && (
         <Sheet title="Bench" onClose={() => setSheet(null)}>
@@ -156,8 +165,8 @@ export function Live({ store }: { store: GameStore }) {
       {sheet === 'endPeriod' && (
         <Sheet title={`End ${periodLabel(period)}`} onClose={() => setSheet(null)}>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" class={opt} onClick={startOt}>{endChoices(period).overtime}</button>
-            <button type="button" class={`${opt} leading-tight`} onClick={doEndGame}>
+            <button type="button" class={`${opt} border-2 border-amber-400`} onClick={startOt}>{endChoices(period).overtime}</button>
+            <button type="button" class={`${opt} border-2 border-red-500 leading-tight`} onClick={doEndGame}>
               <span class="block">{endChoices(period).endGameMain}</span>{' '}
               <span class="block text-sm font-semibold">{endChoices(period).endGameNote}</span>
             </button>

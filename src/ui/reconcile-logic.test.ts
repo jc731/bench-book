@@ -3,7 +3,7 @@ import { appendEvent, newGame } from '../core/events';
 import { endGame, markExported } from '../core/reconcile';
 import type { Game } from '../core/types';
 import {
-  MISMATCH_HINT, appHasText, compareText, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, oppCompareText, oppPlaceholder, parseScore,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, oppCompareText, oppPlaceholder, parseScore,
   reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 
@@ -15,13 +15,26 @@ const base = (): Game =>
     t0,
   );
 
-describe('compareText', () => {
-  it('reads short, over, matches and not-entered', () => {
-    expect(compareText(12, 10)).toBe('Book 12 · App 10 — app is 2 short');
-    expect(compareText(8, 10)).toBe('Book 8 · App 10 — app is 2 over');
-    expect(compareText(10, 10)).toBe('✓ Matches');
-    expect(compareText(null, 10)).toBeNull();
-    expect(compareText(0, 0)).toBe('✓ Matches');
+describe('compareText (typed game totals)', () => {
+  const q1 = { period: 1, spanFrom: 1, anchorBook: 0, anchorApp: 0, appTotal: 10, appSpan: 10 };
+  it('reads short, over, matches and not-entered in Q1', () => {
+    expect(compareText(12, q1)).toBe('Book 12 · App 10 — app is 2 short in Q1');
+    expect(compareText(8, q1)).toBe('Book 8 · App 10 — app is 2 over in Q1');
+    expect(compareText(10, q1)).toBe('✓ Matches');
+    expect(compareText(null, q1)).toBeNull();
+    expect(compareText(0, { ...q1, appTotal: 0, appSpan: 0 })).toBe('✓ Matches');
+  });
+  // Q1 noted at book 12 vs app 10; Q2 the app scored 8 (game 18).
+  const q2 = { period: 2, spanFrom: 2, anchorBook: 12, anchorApp: 10, appTotal: 18, appSpan: 8 };
+  it('grades Q2 on its own points and names a gap carried from Q1', () => {
+    expect(compareText(20, q2)).toBe('✓ Q2 matches — app still 2 short from Q1');
+    expect(isMismatch(20, q2)).toBe(false);
+    expect(compareText(22, q2)).toBe('Book 22 · App 18 — app is 2 short in Q2 (already 2 short after Q1)');
+    expect(isMismatch(22, q2)).toBe(true);
+  });
+  it('names the span when an earlier check was skipped', () => {
+    const q3 = { period: 3, spanFrom: 2, anchorBook: 10, anchorApp: 10, appTotal: 24, appSpan: 14 };
+    expect(compareText(25, q3)).toBe('Book 25 · App 24 — app is 1 short in Q2–Q3');
   });
 });
 
@@ -88,43 +101,48 @@ describe('exportStateText', () => {
 
 describe('opponent check', () => {
   it('never compares, and never says it matches, a blank opponent box', () => {
-    expect(oppCompareText(null, 6, true)).toBe('Opponent not compared (box blank)');
-    expect(oppCompareText(null, 0, true)).not.toMatch(/match|✓/i);
-    expect(oppCompareText(null, 0, false)).toBeNull();
+    const c = (taps: number) => ({ period: 1, oppSpanFrom: 1, anchorOppBook: 0, oppTapped: taps });
+    expect(oppCompareText(null, c(6), true)).toBe('Opponent not compared (box blank)');
+    expect(oppCompareText(null, c(0), true)).not.toMatch(/match|✓/i);
+    expect(oppCompareText(null, c(0), false)).toBeNull();
   });
-  it('compares a typed number with the taps', () => {
-    expect(oppCompareText(6, 6, true)).toBe('Opponent: book 6 · taps 6 ✓');
-    expect(oppCompareText(6, 4, true)).toBe('Opponent: book 6 · taps 4 — taps are 2 short');
-    expect(oppCompareText(3, 4, true)).toBe('Opponent: book 3 · taps 4 — taps are 1 over');
-    expect(oppCompareText(6, 0, false)).toBe('Opponent 6 from the book (no taps to compare)');
+  it('compares a typed game total with the taps since the last typed total', () => {
+    const q1 = (taps: number) => ({ period: 1, oppSpanFrom: 1, anchorOppBook: 0, oppTapped: taps });
+    expect(oppCompareText(6, q1(6), true)).toBe('Opponent: book 6 · taps 6 ✓');
+    expect(oppCompareText(6, q1(4), true)).toBe('Opponent: book 6 · taps 4 — taps are 2 short in Q1');
+    expect(oppCompareText(3, q1(4), true)).toBe('Opponent: book 3 · taps 4 — taps are 1 over in Q1');
+    expect(oppCompareText(6, q1(0), false)).toBe('Opponent 6 from the book (no taps to compare)');
+    // Q1 typed 9 (taps had 7); Q2 tapped 5: the taps' game total is 14.
+    const q2 = { period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 5 };
+    expect(oppCompareText(14, q2, true)).toBe('Opponent: book 14 · taps 14 ✓');
   });
-  it('shows the tap total only as a placeholder', () => {
-    expect(oppPlaceholder(3, true)).toBe('3 from taps');
-    expect(oppPlaceholder(3, false)).toBe('');
+  it('shows the taps\' game total only as a placeholder', () => {
+    expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, true)).toBe('12 from taps');
+    expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, false)).toBe('');
   });
 });
 
 describe('reconcileDraftToSave', () => {
-  const saved = { period: 1, bookUs: 12, bookOpp: null, note: 'n', hadMismatch: true };
-  const draft = { bookUs: 12, bookOpp: null, note: 'n' };
+  const saved = { period: 1, bookUsTotal: 12, bookOppTotal: null, note: 'n', hadMismatch: true };
+  const draft = { bookUsTotal: 12, bookOppTotal: null, note: 'n' };
   it('returns null for an identical draft, and for an empty draft with nothing saved', () => {
     expect(reconcileDraftToSave(saved, draft)).toBeNull();
-    expect(reconcileDraftToSave(undefined, { bookUs: null, bookOpp: null, note: '' })).toBeNull();
+    expect(reconcileDraftToSave(undefined, { bookUsTotal: null, bookOppTotal: null, note: '' })).toBeNull();
   });
   it('saves a blank opponent box as no book number', () => {
-    expect(reconcileDraftToSave(undefined, { bookUs: 12, bookOpp: null, note: '' })).toEqual({
-      bookUs: 12, bookOpp: null, note: '',
+    expect(reconcileDraftToSave(undefined, { bookUsTotal: 12, bookOppTotal: null, note: '' })).toEqual({
+      bookUsTotal: 12, bookOppTotal: null, note: '',
     });
-    expect(reconcileDraftToSave({ ...saved, bookOpp: 9 }, draft)?.bookOpp).toBeNull();
+    expect(reconcileDraftToSave({ ...saved, bookOppTotal: 9 }, draft)?.bookOppTotal).toBeNull();
   });
   it('saves a typed opponent number', () => {
-    expect(reconcileDraftToSave(saved, { ...draft, bookOpp: 9 })).toEqual({
-      bookUs: 12, bookOpp: 9, note: 'n',
+    expect(reconcileDraftToSave(saved, { ...draft, bookOppTotal: 9 })).toEqual({
+      bookUsTotal: 12, bookOppTotal: 9, note: 'n',
     });
   });
   it('saves a changed note and a changed book number', () => {
     expect(reconcileDraftToSave(saved, { ...draft, note: 'm' })?.note).toBe('m');
-    expect(reconcileDraftToSave(saved, { ...draft, bookUs: 10 })?.bookUs).toBe(10);
+    expect(reconcileDraftToSave(saved, { ...draft, bookUsTotal: 10 })?.bookUsTotal).toBe(10);
   });
 });
 
@@ -145,12 +163,12 @@ describe('check screen text', () => {
     g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 2, period: 2 }, t0);
     return g;
   };
-  it('puts the quarter first, then the game score through it', () => {
-    expect(appHasText(twoQuarters(true), 2)).toBe('App has Q2: Us 3 · Them 2 (game 5–5)');
-    expect(appHasText(twoQuarters(true), 1)).toBe('App has Q1: Us 2 · Them 3 (game 2–3)');
+  it('leads with the game score after the quarter, then the quarter on its own', () => {
+    expect(appHasText(twoQuarters(true), 2)).toBe('App after Q2: Us 5 · Them 5 (Q2: 3–2)');
+    expect(appHasText(twoQuarters(true), 1)).toBe('App after Q1: Us 2 · Them 3 (Q1: 2–3)');
   });
   it('leaves Them out when opponent taps are off', () => {
-    expect(appHasText(twoQuarters(false), 2)).toBe('App has Q2: Us 3 (game 5)');
+    expect(appHasText(twoQuarters(false), 2)).toBe('App after Q2: Us 5 (Q2: 3)');
   });
   it('words the mismatch hint', () => {
     expect(MISMATCH_HINT).toBe('Add the missing play, fix one below, or write a note and Save.');

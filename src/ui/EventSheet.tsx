@@ -34,10 +34,11 @@ interface Props {
   toast: Toast | null;
   onPlay: (type: PlayType) => void;
   onUndo: () => void;
+  onRedo?: () => void;
   onClose: () => void;
 }
 
-export function EventSheet({ player, toast, onPlay, onUndo, onClose }: Props) {
+export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose }: Props) {
   const btn = (t: PlayType) => (
     <button
       key={t}
@@ -63,6 +64,11 @@ export function EventSheet({ player, toast, onPlay, onUndo, onClose }: Props) {
           {toast?.canUndo && (
             <button type="button" class="min-h-11 rounded-lg border border-slate-400 px-4 font-semibold" onClick={onUndo}>
               Undo
+            </button>
+          )}
+          {toast?.canRedo && onRedo && (
+            <button type="button" class="min-h-11 rounded-lg border border-amber-300 px-4 font-semibold text-amber-300" onClick={onRedo}>
+              Redo
             </button>
           )}
           <button type="button" class="min-h-11 rounded-lg bg-white px-5 font-semibold text-slate-900" onClick={onClose}>

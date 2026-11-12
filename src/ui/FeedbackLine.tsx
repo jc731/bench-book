@@ -8,6 +8,8 @@ interface Props {
   onPrompt?: (prompt: Prompt) => void;
   /** Given, an undoable entry gets its own Undo (Log and the check). Live passes none: its bar's Undo is the line's. */
   onUndo?: () => void;
+  /** Given, the line offers Redo right after an Undo (every screen passes it). */
+  onRedo?: () => void;
 }
 
 /**
@@ -16,7 +18,7 @@ interface Props {
  * wraps to a second line rather than cutting its tail. The entry text is `#feedback-text`, so a
  * button elsewhere can point `aria-describedby` at it.
  */
-export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo }: Props) {
+export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo, onRedo }: Props) {
   const { entry, prompt } = line;
   const text = entry ? entry.text : '';
   return (
@@ -30,6 +32,11 @@ export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo }: Props)
       {entry?.undoable && onUndo && (
         <button type="button" class="-mr-3 min-h-11 shrink-0 px-3 font-bold text-amber-300" onClick={onUndo}>
           Undo
+        </button>
+      )}
+      {entry?.redoable && onRedo && (
+        <button type="button" class="min-h-11 shrink-0 rounded-lg border border-amber-300 px-3 font-bold text-amber-300" onClick={onRedo}>
+          Redo
         </button>
       )}
       {prompt && (

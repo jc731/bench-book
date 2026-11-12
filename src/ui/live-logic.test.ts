@@ -6,7 +6,8 @@ import {
 } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
-  period, appUs: 0, bookUs: null, diff: null, bookOpp: null, oppTapped: 0, status, note: '',
+  period, spanFrom: period, anchorBook: 0, anchorApp: 0, bookTotal: null, appTotal: 0, bookSpan: null, appSpan: 0,
+  diff: null, oppSpanFrom: period, anchorOppBook: 0, bookOppTotal: null, bookOppSpan: null, oppTapped: 0, status, note: '',
 });
 
 describe('labels', () => {
@@ -34,11 +35,11 @@ describe('labels', () => {
 
 describe('a finished game looks finished', () => {
   it('endSlot', () => {
-    expect(endSlot(2, false)).toEqual({ text: 'End Q2', opens: 'endPeriod' });
-    expect(endSlot(4, false)).toEqual({ text: 'End Q4…', opens: 'endSheet' });
-    expect(endSlot(6, false)).toEqual({ text: 'End OT2…', opens: 'endSheet' });
+    expect(endSlot(2, false)).toEqual({ text: 'End Q2', opens: 'endPeriod', tone: 'quarter' });
+    expect(endSlot(4, false)).toEqual({ text: 'End Q4…', opens: 'endSheet', tone: 'game' });
+    expect(endSlot(6, false)).toEqual({ text: 'End OT2…', opens: 'endSheet', tone: 'game' });
     // The ▸ is a mark beside the name, hidden from screen readers, so the button is named "Final".
-    expect(endSlot(5, true)).toEqual({ text: 'Final', mark: '▸', opens: 'final' });
+    expect(endSlot(5, true)).toEqual({ text: 'Final', mark: '▸', opens: 'final', tone: 'final' });
   });
   it('stripPeriodText', () => {
     expect(stripPeriodText(5, false)).toBe('OT1');
@@ -132,16 +133,16 @@ describe('feedbackLine', () => {
   const toast = { text: '#12 +2 — bonus', canUndo: true };
   const check = { kind: 'check', period: 1, text: banner.text, chip: 'Check Q1' };
   it('shows the last entry beside the check prompt, which outranks the export warning', () =>
-    expect(feedbackLine(banner, unexported, toast)).toEqual({ entry: { text: '#12 +2 — bonus', undoable: true }, prompt: check }));
+    expect(feedbackLine(banner, unexported, toast)).toEqual({ entry: { text: '#12 +2 — bonus', undoable: true, redoable: false }, prompt: check }));
   it('shows the export warning as the chip when no check is open', () =>
     expect(feedbackLine(null, unexported, { text: 'Exported Book CSV', canUndo: false })).toEqual({
-      entry: { text: 'Exported Book CSV', undoable: false },
+      entry: { text: 'Exported Book CSV', undoable: false, redoable: false },
       prompt: { kind: 'export', text: unexported, chip: 'Not exported' },
     }));
   it('shows the entry alone, and whether it can be undone', () => {
-    expect(feedbackLine(null, null, toast)).toEqual({ entry: { text: '#12 +2 — bonus', undoable: true }, prompt: null });
-    expect(feedbackLine(null, null, { text: 'Undid #12 +2', canUndo: false })).toEqual({
-      entry: { text: 'Undid #12 +2', undoable: false }, prompt: null,
+    expect(feedbackLine(null, null, toast)).toEqual({ entry: { text: '#12 +2 — bonus', undoable: true, redoable: false }, prompt: null });
+    expect(feedbackLine(null, null, { text: 'Undid #12 +2', canUndo: false, canRedo: true })).toEqual({
+      entry: { text: 'Undid #12 +2', undoable: false, redoable: true }, prompt: null,
     });
   });
   it('shows the prompt alone with no entry', () =>

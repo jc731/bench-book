@@ -1,7 +1,7 @@
 import { toCsv, type Cell } from './csv';
 import { derive } from './derive';
-import { periodLabel } from './periods';
-import { checkPeriod, oppTotal } from './reconcile';
+import { periodLabel, spanLabel } from './periods';
+import { checkPeriod } from './reconcile';
 import type { Game } from './types';
 
 export function bookCsv(g: Game): string {
@@ -15,30 +15,34 @@ export function bookCsv(g: Game): string {
   rows.push([i.team, i.opponent, i.date, i.homeAway, i.coach, i.scorer, i.timer]);
   rows.push([]);
 
-  // Us: the book's number where the scorer entered one, else our own sum marked `*`.
-  let usSum = 0;
-  let estimated = false;
+  // Running score after each period, as the paper book's Score by Qtr boxes hold it: the typed book
+  // total where the scorer entered one, else the last typed total plus the app's points since, marked
+  // `*`. Built from the last typed total, an estimate never runs backward past a book number.
+  let usRun = 0;
+  let usEstimated = false;
   const us: Cell[] = played.map((p) => {
     const c = checkPeriod(g, p);
-    if (c.bookUs !== null) { usSum += c.bookUs; return c.bookUs; }
-    usSum += c.appUs;
-    estimated = true;
-    return `${c.appUs}*`;
+    if (c.bookTotal !== null) { usRun = c.bookTotal; usEstimated = false; return usRun; }
+    usRun += d.usByPeriod[p] ?? 0;
+    usEstimated = true;
+    return `${usRun}*`;
   });
-  // Opponent: the book's number where typed, else the tap total marked `*`, like our estimates.
+  // Opponent the same way from taps; with taps off, an untyped period is blank, not a 0 nobody counted.
+  let oppRun = 0;
   let oppEstimated = false;
   const opp: Cell[] = played.map((p) => {
     const c = checkPeriod(g, p);
-    if (c.bookOpp !== null) return c.bookOpp;
-    // Taps off and nothing entered: a blank, not a 0 nobody counted.
-    if (!g.trackOpponentTaps) return '';
+    if (c.bookOppTotal !== null) { oppRun = c.bookOppTotal; oppEstimated = false; return oppRun; }
+    if (!g.trackOpponentTaps) { oppEstimated = true; return ''; }
+    oppRun += d.oppByPeriod[p] ?? 0;
     oppEstimated = true;
-    return `${c.oppTapped}*`;
+    return `${oppRun}*`;
   });
-  rows.push(['Score by period']);
-  rows.push(['', ...labels, 'Total']);
-  rows.push([i.team, ...us, estimated ? `${usSum}*` : usSum]);
-  rows.push([i.opponent, ...opp, oppEstimated ? `${oppTotal(g)}*` : oppTotal(g)]);
+  const oppFinal = !oppEstimated ? oppRun : g.trackOpponentTaps ? `${oppRun}*` : '';
+  rows.push(['Score by period (running score after each)']);
+  rows.push(['', ...labels, 'Final']);
+  rows.push([i.team, ...us, usEstimated ? `${usRun}*` : usRun]);
+  rows.push([i.opponent, ...opp, oppFinal]);
   rows.push([]);
 
   const byId = new Map(g.roster.map((p) => [p.id, p]));
@@ -69,12 +73,14 @@ export function bookCsv(g: Game): string {
   rows.push([]);
 
   rows.push(['Reconcile']);
-  rows.push(['Period', 'Book', 'App', 'Diff', 'Status', 'Opp book', 'Opp taps', 'Note']);
+  // Book total / App total are the running scores; Book / App / Diff are the points over the compared
+  // span, which is the period itself unless an earlier check was skipped (then `Compared` says Q2–Q3).
+  rows.push(['Period', 'Book total', 'App total', 'Compared', 'Book', 'App', 'Diff', 'Status', 'Opp book total', 'Opp taps', 'Note']);
   for (const p of played) {
     const c = checkPeriod(g, p);
     rows.push([
-      periodLabel(p), c.bookUs ?? '', c.appUs, c.diff ?? '', c.status, c.bookOpp ?? '',
-      c.oppTapped, c.note,
+      periodLabel(p), c.bookTotal ?? '', c.appTotal, spanLabel(c.spanFrom, p), c.bookSpan ?? '', c.appSpan,
+      c.diff ?? '', c.status, c.bookOppTotal ?? '', c.oppTapped, c.note,
     ]);
   }
   return toCsv(rows, { guard: true });

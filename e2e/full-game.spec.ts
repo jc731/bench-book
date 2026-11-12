@@ -160,7 +160,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await expect(app.banner('Q1')).toBeVisible();
     await app.banner('Q1').click();
-    await expect(page.getByLabel(/Opponent points in Q1/)).toHaveValue('');
+    await expect(page.getByLabel(/Their game score after Q1/)).toHaveValue('');
     await app.expectOppHint('Q1', 6);
     await app.fillCheck('Q1', 8, 6);
     await app.expectMatches();
@@ -193,11 +193,12 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     // The count resets for the new quarter.
     await app.expectStrip({ us: 15, opp: 10, period: 'Q3', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
 
-    // The book says 9; the app has 7. A +2 by #31 was missed; it is added from the check, at the end of Q2.
+    // The book's running score says 17 (9 in Q2); the app has 15 (7). A +2 by #31 was missed; it is
+    // added from the check, at the end of Q2.
     await app.banner('Q2').click();
     await app.expectAppHas('Q2', 7, 4, 15, 10);
-    await app.fillCheck('Q2', 9, 4);
-    await app.expectShort(9, 7);
+    await app.fillCheck('Q2', 17, 10);
+    await app.expectShort('Q2', 17, 15, 2);
     await app.expectMismatchHint();
     await expectNoOverflow(page);
     await app.addPlay('Q2', 'Player Six', '+2');
@@ -246,8 +247,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectPlayer('Player Three', 7, 0);
 
     await expect(app.banner('Q3')).toBeVisible();
-    await app.checkQuarter('Q3', 7, 5, Q3_NOTE);
-    await app.expectShort(7, 5);
+    await app.checkQuarter('Q3', 24, 15, Q3_NOTE);
+    await app.expectShort('Q3', 24, 22, 2);
     await app.saveCheck();
     await expect(app.banner('Q3')).toHaveCount(0);
     await app.expectStrip({ us: 24, opp: 17, period: 'Q4', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 1 } });
@@ -276,12 +277,12 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     // Later keeps a typed number as a draft, through a reload; a draft is not a check, so Q4
     // stays unchecked here and in both CSVs below.
     await app.banner('Q4').click();
-    await app.ourPoints('Q4').fill('6');
+    await app.ourPoints('Q4').fill('30');
     await app.later();
     await expect(app.banner('Q4')).toBeVisible();
     await page.reload();
     await app.banner('Q4').click();
-    await expect(app.ourPoints('Q4')).toHaveValue('6');
+    await expect(app.ourPoints('Q4')).toHaveValue('30');
     await app.later();
     await expect(app.banner('Q4')).toBeVisible();
     await expectNoOverflow(page);
@@ -323,8 +324,10 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await expectNoOverflow(page);
 
     await app.reopen('OT1', 'pending');
-    await app.fillCheck('OT1', 4, 3);
-    await app.expectMatches();
+    // Q4 was never checked, so OT1's check covers Q4 and OT1 together, from Q3's book total of 24. The
+    // 2 noted in Q3 is carried, not counted again.
+    await app.fillCheck('OT1', 34, 31);
+    await app.expectMatches('✓ Q4–OT1 matches — app still 2 short from Q3');
     await app.saveCheck();
     await expect(app.issue('Q4', 'pending')).toBeVisible();
     await expect(app.issues()).not.toContainText('OT1');
@@ -346,11 +349,12 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectExportState(true, false);
     const at = (first: string) => rows.findIndex((r) => r[0] === first);
 
-    const score = at('Score by period');
-    expect(rows[score + 1]).toEqual(['', 'Q1', 'Q2', 'Q3', 'Q4', 'OT1', 'Total']);
-    expect(rows[score + 2]).toEqual([TEAM, '8', '9', '7', '6*', '4', '34*']);
-    // Q4's opponent figure was never typed, so it is the tap total, starred like our estimates.
-    expect(rows[score + 3]).toEqual([OPPONENT, '6', '4', '5', '13*', '3', '31*']);
+    // The running score after each period, as the book keeps it. Q4 was never typed, so it is Q3's book
+    // total plus the app's Q4 points (taps for them), starred.
+    const score = at('Score by period (running score after each)');
+    expect(rows[score + 1]).toEqual(['', 'Q1', 'Q2', 'Q3', 'Q4', 'OT1', 'Final']);
+    expect(rows[score + 2]).toEqual([TEAM, '8', '17', '24', '30*', '34', '34']);
+    expect(rows[score + 3]).toEqual([OPPONENT, '6', '10', '15', '28*', '31', '31']);
 
     const header = rows[at('POS')];
     const col = (name: string) => header.indexOf(name);
@@ -394,14 +398,16 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     ]);
 
     const rec = at('Reconcile');
-    expect(rows[rec + 1]).toEqual(['Period', 'Book', 'App', 'Diff', 'Status', 'Opp book', 'Opp taps', 'Note']);
+    expect(rows[rec + 1]).toEqual([
+      'Period', 'Book total', 'App total', 'Compared', 'Book', 'App', 'Diff', 'Status', 'Opp book total', 'Opp taps', 'Note',
+    ]);
     // Exactly five periods: no ghost OT2 row.
     expect(rows.slice(rec + 2)).toEqual([
-      ['Q1', '8', '8', '0', 'matched', '6', '6', ''],
-      ['Q2', '9', '9', '0', 'fixed', '4', '4', ''],
-      ['Q3', '7', '5', '2', 'noted', '5', '5', Q3_NOTE],
-      ['Q4', '', '6', '', 'pending', '', '13', ''],
-      ['OT1', '4', '4', '0', 'matched', '3', '3', ''],
+      ['Q1', '8', '8', 'Q1', '8', '8', '0', 'matched', '6', '6', ''],
+      ['Q2', '17', '17', 'Q2', '9', '9', '0', 'fixed', '10', '4', ''],
+      ['Q3', '24', '22', 'Q3', '7', '5', '2', 'noted', '15', '5', Q3_NOTE],
+      ['Q4', '', '28', 'Q4', '', '6', '', 'pending', '', '13', ''],
+      ['OT1', '34', '32', 'Q4–OT1', '10', '10', '0', 'matched', '31', '16', ''],
     ]);
   });
 

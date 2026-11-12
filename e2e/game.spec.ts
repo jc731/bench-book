@@ -65,8 +65,8 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await expect(page.getByText('Q2', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
-  await page.getByLabel(/Our points in Q1/).fill('3');
-  await page.getByLabel(/Opponent points in Q1/).fill('5');
+  await page.getByLabel(/Our game score after Q1/).fill('3');
+  await page.getByLabel(/Their game score after Q1/).fill('5');
   await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('button', { name: /Check Q1 — not checked/ })).toHaveCount(0);
@@ -109,8 +109,8 @@ test('scripted game reconciles and exports', async ({ page }) => {
   expect(start).toBeGreaterThan(-1);
   const block = rows.slice(start + 2);
   const q2 = block.find((r) => r[0] === 'Q2');
-  expect(q2?.[4]).toBe('pending');
-  expect(block.find((r) => r[0] === 'Q1')?.[4]).toBe('matched');
+  expect(q2?.[7]).toBe('pending'); // Status sits after Book total, App total, Compared, Book, App, Diff
+  expect(block.find((r) => r[0] === 'Q1')?.[7]).toBe('matched');
 
   // A second game from the same device: New game -> discard -> roster prefilled -> 0-0.
   await page.getByRole('button', { name: 'Back to game' }).click();
@@ -186,7 +186,7 @@ test('reconcile can add a play to a period that has none', async ({ page }) => {
   await page.getByRole('button', { name: 'Start game' }).click();
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
-  await page.getByLabel(/Our points in Q1/).fill('2');
+  await page.getByLabel(/Our game score after Q1/).fill('2');
   await expect(page.getByTestId('compare')).not.toHaveText('✓ Matches');
   await page.getByRole('button', { name: 'Add play to Q1' }).click();
   await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
@@ -237,7 +237,7 @@ const notExportedChip = (page: Page) => page.getByRole('button', { name: /^Not e
 /** Checks a quarter against a book that also reads 0, from wherever its Check button is. */
 async function checkZero(page: Page, check: Locator, label: string) {
   await check.click();
-  await page.getByLabel(new RegExp(`Our points in ${label}`)).fill('0');
+  await page.getByLabel(new RegExp(`Our game score after ${label}`)).fill('0');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 }
 
@@ -366,7 +366,7 @@ test('a play added after both exports marks both files not saved again', async (
   // End again, with Q1 matched to the book (it now reads a mismatch), and the chip is back.
   await endEarly();
   await openCheck('Reopen').click();
-  await page.getByLabel(/Our points in Q1/).fill('2');
+  await page.getByLabel(/Our game score after Q1/).fill('2');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(exportState('plays')).toHaveText(/not saved/);
   await page.getByRole('button', { name: 'Back to game' }).click();
@@ -385,7 +385,7 @@ test('the check screen scrolls its note and last row clear of the feedback line'
   await tap(page, card(page, '4', 'Player One'), '+2');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
-  await page.getByLabel(/Our points in Q1/).fill('5'); // a mismatch, so the plays list shows too
+  await page.getByLabel(/Our game score after Q1/).fill('5'); // a mismatch, so the plays list shows too
   await expect(page.getByTestId('feedback-text')).not.toHaveText('');
 
   const scroller = page.getByTestId('app-has').locator('..');
@@ -436,7 +436,7 @@ test("the check's Add-play sheet shows only what was added while it is open, and
   await tap(page, card(page, '4', 'Player One'), '+2');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
-  await page.getByLabel(/Our points in Q1/).fill('5');
+  await page.getByLabel(/Our game score after Q1/).fill('5');
   // An entry from before the sheet opens is on the check's own line...
   await expect(page.getByTestId('feedback-text')).not.toHaveText('');
 
@@ -501,4 +501,42 @@ test('Log: a fix that changes the player and the quarter, with the plays after i
   await expect(q1.getByRole('listitem')).toHaveCount(2);
   await expect(q1.getByRole('button', { name: '#4 Player One · +2', exact: true })).toBeVisible();
   await expect(q1.getByRole('button', { name: '#4 Player One · Foul', exact: true })).toBeVisible();
+});
+
+test('Redo: five Undos where four were meant, then Redo puts the last one back; a new play ends Redo', async ({ page }) => {
+  await onePlayerGame(page);
+  const card = page.getByRole('button', { name: /^#4 Player One/ });
+  for (let i = 0; i < 5; i++) {
+    await card.click();
+    await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  }
+  await expect(page.getByLabel('Score 10 to 0')).toBeVisible();
+  const undo = page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true });
+  for (let i = 0; i < 5; i++) await undo.click();
+  await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
+  const redo = page.getByRole('button', { name: 'Redo', exact: true });
+  await expect(page.getByTestId('feedback-text')).toHaveText('Undid #4 +2');
+  await redo.click();
+  await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
+  await expect(page.getByTestId('feedback-text')).toHaveText('Redid #4 +2');
+  // More is left to redo, so Redo stays; a new play forks the history and Redo goes.
+  await expect(redo).toBeVisible();
+  await card.click();
+  await page.getByRole('dialog').getByRole('button', { name: '+3', exact: true }).click();
+  await expect(page.getByLabel('Score 5 to 0')).toBeVisible();
+  await expect(redo).toHaveCount(0);
+});
+
+test('the End button is amber for a quarter, red once it can end the game, plain at Final', async ({ page }) => {
+  await onePlayerGame(page);
+  const tone = (name: string) => page.getByRole('navigation').getByRole('button', { name, exact: true });
+  await expect(tone('End Q1')).toHaveAttribute('data-tone', 'quarter');
+  await expect(tone('End Q1')).toHaveCSS('border-color', 'oklch(0.828 0.189 84.429)'); // amber-400
+  for (const q of ['Q1', 'Q2', 'Q3']) await tone(`End ${q}`).click();
+  await expect(tone('End Q4…')).toHaveAttribute('data-tone', 'game');
+  await expect(tone('End Q4…')).toHaveCSS('border-color', 'oklch(0.637 0.237 25.331)'); // red-500
+  await tone('End Q4…').click();
+  await page.getByRole('dialog').getByRole('button', { name: /^End game/ }).click();
+  await page.getByRole('button', { name: 'Back to game', exact: true }).click();
+  await expect(tone('Final')).toHaveAttribute('data-tone', 'final');
 });
