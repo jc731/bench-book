@@ -28,7 +28,7 @@ All notable changes to Bench Book are listed here, in the
 - "Clear saved roster" is in Game details and asks first.
 - The iPhone home-screen tip and the version moved to How to use.
 - Starting a new game over an exported one says "Exported ✓" and makes Discard the main button.
-- An export counts only until the game changes. Adding, fixing, deleting or moving a play, saving a check or note, Reopen, or Undo after a file was saved marks that file "not saved yet" again, brings back the Not exported chip, and makes New game ask to export first.
+- An export counts only until the game changes. Any change after a file was saved (a play added, fixed, deleted or moved, a check or note saved, a quarter or the game ended, overtime started, Reopen, or Undo) marks that file "not saved yet" again and makes New game ask to export first. On an ended game, the Not exported chip comes back too.
 - The quarter check scrolls far enough that its last rows clear the feedback line.
 
 ## [0.2.0] - 2026-11-11
