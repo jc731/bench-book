@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-11
+
 - A "How to use" page, from the ⋯ menu, explains the app in short sections, with three screenshots that are refreshed on every release. It works offline, screenshots included, and opening it keeps the game and Undo.
 - The running score shows a one-line legend of its marks.
 - One line above the bottom bar shows what just happened, for example "#12 +2 — bonus", and stays until the next entry instead of fading. A quarter still to check, or a game not yet exported, shows as a chip at the right of the same line, for example "Check Q1", without hiding the entry. Undo is on the bottom bar.
