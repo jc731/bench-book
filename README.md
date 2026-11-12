@@ -11,7 +11,7 @@ page after the game.
 
 ## How a game works
 
-1. **Setup.** Enter the opponent and your roster (name and number), then tap **Start game**.
+1. **Setup.** Enter the opponent, pick Home or Away, and enter your roster (name and number), then tap **Start game**.
    **Game details** holds the date, your team name, the coach, scorer and timekeeper, and the
    switch that also keeps the opponent's score. The roster is saved on the device for next time.
 2. **Live.** Tap a player card, then `+2`, `+3`, `FT made`, `FT missed`, `Foul` or `Tech foul`.

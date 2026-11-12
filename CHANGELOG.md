@@ -5,8 +5,7 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
-- How to use shows three screenshots, refreshed on every release, and they are saved for offline use.
-- A "How to use" page, from the ⋯ menu, explains the app in short sections. It works offline, and opening it keeps the game and Undo.
+- A "How to use" page, from the ⋯ menu, explains the app in short sections, with three screenshots that are refreshed on every release. It works offline, screenshots included, and opening it keeps the game and Undo.
 - The running score shows a one-line legend of its marks.
 - One line above the bottom bar shows what just happened, for example "#12 +2 — bonus", and stays until the next entry instead of fading. A quarter still to check, or a game not yet exported, shows as a chip at the right of the same line, for example "Check Q1", without hiding the entry. Undo is on the bottom bar.
 - After a reload the line reads "Last: #12 +2".
@@ -14,12 +13,13 @@ All notable changes to Bench Book are listed here, in the
 - A long entry on the line wraps to a second line instead of cutting off its end, and the Check and Not exported chips read their full text to screen readers, starting with the words on the chip.
 - The bottom bar is one row: Timeout, Undo, Log, End Q and ⋯. All seven player cards fit on an iPhone 13 screen without scrolling.
 - Bench tech moved from the bottom bar to a Bench card at the end of the player cards.
-- After End game the status strip reads Final and the End Q button becomes Final ▸. The separate "Game ended" bar is gone.
+- After End game the status strip reads Final and the End Q button becomes Final ▸ (read as "Final" by screen readers). The separate "Game ended" bar is gone.
 - The ⋯ menu's "Final / export" opens the Final screen without ending the game. Final offers "End game early" (with a confirm) while the game is live, and "Reopen game" once it has ended, even after a reload.
 - The Final screen's footer is "Back to game" and "New game".
 - Log rows look like buttons, and the Log lists the newest quarter and the newest play first. The quarter check's list stays oldest first, to walk beside the book.
 - Tapping a Log row opens the fix directly, titled with the play, for example "Fix: #12 +2 · Q1", with Play, Player and Quarter groups and Delete at the bottom.
 - Moving a play to another quarter is in the fix's Quarter group, with "Also move the plays after it" for a missed End Q.
+- Moving plays forward past a quarter now places them at the start of the target quarter, ahead of its own plays. This changes their order in the Plays CSV.
 - "Add a missed play before this" is gone. Add a missed play from the quarter check's "Add play to Q…"; it goes at the end of that quarter.
 - The quarter check always shows its plays on a mismatch; the Hide/Show toggle is gone.
 - Setup starts with the opponent, Home/Away and the roster, plus a "First time here? How to use" link. Date, team, coach, scorer, timekeeper and "Also keep their score" fold into Game details.
@@ -28,6 +28,8 @@ All notable changes to Bench Book are listed here, in the
 - "Clear saved roster" is in Game details and asks first.
 - The iPhone home-screen tip and the version moved to How to use.
 - Starting a new game over an exported one says "Exported ✓" and makes Discard the main button.
+- An export counts only until the game changes. Adding, fixing, deleting or moving a play, saving a check or note, Reopen, or Undo after a file was saved marks that file "not saved yet" again, brings back the Not exported chip, and makes New game ask to export first.
+- The quarter check scrolls far enough that its last rows clear the feedback line.
 
 ## [0.2.0] - 2026-11-11
 

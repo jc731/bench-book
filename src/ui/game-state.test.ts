@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { newGame } from '../core/events';
-import { markExported } from '../core/reconcile';
+import { appendEvent, deleteEvent, editEvent, moveFrom, newGame } from '../core/events';
+import { endGame, isExported, markExported, reopenGame, saveReconcile } from '../core/reconcile';
 import type { Game, GameInfo } from '../core/types';
 import { applyUndo, applyUpdate, type GameState } from './game-state';
 
 const info: GameInfo = { team: '', opponent: 'Test', date: '2026-11-10', homeAway: 'home', coach: '', scorer: '', timer: '' };
 const now = new Date('2026-11-10T12:00:00Z');
 const base = newGame(info, [], now);
+const exportBoth = (g: Game, t: Date): Game => markExported(markExported(g, 'book', t), 'plays', t);
 const setOpp = (o: string) => (g: Game): Game => ({ ...g, info: { ...g.info, opponent: o } });
 
 describe('game state transitions', () => {
@@ -52,14 +53,63 @@ describe('export marks', () => {
     expect(s.game?.exported?.book).toBe(now.toISOString());
     expect(s.stack).toHaveLength(0);
   });
-  it('undoing an edit made before an export keeps the export marks', () => {
+  it('undoing an edit made before an export drops the marks: the files no longer match the game', () => {
     let s: GameState = { game: base, stack: [] };
     s = applyUpdate(s, setOpp('X'), 'x', now);
-    s = applyUpdate(s, (g, t) => markExported(g, 'plays', t), 'Exported Plays CSV', now, false);
+    s = applyUpdate(s, exportBoth, 'Exported both', now, false);
     const u = applyUndo(s);
     expect(u.label).toBe('x');
     expect(u.state.game?.info.opponent).toBe('Test');
-    expect(u.state.game?.exported).toEqual({ plays: now.toISOString() });
+    expect(u.state.game?.exported).toBeUndefined();
+    expect(isExported(u.state.game!)).toBe(false);
+  });
+});
+
+describe('an export counts only until the game changes after it', () => {
+  const exported = (): GameState => applyUpdate({ game: base, stack: [] }, exportBoth, 'Exported both', now, false);
+  const later = new Date('2026-11-10T12:05:00Z');
+  const ended = (): GameState => applyUpdate({ game: endGame(base, now), stack: [] }, exportBoth, 'Exported both', now, false);
+
+  it('both exports count while nothing has changed since', () => {
+    expect(isExported(exported().game!)).toBe(true);
+  });
+  it('adding a play after the export marks both files not saved', () => {
+    const s = applyUpdate(exported(), (g, t) => appendEvent(g, { type: 'TIMEOUT', timeoutKind: 'full' }, t), 'TO', later);
+    expect(s.game?.exported).toBeUndefined();
+    expect(isExported(s.game!)).toBe(false);
+  });
+  it('editing, deleting or moving a play after the export marks the files not saved', () => {
+    const withPlay = applyUpdate({ game: base, stack: [] }, (g, t) => appendEvent(g, { type: 'TIMEOUT', timeoutKind: 'full' }, t), 'TO', now);
+    const s0 = applyUpdate(withPlay, exportBoth, 'Exported both', now, false);
+    const id = s0.game!.events[0].id;
+    expect(isExported(s0.game!)).toBe(true);
+    expect(applyUpdate(s0, (g, t) => editEvent(g, id, { timeoutKind: 'thirty' }, t), 'edit', later).game?.exported).toBeUndefined();
+    expect(applyUpdate(s0, (g, t) => deleteEvent(g, id, t), 'del', later).game?.exported).toBeUndefined();
+    expect(applyUpdate(s0, (g, t) => moveFrom(g, id, 2, t), 'move', later).game?.exported).toBeUndefined();
+  });
+  it('Reopen after the export marks the files not saved, and ending again does not bring them back', () => {
+    let s = applyUpdate(ended(), (g, t) => reopenGame(g, t), 'Reopened game', later);
+    expect(s.game?.exported).toBeUndefined();
+    s = applyUpdate(s, (g, t) => endGame(g, t), 'End game', later);
+    expect(isExported(s.game!)).toBe(false);
+  });
+  it('saving a check after the export marks the files not saved (the Book CSV holds the checks)', () => {
+    const s = applyUpdate(ended(), (g, t) => saveReconcile(g, 1, 0, null, 'late note', t), 'Noted Q1', later);
+    expect(s.game?.exported).toBeUndefined();
+  });
+  it('a check draft or another export is not a change to the files', () => {
+    const draft = { us: '9', opp: '', note: '', appAtOpen: 8 };
+    let s = applyUpdate(exported(), (g) => ({ ...g, checkDrafts: { 1: draft } }), '', later, false);
+    expect(isExported(s.game!)).toBe(true);
+    s = applyUpdate(s, (g, t) => markExported(g, 'book', t), 'Exported Book CSV', later, false);
+    expect(s.game?.exported).toEqual({ book: later.toISOString(), plays: now.toISOString() });
+  });
+  it('undoing an edit made after the export still reads not saved: undo errs toward exporting again', () => {
+    let s = applyUpdate(exported(), (g, t) => appendEvent(g, { type: 'TIMEOUT', timeoutKind: 'full' }, t), 'TO', later);
+    s = applyUndo(s).state;
+    expect(s.game?.events).toHaveLength(0);
+    expect(s.game?.exported).toBeUndefined();
+    expect(isExported(s.game!)).toBe(false);
   });
 });
 

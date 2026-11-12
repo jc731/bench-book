@@ -85,14 +85,21 @@ export function Setup({ store }: { store: GameStore }) {
   if (game && confirming) {
     const exported = isExported(game);
     const warning = notExportedText(game, new Date());
+    const exportBtn = { label: 'Export', onClick: () => store.setView('end') };
+    const discardBtn = { label: 'Discard and start new', onClick: discardAndStart };
+    // Exported: discarding loses nothing, so it is the amber primary. Not exported: Export is, and
+    // Discard reads as the danger it is.
     const primary = `${btn} bg-amber-400 text-slate-900`;
-    const discard = `${btn} border border-red-400 bg-slate-900 text-red-300`;
+    const danger = `${btn} border border-red-400 bg-slate-900 text-red-300`;
+    const [first, second] = exported
+      ? [{ ...discardBtn, class: primary }, { ...exportBtn, class: secondary }]
+      : [{ ...exportBtn, class: primary }, { ...discardBtn, class: danger }];
     return (
       <main class="mx-auto max-w-xl p-4">
         <h1 class="mb-4 text-2xl font-bold">Bench Book</h1>
         <div class="rounded-xl border border-amber-400 bg-slate-800 p-4">
           <p class="mb-4 text-lg">
-            A game is in progress (vs {game.info.opponent}). {exported ? 'It is exported.' : 'Export it first?'}
+            A game is in progress (vs {game.info.opponent}).{exported ? '' : ' Export it first?'}
           </p>
           {exported ? (
             <p class="mb-4 font-semibold text-emerald-300">Exported ✓</p>
@@ -102,15 +109,11 @@ export function Setup({ store }: { store: GameStore }) {
             )
           )}
           <div class="flex flex-col gap-3">
-            <button
-              class={exported ? `${btn} bg-amber-400 text-slate-900` : primary}
-              onClick={exported ? discardAndStart : () => store.setView('end')}
-            >
-              {exported ? 'Discard and start new' : 'Export'}
-            </button>
-            <button class={exported ? secondary : discard} onClick={exported ? () => store.setView('end') : discardAndStart}>
-              {exported ? 'Export' : 'Discard and start new'}
-            </button>
+            {[first, second].map((b) => (
+              <button key={b.label} class={b.class} onClick={b.onClick}>
+                {b.label}
+              </button>
+            ))}
             <button class={secondary} onClick={() => store.setView('live')}>
               Cancel
             </button>

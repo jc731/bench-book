@@ -56,7 +56,10 @@ export interface Game {
   createdAt: string;
   updatedAt: string;
   endedAt?: string;
-  /** When each CSV was last downloaded; the game counts as exported only when both were. */
+  /**
+   * When each CSV was last downloaded; the game counts as exported only when both were. Every edit
+   * after an export drops this (see `applyUpdate`), so a mark always means the file matches the game.
+   */
   exported?: ExportState;
   /**
    * What the scorer typed on a quarter check and left with Later, by period. Not a check: nothing

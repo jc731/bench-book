@@ -48,10 +48,11 @@ export function stripPeriodText(period: number, ended: boolean): string {
 }
 
 /** The bar's End slot: ends a quarter, opens the Q4/OT sheet that can end the game, or, once ended, opens Final. */
-export type EndSlot = { text: string; opens: 'endPeriod' | 'endSheet' | 'final' };
+/** `mark` is decoration after the text, hidden from screen readers so it is not part of the button's name. */
+export type EndSlot = { text: string; mark?: string; opens: 'endPeriod' | 'endSheet' | 'final' };
 
 export function endSlot(period: number, ended: boolean): EndSlot {
-  if (ended) return { text: 'Final ▸', opens: 'final' };
+  if (ended) return { text: 'Final', mark: '▸', opens: 'final' };
   if (mayEndGame(period)) return { text: `${endPeriodLabel(period)}…`, opens: 'endSheet' };
   return { text: endPeriodLabel(period), opens: 'endPeriod' };
 }

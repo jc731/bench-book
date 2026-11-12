@@ -37,7 +37,8 @@ describe('a finished game looks finished', () => {
     expect(endSlot(2, false)).toEqual({ text: 'End Q2', opens: 'endPeriod' });
     expect(endSlot(4, false)).toEqual({ text: 'End Q4…', opens: 'endSheet' });
     expect(endSlot(6, false)).toEqual({ text: 'End OT2…', opens: 'endSheet' });
-    expect(endSlot(5, true)).toEqual({ text: 'Final ▸', opens: 'final' });
+    // The ▸ is a mark beside the name, hidden from screen readers, so the button is named "Final".
+    expect(endSlot(5, true)).toEqual({ text: 'Final', mark: '▸', opens: 'final' });
   });
   it('stripPeriodText', () => {
     expect(stripPeriodText(5, false)).toBe('OT1');

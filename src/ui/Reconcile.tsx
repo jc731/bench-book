@@ -118,7 +118,8 @@ export function Reconcile({ store }: { store: GameStore }) {
         <span class="ml-auto rounded bg-slate-700 px-2 py-1 text-sm font-semibold" data-testid="check-status">{statusChipText(c.status)}</span>
       </header>
 
-      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 pb-24">
+      {/* Clear of the fixed bar (64px) and the feedback line above it (44px, more when an entry wraps). */}
+      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 pb-36">
         <p class="font-semibold text-white" data-testid="app-has">{appHasText(game, period)}</p>
 
         <label class="flex flex-col gap-1">

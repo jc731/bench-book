@@ -27,13 +27,15 @@ async function tap(page: Page, who: Locator, ...labels: string[]) {
 
 test('scripted game reconciles and exports', async ({ page }) => {
   await page.goto('/');
+  // What was typed on Setup survives a look at How to use and Back.
+  await page.getByLabel('Opponent (required)').fill('Test Opp');
   await page.getByRole('button', { name: 'First time here? How to use' }).click();
   await expect(page.getByText(`v${pkg.version}`)).toBeVisible();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'New game' })).toBeVisible();
+  await expect(page.getByLabel('Opponent (required)')).toHaveValue('Test Opp');
 
   // Setup
-  await page.getByLabel('Opponent (required)').fill('Test Opp');
   for (let i = 0; i < ROSTER.length; i++) {
     if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();
     const n = i + 1;
@@ -254,7 +256,9 @@ test('ended game: Final, reload, Reopen game', async ({ page }) => {
 
   await expect(stripPeriod(page, 'Final')).toBeVisible();
   await expect(stripPeriod(page, 'Q4')).toHaveCount(0);
-  await expect(endSlotButton(page, 'Final ▸')).toBeVisible();
+  // The ▸ shows but is not part of the name.
+  await expect(endSlotButton(page, 'Final')).toHaveText('Final ▸');
+  await expect(endSlotButton(page, 'Final')).toHaveAccessibleName('Final');
   await expect(page.getByText('Game ended', { exact: false })).toHaveCount(0);
   // The not-exported chip opens Final.
   await expect(notExportedChip(page)).toHaveText('Not exported');
@@ -266,7 +270,7 @@ test('ended game: Final, reload, Reopen game', async ({ page }) => {
   await page.reload();
   await expect(stripPeriod(page, 'Final')).toBeVisible();
   await expect(notExportedChip(page)).toBeVisible();
-  await endSlotButton(page, 'Final ▸').click();
+  await endSlotButton(page, 'Final').click();
   await expect(page.getByRole('heading', { name: 'Final' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'End game early' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Reopen game' }).click();
@@ -274,7 +278,7 @@ test('ended game: Final, reload, Reopen game', async ({ page }) => {
   await expect(stripPeriod(page, 'Q4')).toBeVisible();
   await expect(stripPeriod(page, 'Final')).toHaveCount(0);
   await expect(endSlotButton(page, 'End Q4…')).toBeVisible();
-  await expect(endSlotButton(page, 'Final ▸')).toHaveCount(0);
+  await expect(endSlotButton(page, 'Final')).toHaveCount(0);
   await expect(notExportedChip(page)).toHaveCount(0);
   await expect(page.getByTestId('feedback-text')).toHaveText('Reopened game');
 });
@@ -305,7 +309,97 @@ test('a live game: Final / export, then End game early with a confirm', async ({
   await expect(page.getByRole('region', { name: 'Open issues' })).toContainText('Q1');
   await page.getByRole('button', { name: 'Back to game' }).click();
   await expect(stripPeriod(page, 'Final')).toBeVisible();
-  await expect(endSlotButton(page, 'Final ▸')).toBeVisible();
+  await expect(endSlotButton(page, 'Final')).toBeVisible();
+});
+
+test('New game over an exported game: Exported ✓, and Discard is the primary button', async ({ page }) => {
+  await onePlayerGame(page);
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Final / export' }).click();
+  await downloadCsv(page, page.getByRole('button', { name: 'Book CSV' }));
+  await downloadCsv(page, page.getByRole('button', { name: 'Plays CSV' }));
+  await page.getByRole('button', { name: 'New game' }).click();
+
+  await expect(page.getByText(/A game is in progress \(vs Test Opp\)\.$/)).toBeVisible();
+  await expect(page.getByText('Exported ✓', { exact: true })).toBeVisible();
+  const buttons = page.getByRole('main').getByRole('button');
+  await expect(buttons.first()).toHaveText('Discard and start new');
+  await expect(buttons.first()).toHaveClass(/bg-amber-400/);
+  await expect(page.getByRole('button', { name: 'Export', exact: true })).not.toHaveClass(/bg-amber-400/);
+});
+
+test('a play added after both exports marks both files not saved again', async ({ page }) => {
+  await onePlayerGame(page);
+  const exportState = (kind: 'book' | 'plays') => page.getByTestId(`export-state-${kind}`);
+  const openFinal = async () => {
+    await page.getByRole('button', { name: 'More' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Final / export' }).click();
+  };
+  const endEarly = async () => {
+    await page.getByRole('button', { name: 'End game early' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'End game', exact: true }).click();
+  };
+  const openCheck = (action = 'Check') =>
+    page.getByRole('region', { name: 'Open issues' }).getByRole('button', { name: action, exact: true });
+
+  // End with Q1 checked, so the only chip an ended game can show is the not-exported one.
+  await openFinal();
+  await endEarly();
+  await checkZero(page, openCheck(), 'Q1');
+  await downloadCsv(page, page.getByRole('button', { name: 'Book CSV' }));
+  await downloadCsv(page, page.getByRole('button', { name: 'Plays CSV' }));
+  await expect(exportState('book')).toHaveText('Book CSV ✓ saved');
+  await expect(exportState('plays')).toHaveText('Plays CSV ✓ saved');
+  await page.getByRole('button', { name: 'Back to game' }).click();
+  await expect(stripPeriod(page, 'Final')).toBeVisible();
+  await expect(notExportedChip(page)).toHaveCount(0);
+
+  // Reopen and add a play: the saved files no longer hold the game.
+  await endSlotButton(page, 'Final').click();
+  await page.getByRole('button', { name: 'Reopen game' }).click();
+  await tap(page, card(page, '4', 'Player One'), '+2');
+  await openFinal();
+  await expect(exportState('book')).toHaveText(/not saved/);
+  await expect(exportState('plays')).toHaveText(/not saved/);
+  await expect(exportState('book')).toHaveClass(/text-amber-300/);
+
+  // End again, with Q1 matched to the book (it now reads a mismatch), and the chip is back.
+  await endEarly();
+  await openCheck('Reopen').click();
+  await page.getByLabel(/Our points in Q1/).fill('2');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(exportState('plays')).toHaveText(/not saved/);
+  await page.getByRole('button', { name: 'Back to game' }).click();
+  await expect(notExportedChip(page)).toHaveText('Not exported');
+
+  // And New game asks to export first.
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'New game' }).click();
+  await expect(page.getByText(/A game is in progress/)).toBeVisible();
+  await expect(page.getByText('Exported ✓', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('button').first()).toHaveText('Export');
+});
+
+test('the check screen scrolls its note and last row clear of the feedback line', async ({ page }) => {
+  await onePlayerGame(page);
+  await tap(page, card(page, '4', 'Player One'), '+2');
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
+  await page.getByLabel(/Our points in Q1/).fill('5'); // a mismatch, so the plays list shows too
+  await expect(page.getByTestId('feedback-text')).not.toHaveText('');
+
+  const scroller = page.getByTestId('app-has').locator('..');
+  await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  const line = (await page.getByRole('status').filter({ has: page.getByTestId('feedback-text') }).boundingBox())!;
+  const viewport = page.viewportSize()!;
+  const note = (await page.getByRole('textbox', { name: 'Note' }).boundingBox())!;
+  expect(note.y).toBeGreaterThanOrEqual(0);
+  expect(note.y + note.height).toBeLessThanOrEqual(Math.min(line.y, viewport.height));
+  const last = (await scroller.evaluate((el) => {
+    const r = el.lastElementChild!.getBoundingClientRect();
+    return r.bottom;
+  }));
+  expect(last).toBeLessThanOrEqual(line.y);
 });
 
 test('Log: newest first, tap to fix, Delete and Undo', async ({ page }) => {

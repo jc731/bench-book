@@ -83,7 +83,10 @@ export function markExported(g: Game, kind: ExportKind, now: Date): Game {
   return { ...touch(g, now), exported: { ...g.exported, [kind]: now.toISOString() } };
 }
 
-/** Exported means both files were saved: the Book CSV alone loses the plays, the Plays CSV alone the checks. */
+/**
+ * Exported means both files were saved since the last edit (an edit drops the marks): the Book CSV alone
+ * loses the plays, the Plays CSV alone the checks.
+ */
 export function isExported(g: Game): boolean {
   return Boolean(g.exported?.book && g.exported?.plays);
 }

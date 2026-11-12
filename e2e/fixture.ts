@@ -75,7 +75,7 @@ export function ui(page: Page) {
       await expect(dialog()).toHaveCount(0);
     },
     /** The bottom bar's last row: Timeout, Undo, Log, the End slot and More, all on one line and at most 48px tall.
-     *  The End slot reads `End Qn` while the game is live, or the given text (`Final ▸` once it has ended). */
+     *  The End slot reads `End Qn` while the game is live, or the given name (`Final` once it has ended; its ▸ is hidden from screen readers). */
     async expectBarOneRow(endSlot?: string) {
       const end = endSlot === undefined ? { name: /^End (Q|OT)\d/ } : exact(endSlot);
       const names = [exact('Timeout'), { name: /^Undo/ }, exact('Log'), end, exact('More')];

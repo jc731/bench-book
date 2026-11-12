@@ -119,6 +119,7 @@ export function Live({ store }: { store: GameStore }) {
             onClick={() => (end.opens === 'final' ? openEnd() : end.opens === 'endSheet' ? setSheet('endPeriod') : doEndPeriod())}
           >
             {end.text}
+            {end.mark && <span aria-hidden="true"> {end.mark}</span>}
           </button>
           <button type="button" class={bar} aria-label="More" onClick={() => setSheet('menu')}>⋯</button>
         </div>

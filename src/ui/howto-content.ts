@@ -68,7 +68,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'export',
     title: 'Export',
     body: [
-      'Final / export, under the ⋯ button, saves the plays and book files, and never ends the game. Saved games clear from this phone after 72 hours.',
+      'Final / export, under the ⋯ button, saves the plays and book files, and never ends the game. Change the game after saving and the files read not saved yet: export again. Saved games clear from this phone after 72 hours.',
       'A quarter marked Not checked exports as pending. One marked Mismatch, with no note, exports as unresolved.',
     ],
   },

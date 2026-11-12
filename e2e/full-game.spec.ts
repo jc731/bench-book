@@ -339,7 +339,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.backToLive();
     // The game has ended, so the strip reads Final and the End slot opens Final.
     await app.expectStrip({ us: 32, opp: 31, period: 'Final', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 1, ot: 0 } });
-    await app.expectBarOneRow('Final ▸');
+    await app.expectBarOneRow('Final');
     await app.expectToast('Exported Book CSV');
     await app.expectToastNoUndo('Q4');
     await app.openEnd();
