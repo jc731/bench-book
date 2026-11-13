@@ -4,7 +4,7 @@ import { clearRoster, loadPrefs, loadRoster, saveRoster, savePrefs } from '../co
 import type { GameInfo, Player } from '../core/types';
 import { isExported } from '../core/reconcile';
 import { notExportedText } from './reconcile-logic';
-import { cleanRoster, MAX_PLAYERS, validateRoster } from './roster';
+import { cleanRoster, defaultOpponent, MAX_PLAYERS, opponentOrDefault, validateRoster } from './roster';
 import { Sheet } from './EventSheet';
 import { getStorage, type GameStore } from './store';
 import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
@@ -60,10 +60,7 @@ export function Setup({ store }: { store: GameStore }) {
   const setPlayer = (id: string, k: keyof Player, v: string) =>
     setRoster((r) => r.map((p) => (p.id === id ? { ...p, [k]: v } : p)));
 
-  const errors = [
-    ...(info.opponent.trim() === '' ? ['Opponent is required.'] : []),
-    ...validateRoster(roster),
-  ];
+  const errors = validateRoster(roster);
 
   const onStart = () => {
     setTried(true);
@@ -72,7 +69,7 @@ export function Setup({ store }: { store: GameStore }) {
     saveRoster(storage, clean);
     savePrefs(storage, { trackOpponentTaps: track });
     store.start({
-      ...newGame({ ...info, opponent: info.opponent.trim() }, clean, new Date()),
+      ...newGame({ ...info, opponent: opponentOrDefault(info.opponent, info.date) }, clean, new Date()),
       trackOpponentTaps: track,
     });
   };
@@ -136,23 +133,17 @@ export function Setup({ store }: { store: GameStore }) {
         First time here? How to use
       </button>
 
-      <div class="mb-6 flex items-end gap-2">
-        <label class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm text-slate-300">Opponent (required)</span>
-          <input class={input} value={info.opponent} onInput={(e) => setField('opponent', e.currentTarget.value)} />
-        </label>
-        <div class="flex shrink-0" role="group" aria-label="Home or away">
-          {(['home', 'away'] as const).map((h) => (
-            <button
-              type="button"
-              aria-pressed={info.homeAway === h}
-              class={`min-h-11 border px-3 font-semibold ${h === 'home' ? 'rounded-l-lg' : 'rounded-r-lg border-l-0'} ${info.homeAway === h ? 'border-amber-400 bg-amber-400 text-slate-900' : 'border-slate-500 bg-slate-800 text-white'}`}
-              onClick={() => setField('homeAway', h)}
-            >
-              {h === 'home' ? 'Home' : 'Away'}
-            </button>
-          ))}
-        </div>
+      <div class="mb-6 flex" role="group" aria-label="Home or away">
+        {(['home', 'away'] as const).map((h) => (
+          <button
+            type="button"
+            aria-pressed={info.homeAway === h}
+            class={`min-h-11 flex-1 border px-3 font-semibold ${h === 'home' ? 'rounded-l-lg' : 'rounded-r-lg border-l-0'} ${info.homeAway === h ? 'border-amber-400 bg-amber-400 text-slate-900' : 'border-slate-500 bg-slate-800 text-white'}`}
+            onClick={() => setField('homeAway', h)}
+          >
+            {h === 'home' ? 'Home' : 'Away'}
+          </button>
+        ))}
       </div>
 
       <section class="mb-4">
@@ -203,6 +194,15 @@ export function Setup({ store }: { store: GameStore }) {
       <details class="mb-6 rounded-lg border border-slate-600 bg-slate-800/50 p-3">
         <summary class="min-h-11 cursor-pointer py-2 font-semibold">Game details</summary>
         <div class="mt-2 flex flex-col gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="text-sm text-slate-300">Opponent (optional)</span>
+            <input
+              class={input}
+              placeholder={defaultOpponent(info.date)}
+              value={info.opponent}
+              onInput={(e) => setField('opponent', e.currentTarget.value)}
+            />
+          </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm text-slate-300">Date</span>
             <input type="date" class={input} value={info.date} onInput={(e) => setField('date', e.currentTarget.value)} />

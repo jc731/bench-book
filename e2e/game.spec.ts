@@ -28,12 +28,13 @@ async function tap(page: Page, who: Locator, ...labels: string[]) {
 test('scripted game reconciles and exports', async ({ page }) => {
   await page.goto('/');
   // What was typed on Setup survives a look at How to use and Back.
-  await page.getByLabel('Opponent (required)').fill('Test Opp');
+  await page.getByText('Game details', { exact: true }).click();
+  await page.getByLabel('Opponent (optional)').fill('Test Opp');
   await page.getByRole('button', { name: 'First time here? How to use' }).click();
   await expect(page.getByText(`v${pkg.version}`)).toBeVisible();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'New game' })).toBeVisible();
-  await expect(page.getByLabel('Opponent (required)')).toHaveValue('Test Opp');
+  await expect(page.getByLabel('Opponent (optional)')).toHaveValue('Test Opp');
 
   // Setup
   for (let i = 0; i < ROSTER.length; i++) {
@@ -119,15 +120,14 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await expect(page.getByText(/A game is in progress/)).toBeVisible();
   await page.getByRole('button', { name: 'Discard and start new' }).click();
   await expect(page.getByLabel('Player 3 name')).toHaveValue('Player Three');
-  await page.getByLabel('Opponent (required)').fill('Second Opp');
   await page.getByRole('button', { name: 'Start game' }).click();
   await expect(score(0, 0)).toBeVisible();
 });
 
 test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Opponent (required)').fill('First Opp');
   await page.getByText('Game details', { exact: true }).click();
+  await page.getByLabel('Opponent (optional)').fill('First Opp');
   await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
   await page.getByLabel('Player 1 number').fill('4');
   await page.getByLabel('Player 1 name').fill('Player One');
@@ -149,7 +149,6 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
   // "Also keep their score" is remembered from the first game.
   await page.getByText('Game details', { exact: true }).click();
   await expect(page.getByLabel('Also keep their score (Opp +1/+2/+3)')).toBeChecked();
-  await page.getByLabel('Opponent (required)').fill('Second Opp');
   await page.getByRole('button', { name: 'Start game' }).click();
   await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
   await expect(page.getByText('Q1', { exact: true })).toBeVisible();
@@ -157,7 +156,6 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
 
 test('Clear saved roster: Cancel keeps it, Clear empties it', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Opponent (required)').fill('Clear Opp');
   await page.getByLabel('Player 1 number').fill('4');
   await page.getByLabel('Player 1 name').fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
@@ -180,7 +178,6 @@ test('Clear saved roster: Cancel keeps it, Clear empties it', async ({ page }) =
 
 test('reconcile can add a play to a period that has none', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Opponent (required)').fill('Add Opp');
   await page.getByLabel('Player 1 number').fill('4');
   await page.getByLabel('Player 1 name').fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
@@ -197,7 +194,6 @@ test('reconcile can add a play to a period that has none', async ({ page }) => {
 test('a long foul-out entry wraps whole beside the check chip and every card still fits', async ({ page }) => {
   const long = 'Player With A Very Long Nam'; // 27 characters
   await page.goto('/');
-  await page.getByLabel('Opponent (required)').fill('Test Opp');
   await page.getByText('Game details', { exact: true }).click();
   await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
   for (let i = 0; i < 7; i++) {
@@ -224,7 +220,6 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
 
 async function onePlayerGame(page: Page) {
   await page.goto('/');
-  await page.getByLabel('Opponent (required)').fill('Test Opp');
   await page.getByLabel('Player 1 number').fill('4');
   await page.getByLabel('Player 1 name').fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
@@ -320,7 +315,8 @@ test('New game over an exported game: Exported ✓, and Discard is the primary b
   await downloadCsv(page, page.getByRole('button', { name: 'Plays CSV' }));
   await page.getByRole('button', { name: 'New game' }).click();
 
-  await expect(page.getByText(/A game is in progress \(vs Test Opp\)\.$/)).toBeVisible();
+  // No opponent was typed, so the game is named for its date (MM-DD).
+  await expect(page.getByText(/A game is in progress \(vs \d{2}-\d{2}\)\.$/)).toBeVisible();
   await expect(page.getByText('Exported ✓', { exact: true })).toBeVisible();
   const buttons = page.getByRole('main').getByRole('button');
   await expect(buttons.first()).toHaveText('Discard and start new');
@@ -459,7 +455,6 @@ test("the check's Add-play sheet shows only what was added while it is open, and
 
 test('Log: a fix that changes the player and the quarter, with the plays after it, is one Undo', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Opponent (required)').fill('Test Opp');
   await page.getByLabel('Player 1 number').fill('4');
   await page.getByLabel('Player 1 name').fill('Player One');
   await page.getByRole('button', { name: 'Add player' }).click();

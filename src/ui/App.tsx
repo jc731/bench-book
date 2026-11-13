@@ -7,12 +7,15 @@ import { RunningScore } from './RunningScore';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
 import { registerUpdates } from './sw-update';
+import { useWakeLock } from './wake-lock';
 
 registerUpdates();
 
 export function App() {
   const store = useGameStore();
   const { saving, view } = store;
+  // The screen stays on through a live game on every view (Live, Log, a quarter check), not on Setup.
+  useWakeLock(Boolean(store.game && !store.game.endedAt && view !== 'setup'));
 
   return (
     <div class="flex h-dvh flex-col overflow-hidden bg-slate-900 text-white">

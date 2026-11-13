@@ -4,6 +4,7 @@ import {
   BONUS_TEXT, UNDO_CLEARED_LABEL, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
   stripPeriodText, undoAriaLabel,
 } from './live-logic';
+import { outReason } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
   period, spanFrom: period, anchorBook: 0, anchorApp: 0, bookTotal: null, appTotal: 0, bookSpan: null, appSpan: 0,
@@ -148,4 +149,16 @@ describe('feedbackLine', () => {
   it('shows the prompt alone with no entry', () =>
     expect(feedbackLine(banner, null, null)).toEqual({ entry: null, prompt: check }));
   it('is empty with nothing to say', () => expect(feedbackLine(null, null, null)).toEqual({ entry: null, prompt: null }));
+});
+
+describe('outReason', () => {
+  it('is null while the player can play, including at 4 fouls and 1 tech', () => {
+    expect(outReason(undefined)).toBeNull();
+    expect(outReason({ fouls: 4, techs: 1 })).toBeNull();
+  });
+  it('names 5 fouls, or 2 techs when the fouls are under 5', () => {
+    expect(outReason({ fouls: 5, techs: 0 })).toBe('5 fouls');
+    expect(outReason({ fouls: 2, techs: 2 })).toBe('2 techs');
+    expect(outReason({ fouls: 6, techs: 2 })).toBe('6 fouls');
+  });
 });

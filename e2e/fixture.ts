@@ -50,8 +50,8 @@ export function ui(page: Page) {
   return {
     /** Setup: opponent, our team, opponent taps on, and the whole roster. */
     async fillSetup(opponent: string, team: string) {
-      await page.getByLabel('Opponent (required)').fill(opponent);
       await page.getByText('Game details', { exact: true }).click();
+      await page.getByLabel('Opponent (optional)').fill(opponent);
       await page.getByLabel('Our team (optional)').fill(team);
       await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
       for (let i = 0; i < ROSTER.length; i++) {
@@ -70,7 +70,7 @@ export function ui(page: Page) {
     opp: (n: 1 | 2 | 3) => nav().getByRole('button', exact(`Opp +${n}`)).click(),
     /** The Bench card at the end of the player cards, then its one button. */
     async benchTech() {
-      await page.getByRole('button', exact('Bench')).click();
+      await page.getByRole('button', { name: /^Bench(, \d+ techs?)?$/ }).click();
       await dialog().getByRole('button', exact('Bench tech')).click();
       await expect(dialog()).toHaveCount(0);
     },
@@ -89,7 +89,7 @@ export function ui(page: Page) {
     async expectCardsFit() {
       const grid = page.getByTestId('player-grid');
       expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
-      const bench = (await page.getByRole('button', exact('Bench')).boundingBox())!;
+      const bench = (await page.getByRole('button', { name: /^Bench(, \d+ techs?)?$/ }).boundingBox())!;
       const line = (await page.getByTestId('feedback-text').boundingBox())!;
       expect(bench.y + bench.height).toBeLessThanOrEqual(line.y);
     },
@@ -105,6 +105,39 @@ export function ui(page: Page) {
       const el = page.getByTestId('feedback-text');
       expect(await el.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
     },
+    /** An out player's sheet: the warning shows and every play is grayed out. Closes with Done. */
+    async expectOutGuard(name: Name, reason: string) {
+      await card(name).click();
+      await expect(dialog().getByTestId('out-warning')).toContainText(`Out: ${reason}. Are you sure? This player is supposed to be out.`);
+      for (const p of ['+2', '+3', 'FT made', 'FT missed', 'Foul', 'Tech foul']) {
+        await expect(dialog().getByRole('button', exact(p))).toBeDisabled();
+      }
+      await dialog().getByRole('button', exact('Done')).click();
+      await expect(dialog()).toHaveCount(0);
+    },
+    /** Past the out warning on purpose, then one play. */
+    async anyway(name: Name, play: '+2' | '+3') {
+      await card(name).click();
+      await dialog().getByRole('button', exact('Enter a play anyway')).click();
+      await dialog().getByRole('button', exact(play)).click();
+      await expect(dialog()).toHaveCount(0);
+    },
+    /** The Bench card's count, as screen readers hear it. */
+    expectBenchTechs: (n: number) =>
+      expect(page.getByRole('button', { name: /^Bench/ })).toHaveAccessibleName(n === 0 ? 'Bench' : `Bench, ${n} tech${n === 1 ? '' : 's'}`),
+    /** Setup with the opponent left blank (it defaults to the game date as MM-DD). */
+    async fillSetupNoOpponent(team: string) {
+      await page.getByText('Game details', { exact: true }).click();
+      await page.getByLabel('Our team (optional)').fill(team);
+      await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
+      for (let i = 0; i < ROSTER.length; i++) {
+        if (i > 0) await page.getByRole('button', exact('Add player')).click();
+        await page.getByLabel(`Player ${i + 1} name`).fill(ROSTER[i].name);
+        await page.getByLabel(`Player ${i + 1} number`).fill(ROSTER[i].number);
+      }
+    },
+    /** The Date field's value as MM-DD: the opponent a blank Opponent field becomes. */
+    defaultOpponent: async () => (await page.getByLabel('Date').inputValue()).slice(5),
     undo: () => nav().getByRole('button', exact('Undo')).click(),
     /** ⋯ > How to use: an in-app page, so the game and Undo stay. */
     async openHowto() {

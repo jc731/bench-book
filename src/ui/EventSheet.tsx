@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import type { Player } from '../core/types';
-import { playButtonText, type PlayType, type Toast } from './live-logic';
+import { OUT_ANYWAY, OUT_WARNING, playButtonText, type PlayType, type Toast } from './live-logic';
 
 /** Bottom sheet over a dimmed backdrop; tapping the backdrop or pressing Escape closes it. */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ComponentChildren }) {
@@ -36,15 +36,20 @@ interface Props {
   onUndo: () => void;
   onRedo?: () => void;
   onClose: () => void;
+  /** Why the player is out (`5 fouls`), or null. An out player's plays are grayed until confirmed. */
+  out?: string | null;
 }
 
-export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose }: Props) {
+export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose, out = null }: Props) {
+  const [confirmed, setConfirmed] = useState(false);
+  const locked = out !== null && !confirmed;
   const btn = (t: PlayType) => (
     <button
       key={t}
       type="button"
+      disabled={locked}
       // Word labels (FT missed, Tech foul) drop to text-xl so they stay one line in a 117px button.
-      class={`min-h-14 rounded-xl bg-slate-600 font-bold active:bg-slate-500 ${t === 'FG2' || t === 'FG3' ? 'text-2xl' : 'text-xl'}`}
+      class={`min-h-14 rounded-xl bg-slate-600 font-bold active:bg-slate-500 disabled:opacity-30 ${t === 'FG2' || t === 'FG3' ? 'text-2xl' : 'text-xl'}`}
       onClick={() => onPlay(t)}
     >
       {playButtonText(t)}
@@ -52,6 +57,18 @@ export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose }: P
   );
   return (
     <Sheet title={`#${player.number} ${player.name}`.trim()} onClose={onClose}>
+      {locked && (
+        <div class="mb-3 rounded-lg border border-red-500 bg-slate-900 p-3" role="alert" data-testid="out-warning">
+          <p class="font-semibold text-red-300">Out: {out}. {OUT_WARNING}</p>
+          <button
+            type="button"
+            class="mt-2 min-h-11 w-full rounded-lg border border-red-400 font-semibold text-red-300"
+            onClick={() => setConfirmed(true)}
+          >
+            {OUT_ANYWAY}
+          </button>
+        </div>
+      )}
       <div class="grid grid-cols-3 gap-2">
         {ROW1.map(btn)}
         {ROW2.map(btn)}

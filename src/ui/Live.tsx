@@ -8,7 +8,7 @@ import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
   BENCH_TECH_TEXT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, oppLabel, playLabel, reconcileBanner,
-  timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
+  outReason, timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
 import { PlayerGrid } from './PlayerGrid';
@@ -87,7 +87,7 @@ export function Live({ store }: { store: GameStore }) {
     <div class="flex min-h-0 flex-1 flex-col">
       <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} ended={Boolean(game.endedAt)} derived={d} />
       <div data-testid="player-grid" class="min-h-0 flex-1 overflow-y-auto">
-        <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} onBench={() => setSheet('bench')} />
+        <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} onBench={() => setSheet('bench')} benchTechs={d.benchTechs} />
       </div>
 
       {/* The last entry, and a chip for the check prompt or else the not-exported warning. The bar's Undo is its Undo. */}
@@ -135,10 +135,13 @@ export function Live({ store }: { store: GameStore }) {
       </nav>
 
       {picked && (
-        <EventSheet player={picked} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onRedo={redo} onClose={() => setPicked(null)} />
+        <EventSheet player={picked} out={outReason(d.players.find((l) => l.playerId === picked.id))} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onRedo={redo} onClose={() => setPicked(null)} />
       )}
       {sheet === 'bench' && (
         <Sheet title="Bench" onClose={() => setSheet(null)}>
+          <p class="mb-2 text-sm text-slate-300" data-testid="bench-sheet-count">
+            Bench techs this game: {d.benchTechs}
+          </p>
           <button
             type="button"
             class={`${opt} w-full`}

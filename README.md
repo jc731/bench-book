@@ -11,9 +11,10 @@ page after the game.
 
 ## How a game works
 
-1. **Setup.** Enter the opponent, pick Home or Away, and enter your roster (name and number), then tap **Start game**.
-   **Game details** holds the date, your team name, the coach, scorer and timekeeper, and the
-   switch that also keeps the opponent's score. The roster is saved on the device for next time.
+1. **Setup.** Pick Home or Away and enter your roster (name and number), then tap **Start game**.
+   **Game details** holds the opponent (left blank, the game is named for its date, MM-DD), the
+   date, your team name, the coach, scorer and timekeeper, and the switch that also keeps the
+   opponent's score. The roster is saved on the device for next time.
 2. **Live.** Tap a player card, then `+2`, `+3`, `FT made`, `FT missed`, `Foul` or `Tech foul`.
    Bench technicals are on the **Bench** card after the players. Timeout, **Undo**, **Log** and
    **End Q** are on the bottom bar. One line above the bar shows what was just entered and stays
@@ -46,7 +47,7 @@ pnpm dev        # dev server
 pnpm build      # static build to dist/
 pnpm preview    # serve the built site
 pnpm test       # unit tests (vitest)
-pnpm test:e2e   # scripted game in a real browser (Playwright, iPhone 13 profile)
+pnpm test:e2e   # scripted games in a real browser (Playwright, iPhone 13 profile); the bonus game prints taps per quarter
 pnpm check      # the gate: astro check, tsc, unit tests
 pnpm howto:shots # refresh the How-to screenshots in public/howto/ (pnpm release runs it)
 ```
@@ -61,6 +62,8 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 ## Backlog
 
 - Tablet-size release test (after 1.0)
+- Opponent tracking, in steps: their fouls first (loosely tied to our free throws), then their
+  timeouts, then a full opponent roster with player stats. Setup will need an opponent roster.
 
 ## Deploy
 

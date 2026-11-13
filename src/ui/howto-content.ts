@@ -17,7 +17,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'tip-off',
     title: 'Before tip-off',
     body: [
-      'Enter the opponent and Home or Away, then your roster (number and name), and tap Start. The date, team, coach and extras such as keeping their points are under Game details.',
+      'Pick Home or Away, enter your roster (number and name), and tap Start. The opponent, date, team, coach and extras such as keeping their points are under Game details; left blank, the opponent is the date, for example 11-13.',
       'On iPhone, tap Share, then Add to Home Screen: it keeps your roster saved between games.',
     ],
   },
@@ -34,7 +34,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
   {
     id: 'timeouts',
     title: 'Timeouts and bench techs',
-    body: ['Timeout opens Full, 30 and OT. Bench techs are on the Bench card, after the last player.'],
+    body: ['Timeout opens Full, 30 and OT. Bench techs are on the Bench card, after the last player, which shows how many there have been.'],
   },
   {
     id: 'theirs',
@@ -76,7 +76,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'screen',
     title: 'Reading the screen',
     body: [
-      'Foul dots turn amber at 4 and red at OUT. The strip at the top shows the bonus and timeouts left.',
+      'Foul dots turn amber at 4 and red at OUT, and an out player\'s card is grayed: tapping it asks first. The strip at the top shows the bonus and timeouts left.',
       MARK_LEGEND,
     ],
     image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: the score, team fouls 5 with the bonus, and timeouts left at the top, and #12 with four amber foul dots.' },
@@ -85,7 +85,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'wrong',
     title: "If something's wrong",
     body: [
-      'A banner saying Not saving means this phone cannot store the game: keep the paper book current. A reload keeps your plays but clears Undo.',
+      'A banner saying Not saving means this phone cannot store the game: keep the paper book current. A reload keeps your plays but clears Undo. The screen stays on during a game where the phone allows it.',
       'When an update is ready, Setup shows an "Update available — reload" button.',
     ],
   },

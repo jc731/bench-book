@@ -7,11 +7,13 @@ interface Props {
   lines: PlayerLine[];
   onPick: (p: Player) => void;
   onBench: () => void;
+  benchTechs: number;
 }
 
-const border = { ok: 'border-slate-600', warn: 'border-amber-400', out: 'border-red-500' } as const;
+// An out player's card is grayed (still red-bordered) so a tap on it reads as a mistake before it is one.
+const border = { ok: 'border-slate-600', warn: 'border-amber-400', out: 'border-red-500 opacity-50' } as const;
 
-export function PlayerGrid({ roster, lines, onPick, onBench }: Props) {
+export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props) {
   return (
     <div class="grid grid-cols-2 gap-2 p-2 sm:grid-cols-3 lg:grid-cols-4">
       {roster.map((p, i) => {
@@ -48,10 +50,16 @@ export function PlayerGrid({ roster, lines, onPick, onBench }: Props) {
       })}
       <button
         type="button"
-        class="flex min-h-[76px] items-center justify-center rounded-xl border-2 border-dashed border-slate-500 bg-slate-900 p-2 text-xl font-bold active:bg-slate-700"
+        class={`flex min-h-[76px] flex-col items-center justify-center rounded-xl border-2 border-dashed bg-slate-900 p-2 text-xl font-bold active:bg-slate-700 ${benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
+        aria-label={benchTechs > 0 ? `Bench, ${countText(benchTechs, 'tech', 'techs')}` : 'Bench'}
         onClick={onBench}
       >
         Bench
+        {benchTechs > 0 && (
+          <span class="text-sm font-semibold text-amber-300" data-testid="bench-techs">
+            {countText(benchTechs, 'tech', 'techs')}
+          </span>
+        )}
       </button>
     </div>
   );

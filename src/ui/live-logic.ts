@@ -186,3 +186,14 @@ export const UNDO_CLEARED_LABEL = 'Undo (history clears when the app reloads —
 export function undoAriaLabel(canUndo: boolean, hasEvents: boolean): string | undefined {
   return !canUndo && hasEvents ? UNDO_CLEARED_LABEL : undefined;
 }
+
+/** Why a player is out, for the warning on their sheet: `5 fouls` or `2 techs`; null while they can play. */
+export function outReason(line: { fouls: number; techs: number } | undefined): string | null {
+  if (!line) return null;
+  if (line.fouls >= 5) return `${line.fouls} fouls`;
+  if (line.techs >= 2) return `${line.techs} techs`;
+  return null;
+}
+
+export const OUT_WARNING = 'Are you sure? This player is supposed to be out.';
+export const OUT_ANYWAY = 'Enter a play anyway';

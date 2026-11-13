@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Player } from '../core/types';
-import { cleanRoster, validateRoster } from './roster';
+import { cleanRoster, defaultOpponent, opponentOrDefault, validateRoster } from './roster';
 
 const P = (number: string, i = 0): Player => ({ id: String(i), number, name: `Player ${i}`, pos: '' });
 const many = (n: number) => Array.from({ length: n }, (_, i) => P(String(i + 1), i));
@@ -30,5 +30,18 @@ describe('cleanRoster', () => {
     expect(cleanRoster([{ id: 'a', number: ' 4 ', name: ' Player One ', pos: 'G' }])).toEqual([
       { id: 'a', number: '4', name: 'Player One', pos: '' },
     ]);
+  });
+});
+
+describe('opponentOrDefault', () => {
+  it('uses the typed opponent, trimmed', () => {
+    expect(opponentOrDefault('  Test Opp ', '2026-11-13')).toBe('Test Opp');
+  });
+  it('falls back to the game date as MM-DD when blank', () => {
+    expect(opponentOrDefault('   ', '2026-01-05')).toBe('01-05');
+    expect(defaultOpponent('2026-11-13')).toBe('11-13');
+  });
+  it('never leaves the opponent empty, even with no usable date', () => {
+    expect(opponentOrDefault('', '')).toBe('Opponent');
   });
 });
