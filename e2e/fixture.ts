@@ -70,7 +70,7 @@ export function ui(page: Page) {
     opp: (n: 1 | 2 | 3) => nav().getByRole('button', exact(`Opp +${n}`)).click(),
     /** The Bench card at the end of the player cards, then its one button. */
     async benchTech() {
-      await page.getByRole('button', { name: /^Bench(, \d+ techs?)?$/ }).click();
+      await page.getByRole('button', { name: /^Bench \/ coach tech(, \d+ techs?)?$/ }).click();
       await dialog().getByRole('button', exact('Bench tech')).click();
       await expect(dialog()).toHaveCount(0);
     },
@@ -89,7 +89,7 @@ export function ui(page: Page) {
     async expectCardsFit() {
       const grid = page.getByTestId('player-grid');
       expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
-      const bench = (await page.getByRole('button', { name: /^Bench(, \d+ techs?)?$/ }).boundingBox())!;
+      const bench = (await page.getByRole('button', { name: /^Bench \/ coach tech(, \d+ techs?)?$/ }).boundingBox())!;
       const line = (await page.getByTestId('feedback-text').boundingBox())!;
       expect(bench.y + bench.height).toBeLessThanOrEqual(line.y);
     },
@@ -124,7 +124,7 @@ export function ui(page: Page) {
     },
     /** The Bench card's count, as screen readers hear it. */
     expectBenchTechs: (n: number) =>
-      expect(page.getByRole('button', { name: /^Bench/ })).toHaveAccessibleName(n === 0 ? 'Bench' : `Bench, ${n} tech${n === 1 ? '' : 's'}`),
+      expect(page.getByRole('button', { name: /^Bench \/ coach tech/ })).toHaveAccessibleName(n === 0 ? 'Bench / coach tech' : `Bench / coach tech, ${n} tech${n === 1 ? '' : 's'}`),
     /** Setup with the opponent left blank (it defaults to the game date as MM-DD). */
     async fillSetupNoOpponent(team: string) {
       await page.getByText('Game details', { exact: true }).click();

@@ -14,6 +14,8 @@ const PLAY_TEXT: Record<PlayType, string> = {
 };
 
 export const BENCH_TECH_TEXT = 'Bench tech';
+/** The Bench card's label: says it records techs, so it is not mistaken for roster editing. */
+export const BENCH_CARD_TEXT = 'Bench / coach tech';
 
 const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30', ot: 'OT' };
 

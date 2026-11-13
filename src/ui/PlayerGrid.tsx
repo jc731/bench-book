@@ -1,6 +1,6 @@
 import type { PlayerLine } from '../core/derive';
 import type { Player } from '../core/types';
-import { countText } from './live-logic';
+import { BENCH_CARD_TEXT, countText } from './live-logic';
 
 interface Props {
   roster: Player[];
@@ -48,13 +48,16 @@ export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props
           </button>
         );
       })}
+      {/* Named for what it records, so it is not read as "edit the bench/roster". It fills the rest of
+          its row: beside the last player when the roster is odd (a full-width row there measured 38px
+          too tall for an iPhone 13 with 7 players), the whole row when it is even. */}
       <button
         type="button"
-        class={`flex min-h-[76px] flex-col items-center justify-center rounded-xl border-2 border-dashed bg-slate-900 p-2 text-xl font-bold active:bg-slate-700 ${benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
-        aria-label={benchTechs > 0 ? `Bench, ${countText(benchTechs, 'tech', 'techs')}` : 'Bench'}
+        class={`${roster.length % 2 === 0 ? 'col-span-2 min-h-12 justify-between' : 'min-h-[76px] flex-col justify-center gap-0 text-center'} flex items-center gap-2 rounded-xl border-2 border-dashed bg-slate-900 px-3 py-2 text-lg font-bold active:bg-slate-700 ${benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
+        aria-label={`${BENCH_CARD_TEXT}${benchTechs > 0 ? `, ${countText(benchTechs, 'tech', 'techs')}` : ''}`}
         onClick={onBench}
       >
-        Bench
+        <span>{BENCH_CARD_TEXT}</span>
         {benchTechs > 0 && (
           <span class="text-sm font-semibold text-amber-300" data-testid="bench-techs">
             {countText(benchTechs, 'tech', 'techs')}

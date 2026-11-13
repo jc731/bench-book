@@ -214,7 +214,7 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   expect((await entry.boundingBox())!.height).toBeGreaterThan(24);
   const grid = page.getByTestId('player-grid');
   expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
-  const bench = (await page.getByRole('button', { name: 'Bench', exact: true }).boundingBox())!;
+  const bench = (await page.getByRole('button', { name: 'Bench / coach tech', exact: true }).boundingBox())!;
   expect(bench.y + bench.height).toBeLessThanOrEqual((await entry.boundingBox())!.y);
 });
 

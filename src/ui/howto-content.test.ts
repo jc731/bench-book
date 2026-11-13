@@ -19,7 +19,7 @@ describe('how-to content', () => {
   it('keeps each section short', () => HOWTO_SECTIONS.forEach((s) => expect(s.body.length).toBeLessThanOrEqual(2)));
   it('gives every section a distinct id', () =>
     expect(new Set(HOWTO_SECTIONS.map((s) => s.id)).size).toBe(HOWTO_SECTIONS.length));
-  it('puts bench techs on the Bench card', () => expect(text('Timeouts and bench techs')).toMatch(/Bench card/));
+  it('puts bench techs on the Bench card', () => expect(text('Timeouts and bench techs')).toMatch(/Bench \/ coach tech card/));
   it('carries the iPhone home-screen tip and names Game details', () => {
     expect(text('Before tip-off')).toMatch(/Add to Home Screen/);
     expect(text('Before tip-off')).toMatch(/Game details/);
