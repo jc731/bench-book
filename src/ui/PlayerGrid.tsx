@@ -14,6 +14,7 @@ interface Props {
 const border = { ok: 'border-slate-600', warn: 'border-amber-400', out: 'border-red-500 opacity-50' } as const;
 
 export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props) {
+  const wide = roster.length % 2 === 0;
   return (
     <div class="grid grid-cols-2 gap-2 p-2 sm:grid-cols-3 lg:grid-cols-4">
       {roster.map((p, i) => {
@@ -53,7 +54,7 @@ export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props
           too tall for an iPhone 13 with 7 players), the whole row when it is even. */}
       <button
         type="button"
-        class={`${roster.length % 2 === 0 ? 'col-span-2 min-h-12 justify-between' : 'min-h-[76px] flex-col justify-center gap-0 text-center'} flex items-center gap-2 rounded-xl border-2 border-dashed bg-slate-900 px-3 py-2 text-lg font-bold active:bg-slate-700 ${benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
+        class={`${wide ? 'col-span-2 min-h-12 justify-between text-lg' : 'min-h-[76px] flex-col justify-center gap-0 text-center text-base'} flex items-center gap-2 rounded-xl border-2 border-dashed bg-slate-900 px-3 py-2 font-bold active:bg-slate-700 ${benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
         aria-label={`${BENCH_CARD_TEXT}${benchTechs > 0 ? `, ${countText(benchTechs, 'tech', 'techs')}` : ''}`}
         onClick={onBench}
       >
