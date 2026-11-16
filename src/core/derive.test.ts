@@ -232,3 +232,54 @@ describe('bonus carry-over at currentPeriod above 4', () => {
     expect(d.oppInBonus(g.currentPeriod)).toBe(true);
   });
 });
+
+describe('both teams', () => {
+  const us4: Player = { id: 'u4', number: '4', name: 'Player Four', pos: 'G' };
+  const th4: Player = { id: 't4', number: '4', name: 'Rival Four', pos: 'G' };
+  const th14: Player = { id: 't14', number: '14', name: 'Rival Fourteen', pos: 'F' };
+  const two = (): Game => newGame(info, [us4], now, [th4, th14]);
+
+  test('their FG2 scores for them only', () => {
+    const d = derive(add(two(), 1, { type: 'FG2', playerId: 't14', side: 'them' }));
+    expect(d.opp.total).toBe(2);
+    expect(d.opp.players[1].points).toBe(2);
+    expect(d.usTotal).toBe(0);
+    expect(d.players[0].points).toBe(0);
+  });
+
+  test('their foul on #4 counts for them, not our #4', () => {
+    const d = derive(add(two(), 1, { type: 'FOUL', playerId: 't4', side: 'them' }));
+    expect(d.opp.teamFoulsByPeriod[1]).toBe(1);
+    expect(d.teamFoulsByPeriod[1]).toBeUndefined();
+    expect(d.players[0].fouls).toBe(0);
+    expect(d.opp.players[0].fouls).toBe(1);
+  });
+
+  test('a no-number foul counts toward their team fouls and no line', () => {
+    const d = derive(add(two(), 1, { type: 'FOUL', side: 'them' }));
+    expect(d.opp.teamFoulsByPeriod[1]).toBe(1);
+    expect(d.opp.players.every((p) => p.fouls === 0)).toBe(true);
+  });
+
+  test('their timeout is theirs', () => {
+    const d = derive(add(two(), 1, { type: 'TIMEOUT', timeoutKind: 'full', side: 'them' }));
+    expect(d.opp.timeouts.full.used).toBe(1);
+    expect(d.timeouts.full.used).toBe(0);
+  });
+
+  test('five of their fouls put us in the bonus, not them', () => {
+    let g = two();
+    for (let i = 0; i < 5; i++) g = add(g, 2, { type: 'FOUL', side: 'them' });
+    const d = derive(g);
+    expect(d.usInBonus(2)).toBe(true);
+    expect(d.oppInBonus(2)).toBe(false);
+  });
+
+  test('legacy OPP_PTS adds to their total', () => {
+    const g = add(two(), 1, { type: 'OPP_PTS', oppPoints: 3 }, { type: 'FG2', playerId: 't4', side: 'them' });
+    const d = derive(g);
+    expect(d.oppTotal).toBe(5);
+    expect(d.opp.byPeriod).toEqual({ 1: 5 });
+    expect(d.oppByPeriod).toEqual({ 1: 5 });
+  });
+});

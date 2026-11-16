@@ -74,4 +74,13 @@ describe('runningScore', () => {
     g = { ...g, events: [g.events[1], g.events[0]] }; // array order reversed
     expect(runningScore(g).map((x) => x.score)).toEqual([3, 4]);
   });
+
+  test('their plays are ignored', () => {
+    let g: Game = newGame(info, roster, t0, [{ id: 't1', number: '1', name: 'Rival One', pos: 'G' }]);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p4' }, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 't1', side: 'them' }, t0);
+    const m = runningScore(g);
+    expect(m).toHaveLength(1);
+    expect(m[0].score).toBe(2);
+  });
 });

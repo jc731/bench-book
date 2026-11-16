@@ -1,4 +1,4 @@
-import { orderedEvents } from './events';
+import { orderedEvents, sideOf } from './events';
 import type { Game } from './types';
 
 export interface Mark {
@@ -22,6 +22,7 @@ export function runningScore(g: Game): Mark[] {
   const marks: Mark[] = [];
   let score = 0;
   for (const e of orderedEvents(g)) {
+    if (sideOf(e) === 'them') continue;
     if (e.type !== 'FG2' && e.type !== 'FG3' && e.type !== 'FTM') continue;
     const s = SCORING[e.type];
     score += s.pts;
