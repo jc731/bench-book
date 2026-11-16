@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Player } from '../core/types';
-import { cleanRoster, defaultOpponent, opponentOrDefault, validateRoster } from './roster';
+import { cleanOppRoster, validateOppRoster, cleanRoster, defaultOpponent, opponentOrDefault, validateRoster } from './roster';
 
 const P = (number: string, i = 0): Player => ({ id: String(i), number, name: `Player ${i}`, pos: '' });
 const many = (n: number) => Array.from({ length: n }, (_, i) => P(String(i + 1), i));
@@ -43,5 +43,17 @@ describe('opponentOrDefault', () => {
   });
   it('never leaves the opponent empty, even with no usable date', () => {
     expect(opponentOrDefault('', '')).toBe('Opponent');
+  });
+});
+
+describe('validateOppRoster', () => {
+  it('accepts an empty list and drops blank rows', () => {
+    expect(validateOppRoster([])).toEqual([]);
+    expect(validateOppRoster([P('', 1)].map((p) => ({ ...p, name: '' })))).toEqual([]);
+    expect(cleanOppRoster([{ id: 'a', number: ' ', name: '', pos: '' }, P('4', 2)])).toHaveLength(1);
+  });
+  it('needs a number when there is a name, and flags duplicates', () => {
+    expect(validateOppRoster([P('', 1)])).toEqual(['Every player needs a jersey number.']);
+    expect(validateOppRoster([P('4', 1), P('4', 2)])).toEqual(['Duplicate number: #4.']);
   });
 });

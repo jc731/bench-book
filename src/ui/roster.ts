@@ -19,6 +19,17 @@ export function validateRoster(players: Player[]): string[] {
   return errors;
 }
 
+/** Blank rows (no number, no name) are dropped; the rest are cleaned like ours. */
+export function cleanOppRoster(players: Player[]): Player[] {
+  return cleanRoster(players.filter((p) => p.number.trim() !== '' || (p.name ?? '').trim() !== ''));
+}
+
+/** Like validateRoster, but the opponent's list may be empty. */
+export function validateOppRoster(players: Player[]): string[] {
+  const kept = cleanOppRoster(players);
+  return kept.length === 0 ? [] : validateRoster(kept);
+}
+
 /** The roster as saved: trimmed, with no position (Setup no longer asks for one). */
 export function cleanRoster(players: Player[]): Player[] {
   return players.map((p) => ({ ...p, number: p.number.trim(), name: (p.name ?? '').trim(), pos: '' }));

@@ -38,7 +38,12 @@ function safeWrite(s: Storage, key: string, value: unknown): boolean {
  * old screen called that game exported.
  */
 export function migrateGame(g: Game): Game {
-  return migrateChecks(migrateExport(g));
+  return migrateOppRoster(migrateChecks(migrateExport(g)));
+}
+
+/** Games saved before 0.8 have no opponent roster. */
+function migrateOppRoster(g: Game): Game {
+  return Array.isArray(g.oppRoster) ? g : { ...g, oppRoster: [] };
 }
 
 function migrateExport(g: Game): Game {

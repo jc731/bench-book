@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { periodLabel, isOvertime, otCount } from './periods';
 import {
-  appendEvent, deleteEvent, editEvent, insertEventBefore, moveFrom, newGame, orderedEvents,
+  addPlayer, appendEvent, deleteEvent, editEvent, insertEventBefore, moveFrom, newGame, orderedEvents, sideName, sideOf,
 } from './events';
 import type { Game, GameInfo, Player } from './types';
 
@@ -260,5 +260,28 @@ describe('event log', () => {
     for (const r of results) expect(r.updatedAt).toBe(t1.toISOString());
     expect(frozen.updatedAt).toBe(t0.toISOString());
     expect(frozen.events).toHaveLength(3);
+  });
+});
+
+describe('sides and opponent roster', () => {
+  const ev = (side?: 'them') => ({ id: 'e', order: 0, period: 1, type: 'OPP_PTS' as const, enteredAt: '', side });
+  test('sideOf', () => {
+    expect(sideOf(ev(undefined))).toBe('us');
+    expect(sideOf(ev('them'))).toBe('them');
+  });
+  test('addPlayer adds to the named side only', () => {
+    const g = newGame(info, roster, new Date());
+    const h = addPlayer(g, 'them', { id: 'x', number: '14', name: '', pos: '' }, new Date());
+    expect(h.oppRoster.at(-1)?.number).toBe('14');
+    expect(h.roster).toEqual(g.roster);
+    expect(() => addPlayer(h, 'them', { id: 'y', number: '14', name: '', pos: '' }, new Date())).toThrow();
+  });
+  test('sideName', () => {
+    const g = newGame(info, roster, new Date());
+    expect(sideName(g, 'us')).toBe('Home');
+    expect(sideName(g, 'them')).toBe('Away');
+    const a = { ...g, info: { ...g.info, homeAway: 'away' as const } };
+    expect(sideName(a, 'us')).toBe('Away');
+    expect(sideName(a, 'them')).toBe('Home');
   });
 });

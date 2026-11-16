@@ -1,20 +1,45 @@
-import type { EventDraft, Game, GameEvent, GameInfo, Player } from './types';
+import type { EventDraft, Game, GameEvent, GameInfo, Player, Side } from './types';
 
 export function orderedEvents(g: Game): GameEvent[] {
   return [...g.events].sort((a, b) => a.order - b.order);
+}
+
+export function sideOf(e: GameEvent): Side {
+  return e.side === 'them' ? 'them' : 'us';
+}
+
+export function rosterOf(g: Game, side: Side): Player[] {
+  return side === 'them' ? g.oppRoster : g.roster;
+}
+
+export function homeSide(g: Game): Side {
+  return g.info.homeAway === 'home' ? 'us' : 'them';
+}
+
+export function sideName(g: Game, side: Side): 'Home' | 'Away' {
+  return side === homeSide(g) ? 'Home' : 'Away';
+}
+
+/** Adds a player to one side's roster; throws if that side already has the jersey number. */
+export function addPlayer(g: Game, side: Side, p: Player, now: Date): Game {
+  const n = p.number.trim();
+  if (rosterOf(g, side).some((q) => q.number.trim() === n)) throw new Error(`Duplicate number: #${n}`);
+  const key = side === 'them' ? 'oppRoster' : 'roster';
+  return { ...g, [key]: [...rosterOf(g, side), p], updatedAt: now.toISOString() };
 }
 
 function withEvents(g: Game, events: GameEvent[], now: Date): Game {
   return { ...g, events, updatedAt: now.toISOString() };
 }
 
-export function newGame(info: GameInfo, roster: Player[], now: Date): Game {
+export function newGame(info: GameInfo, roster: Player[], now: Date, oppRoster: Player[] = []): Game {
   const iso = now.toISOString();
   return {
     version: 1,
     id: crypto.randomUUID(),
     info,
     roster,
+    oppRoster,
     events: [],
     currentPeriod: 1,
     periods: [],

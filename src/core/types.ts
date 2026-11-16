@@ -24,6 +24,8 @@ export interface GameInfo {
   timer: string;
 }
 
+export type Side = 'us' | 'them';
+
 export interface GameEvent {
   id: string;
   order: number;
@@ -32,6 +34,8 @@ export interface GameEvent {
   playerId?: string;
   timeoutKind?: TimeoutKind;
   oppPoints?: 1 | 2 | 3;
+  /** Absent means ours; 'them' marks the opponent's play. */
+  side?: 'them';
   enteredAt: string; // ISO
   editedAt?: string;
 }
@@ -53,6 +57,8 @@ export interface Game {
   id: string;
   info: GameInfo;
   roster: Player[];
+  /** The opponent's players (may be empty); migrated to [] for older saves. */
+  oppRoster: Player[];
   events: GameEvent[];
   currentPeriod: number;
   periods: PeriodRecord[];

@@ -53,6 +53,7 @@ function game(updatedAt = T0.toISOString()): Game {
   return {
     version: 1,
     id: 'g1',
+    oppRoster: [],
     info: {
       team: 'Home Team',
       opponent: 'Away Team',
@@ -280,5 +281,15 @@ describe('prefs', () => {
     expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
     s.setItem(PREFS_KEY, '{"trackOpponentTaps":"yes"}');
     expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
+  });
+});
+
+describe('migrateGame (opponent roster)', () => {
+  it('fills oppRoster with [] and leaves events alone', () => {
+    const { oppRoster: _o, ...rest } = game();
+    const old = { ...rest, events: [{ id: 'e', order: 0, period: 1, type: 'OPP_PTS', oppPoints: 2, enteredAt: '' }] } as unknown as Game;
+    const m = migrateGame(old);
+    expect(m.oppRoster).toEqual([]);
+    expect(m.events).toBe(old.events);
   });
 });
