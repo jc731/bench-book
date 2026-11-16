@@ -8,3 +8,6 @@ playwright-report
 # Local Netlify folder
 .netlify
 .playwright-mcp/
+
+# Brainstorming mockups (visual companion)
+.superpowers/
