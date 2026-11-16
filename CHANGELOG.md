@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-16
+
 - Colors have one job each. Amber now only warns (4 fouls, the bonus, a check that doesn't match, a file not saved). The action to take is blue: End Q1, Check, Undo, Redo, and the Check chip after a quarter. End Q4 and OT stay red. A player's first three fouls show as gray dots, turning amber at the 4th.
 - Start game and the new-game screen's main button are white, like every other main button.
 - The Final score shows one team per row with its score at the right, so a long team name wraps inside its own row instead of splitting the score.
