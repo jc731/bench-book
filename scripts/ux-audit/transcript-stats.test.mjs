@@ -149,7 +149,25 @@ describe('analyzeTranscript', () => {
     expect(r.void).toBe(false);
     expect(r.totalActions).toBe(0);
     expect(ALLOWED_TOOLS).not.toContain('ToolSearch');
-    expect(HARMLESS_TOOLS).toEqual(['ToolSearch']);
+    expect(HARMLESS_TOOLS).toEqual(['ToolSearch', 'SubagentHandback']);
+  });
+
+  it('SubagentHandback (the final report) is allowed, not an action, and not counted to the event', () => {
+    const r = analyzeTranscript(
+      jsonl(line(text('Event 44:'), ux('browser_click')), line(tool('SubagentHandback', { message: 'All 44 events done.' }))),
+      { appUrl: APP },
+    );
+    expect(r.void).toBe(false);
+    expect(r.reasons).toEqual([]);
+    expect(r.totalActions).toBe(1);
+    expect(r.perEvent[44].actions).toBe(1);
+    expect(r.toolCounts.SubagentHandback).toBeUndefined();
+    expect(ALLOWED_TOOLS).not.toContain('SubagentHandback');
+  });
+
+  it('a look-alike of the handback tool is still void', () => {
+    const r = analyzeTranscript(jsonl(line(tool('mcp__other__SubagentHandback'))), { appUrl: APP });
+    expect(r.reasons).toEqual(['disallowed tool: mcp__other__SubagentHandback']);
   });
 
   describe('prompt check', () => {

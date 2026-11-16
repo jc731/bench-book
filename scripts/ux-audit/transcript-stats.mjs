@@ -18,8 +18,9 @@ export const ALLOWED_TOOLS = [
   'browser_handle_dialog',
 ];
 
-// Deferred tool loading only returns schemas: allowed, never an action, never in ALLOWED_TOOLS.
-export const HARMLESS_TOOLS = ['ToolSearch'];
+// Allowed, never an action, never in ALLOWED_TOOLS: deferred tool loading only returns
+// schemas, and SubagentHandback is how the harness has a subagent return its final report.
+export const HARMLESS_TOOLS = ['ToolSearch', 'SubagentHandback'];
 
 // Looking and waiting are not actions.
 const NON_ACTIONS = new Set(['browser_snapshot', 'browser_take_screenshot', 'browser_wait_for']);
