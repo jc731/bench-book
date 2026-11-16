@@ -1,18 +1,18 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
-import { appendEvent, sideName } from '../core/events';
-import { periodLabel, isOvertime } from '../core/periods';
+import { appendEvent, homeSide, rosterOf, sideName } from '../core/events';
+import { periodLabel } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
-import type { EventDraft, Player, TimeoutKind } from '../core/types';
+import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, oppLabel, playLabel, who, reconcileBanner,
-  outReason, timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
+  BENCH_TECH_TEXT, BONUS_AT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, who, reconcileBanner,
+  outReason, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
-import { PlayerGrid } from './PlayerGrid';
 import { StatusStrip } from './StatusStrip';
+import { TeamHalf } from './TeamHalf';
 import type { GameStore } from './store';
 
 const barBase = 'min-h-12 rounded-lg bg-slate-800 px-1 text-sm font-semibold active:bg-slate-700 disabled:opacity-40';
@@ -25,17 +25,21 @@ const endTone = {
   final: 'border border-slate-500',
 } as const;
 
-type SheetKind = 'timeout' | 'endPeriod' | 'menu' | 'bench' | null;
+type SheetKind = 'endPeriod' | 'menu' | 'bench' | null;
+/** Whose play sheet is open: a player's card (`p`), or a team's + Play card (`p` null, no number). */
+type Picked = { side: Side; p: Player | null };
 
 export function Live({ store }: { store: GameStore }) {
   const { game, toast, update, undo, redo, canUndo, setView, openReconcile, openHowto } = store;
-  const [picked, setPicked] = useState<Player | null>(null);
+  const [picked, setPicked] = useState<Picked | null>(null);
   const [sheet, setSheet] = useState<SheetKind>(null);
-  // The feedback present when a player's sheet opened: the sheet shows only what came after it.
+  // The Bench sheet's team.
+  const [benchSide, setBenchSide] = useState<Side>('us');
+  // The feedback present when a play sheet opened: the sheet shows only what came after it.
   const sheetOpenedWith = useRef<Toast | null>(null);
-  const pick = (p: Player) => {
+  const pick = (side: Side, p: Player | null) => {
     sheetOpenedWith.current = toast;
-    setPicked(p);
+    setPicked({ side, p });
   };
 
   if (!game) return null;
@@ -44,21 +48,35 @@ export function Live({ store }: { store: GameStore }) {
   const banner = reconcileBanner(openIssues(game));
 
   const add = (draft: EventDraft, label: string) => update((g, now) => appendEvent(g, draft, now), label);
-  const usTag = sideName(game, 'us');
-  const teamFouls = d.teamFoulsForBonus(period);
+  const teamOf = (side: Side) => (side === 'us' ? d.us : d.opp);
+  // Absent means ours, so only their events carry a side.
+  const sided = (side: Side): Pick<EventDraft, 'side'> => (side === 'them' ? { side: 'them' } : {});
+  const lineOf = (pk: Picked) => (pk.p ? teamOf(pk.side).players.find((l) => l.playerId === pk.p!.id) : undefined);
   const play = (type: PlayType) => {
     if (!picked) return;
-    const line = d.players.find((l) => l.playerId === picked.id);
-    const label =
-      type === 'FOUL' || type === 'TECH'
-        ? foulLabel(type, { player: { p: picked, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 }, teamFouls, tag: usTag })
-        : playLabel(type, who(picked, usTag));
-    add({ type, playerId: picked.id }, label);
+    const { side, p } = picked;
+    const tag = sideName(game, side);
+    const teamFouls = teamOf(side).teamFoulsForBonus(period);
+    const line = lineOf(picked);
+    let label: string;
+    if (type !== 'FOUL' && type !== 'TECH') label = playLabel(type, who(p, tag));
+    else if (p) label = foulLabel(type, { player: { p, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 }, teamFouls, tag });
+    else {
+      // A foul with no number: the team's, toward its bonus like any other.
+      const base = playLabel(type, who(null, tag));
+      label = teamFouls + 1 === BONUS_AT ? `${base} — bonus` : base;
+    }
+    // + Play records the team's play with no number. Task 8 puts the Whose number? prompt here,
+    // before the play is added, for a team that has not chosen Stop asking.
+    add({ type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, label);
     if (type !== 'FTM' && type !== 'FTX') setPicked(null);
   };
-  const timeout = (kind: TimeoutKind) => {
-    add({ type: 'TIMEOUT', timeoutKind: kind }, timeoutLabel(kind, usTag));
-    setSheet(null);
+  // One tap takes the timeout, at zero too (the count shown never drops below 0). Task 8 guards zero.
+  const timeout = (side: Side, kind: TimeoutKind) =>
+    add({ type: 'TIMEOUT', timeoutKind: kind, ...sided(side) }, timeoutLabel(kind, sideName(game, side)));
+  const openBench = (side: Side) => {
+    setBenchSide(side);
+    setSheet('bench');
   };
   const doEndPeriod = () => {
     update((g, now) => endPeriod(g, now), endPeriodLabel(period));
@@ -79,16 +97,42 @@ export function Live({ store }: { store: GameStore }) {
     setView('end');
   };
 
-  const timeoutKinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
   const end = endSlot(period, Boolean(game.endedAt));
   const unexported = notExportedText(game, new Date());
   const line = feedbackLine(banner, unexported, toast);
+  // Home always left and light, Away right and dark; only the US tag changes between home and away nights.
+  const home = homeSide(game);
+  const away: Side = home === 'us' ? 'them' : 'us';
+  const total = (side: Side) => (side === 'us' ? d.usTotal : oppTotal(game));
+  // A team shoots when the other team is in the bonus: our fouls put them there, theirs put us there.
+  const shoots = (side: Side) => (side === 'us' ? d.usInBonus(period) : d.oppInBonus(period));
+  const benchTeam = teamOf(benchSide);
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
-      <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} ended={Boolean(game.endedAt)} derived={d} oppTag={sideName(game, 'them')} />
-      <div data-testid="player-grid" class="min-h-0 flex-1 overflow-y-auto">
-        <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} onBench={() => setSheet('bench')} benchTechs={d.benchTechs} />
+      <StatusStrip
+        home={total(home)}
+        away={total(away)}
+        period={period}
+        ended={Boolean(game.endedAt)}
+        shooters={{ home: shoots(home), away: shoots(away) }}
+      />
+      <div class="grid min-h-0 flex-1 grid-cols-2">
+        {[home, away].map((side) => (
+          <TeamHalf
+            key={side}
+            side={sideName(game, side)}
+            tone={side === home ? 'light' : 'dark'}
+            isUs={side === 'us'}
+            roster={rosterOf(game, side)}
+            team={teamOf(side)}
+            period={period}
+            onPick={(p) => pick(side, p)}
+            onTeamPlay={() => pick(side, null)}
+            onBench={() => openBench(side)}
+            onTimeout={(k) => timeout(side, k)}
+          />
+        ))}
       </div>
 
       {/* The last entry, and a chip for the check prompt or else the not-exported warning. The bar's Undo is its Undo. */}
@@ -100,17 +144,7 @@ export function Live({ store }: { store: GameStore }) {
       />
 
       <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-3">
-        {game.trackOpponentTaps && (
-          <div class="grid grid-cols-3 gap-2">
-            {([1, 2, 3] as const).map((n) => (
-              <button key={n} type="button" class={bar} onClick={() => add({ type: 'OPP_PTS', oppPoints: n }, oppLabel(n))}>
-                Opp +{n}
-              </button>
-            ))}
-          </div>
-        )}
-        <div class="grid grid-cols-5 gap-2">
-          <button type="button" class={bar} onClick={() => setSheet('timeout')}>Timeout</button>
+        <div class="grid grid-cols-4 gap-2">
           <button
             type="button"
             class={bar}
@@ -136,34 +170,33 @@ export function Live({ store }: { store: GameStore }) {
       </nav>
 
       {picked && (
-        <EventSheet player={picked} out={outReason(d.players.find((l) => l.playerId === picked.id))} toast={toast === sheetOpenedWith.current ? null : toast} onPlay={play} onUndo={undo} onRedo={redo} onClose={() => setPicked(null)} />
+        <EventSheet
+          player={picked.p}
+          title={picked.p ? undefined : sideName(game, picked.side)}
+          out={outReason(lineOf(picked))}
+          toast={toast === sheetOpenedWith.current ? null : toast}
+          onPlay={play}
+          onUndo={undo}
+          onRedo={redo}
+          onClose={() => setPicked(null)}
+        />
       )}
       {sheet === 'bench' && (
-        <Sheet title="Bench" onClose={() => setSheet(null)}>
+        <Sheet title={`${sideName(game, benchSide)} bench`} onClose={() => setSheet(null)}>
           <p class="mb-2 text-sm text-slate-300" data-testid="bench-sheet-count">
-            Bench techs this game: {d.benchTechs}
+            Bench techs this game: {benchTeam.benchTechs}
           </p>
           <button
             type="button"
             class={`${opt} w-full`}
             onClick={() => {
-              add({ type: 'BENCH_TECH' }, foulLabel('BENCH_TECH', { player: null, teamFouls, tag: usTag }));
+              const tag = sideName(game, benchSide);
+              add({ type: 'BENCH_TECH', ...sided(benchSide) }, foulLabel('BENCH_TECH', { player: null, teamFouls: benchTeam.teamFoulsForBonus(period), tag }));
               setSheet(null);
             }}
           >
             {BENCH_TECH_TEXT}
           </button>
-        </Sheet>
-      )}
-      {sheet === 'timeout' && (
-        <Sheet title="Timeout" onClose={() => setSheet(null)}>
-          <div class={`grid gap-2 ${timeoutKinds.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            {timeoutKinds.map((k) => (
-              <button key={k} type="button" class={opt} onClick={() => timeout(k)}>
-                {timeoutKindText(k)}
-              </button>
-            ))}
-          </div>
         </Sheet>
       )}
       {sheet === 'endPeriod' && (

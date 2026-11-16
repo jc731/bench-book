@@ -84,8 +84,9 @@ owner's games, each team's scorer keeps both teams.
 - Opponent team stats on the live screen: their fouls (and so our bonus), their timeouts,
   their points by player number. Team-level stats first (0.6/0.7), then the opponent roster.
 - Active lineup with substitutions: the live screen shows only who is on the floor, and a
-  fouled-out player prompts a sub. This is also the fix for large rosters: 14 players measured
-  750 px of cards in 474 px of screen (design audit v0.5.0, D1).
+  fouled-out player prompts a sub. This is also the fix for large rosters: since 0.8 each team
+  has half the screen, and an iPhone 13 fits 10 players (64 px cards, 506 px half with + Play,
+  Bench and timeouts, no slack); 11 or more scroll inside their half (design audit v0.5.0, D1).
 - Both teams in the Book CSV, and the quarter check compares both scores.
 
 **After 1.0 (1.x):**

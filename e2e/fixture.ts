@@ -28,16 +28,25 @@ export type Status = keyof typeof STATUS;
 
 /** Timeouts left; `ot` only in an OT period (one OT timeout per OT period, so OT1 has 1). */
 interface TimeoutsLeft { full: number; thirty: number; ot?: number }
-export const timeoutsText = (t: TimeoutsLeft) =>
-  `TO left: ${[`Full ${t.full}`, `30s ${t.thirty}`, ...(t.ot === undefined ? [] : [`OT ${t.ot}`])].join(' · ')}`;
+/** The timeout buttons under a team's Bench card, as they read: `Full: 2`, `30s: 1`, `OT: 1`. */
+export const timeoutButtons = (t: TimeoutsLeft) =>
+  [`Full: ${t.full}`, `30s: ${t.thirty}`, ...(t.ot === undefined ? [] : [`OT: ${t.ot}`])];
+const TIMEOUT_KIND = { Full: 'Full', '30s': '30s', OT: 'OT' } as const;
 
-export function ui(page: Page) {
+export type Side = 'Home' | 'Away';
+const other = (s: Side): Side => (s === 'Home' ? 'Away' : 'Home');
+const BENCH = /^Bench \/ coach tech(, \d+ techs?)?$/;
+
+/** `ours` is the half our team is on: Home on a home game (every scripted game is one). */
+export function ui(page: Page, ours: Side = 'Home') {
   const dialog = () => page.getByRole('dialog');
   const strip = () => page.getByRole('banner');
   const nav = () => page.getByRole('navigation');
   const exact = (name: string) => ({ name, exact: true });
+  /** One team's half of the live screen: its cards, + Play, Bench card and timeout buttons. */
+  const half = (side: Side) => page.getByRole('region', exact(side));
 
-  const card = (name: Name) => page.getByRole('button', { name: new RegExp(`^#${numberOf(name)} ${name},`) });
+  const card = (name: Name) => half(ours).getByRole('button', { name: new RegExp(`^#${numberOf(name)} ${name},`) });
 
   /** Taps a player, then each play button. FT buttons keep the sheet open for the pair, so close it with Done. */
   async function onPlayer(name: Name, plays: string[], closeWithDone: boolean) {
@@ -75,31 +84,40 @@ export function ui(page: Page) {
     ft: (name: Name, ...made: boolean[]) => onPlayer(name, made.map((m) => (m ? 'FT made' : 'FT missed')), true),
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
     tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
-    opp: (n: 1 | 2 | 3) => nav().getByRole('button', exact(`Opp +${n}`)).click(),
-    /** The Bench card at the end of the player cards, then its one button. */
-    async benchTech() {
-      await page.getByRole('button', { name: /^Bench \/ coach tech(, \d+ techs?)?$/ }).click();
+    half,
+    /** Points for the other team with no number, through their + Play: 1 is an FT made (then Done), 2 a +2, 3 a +3. */
+    async opp(n: 1 | 2 | 3) {
+      await half(other(ours)).getByRole('button', exact('+ Play')).click();
+      await expect(dialog()).toHaveAccessibleName(other(ours));
+      await dialog().getByRole('button', exact(n === 1 ? 'FT made' : `+${n}`)).click();
+      if (n === 1) await dialog().getByRole('button', exact('Done')).click();
+      await expect(dialog()).toHaveCount(0);
+    },
+    /** A half's Bench card, then its one button. */
+    async benchTech(side: Side = ours) {
+      await half(side).getByRole('button', { name: BENCH }).click();
       await dialog().getByRole('button', exact('Bench tech')).click();
       await expect(dialog()).toHaveCount(0);
     },
-    /** The bottom bar's last row: Timeout, Undo, Log, the End slot and More, all on one line and at most 48px tall.
+    /** The bottom bar: Undo, Log, the End slot and More, all on one line and at most 48px tall.
      *  The End slot reads `End Qn` while the game is live, or the given name (`Final` once it has ended; its ▸ is hidden from screen readers). */
     async expectBarOneRow(endSlot?: string) {
       const end = endSlot === undefined ? { name: /^End (Q|OT)\d/ } : exact(endSlot);
-      const names = [exact('Timeout'), { name: /^Undo/ }, exact('Log'), end, exact('More')];
+      const names = [{ name: /^Undo/ }, exact('Log'), end, exact('More')];
       const boxes = [];
       for (const n of names) boxes.push((await nav().getByRole('button', n).boundingBox())!);
       expect(new Set(boxes.map((b) => b.y)).size).toBe(1);
       for (const b of boxes) expect(b.height).toBeLessThanOrEqual(48);
-      expect(await nav().getByRole('button').filter({ hasNotText: /^Opp \+/ }).count()).toBe(5);
+      expect(await nav().getByRole('button').count()).toBe(4);
     },
-    /** Every card, Bench included, shows with no scrolling, above the feedback line. */
+    /** Each half shows all of its cards, + Play, Bench and timeouts with no scrolling, above the feedback line. */
     async expectCardsFit() {
-      const grid = page.getByTestId('player-grid');
-      expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
-      const bench = (await page.getByRole('button', { name: /^Bench \/ coach tech(, \d+ techs?)?$/ }).boundingBox())!;
       const line = (await page.getByTestId('feedback-text').boundingBox())!;
-      expect(bench.y + bench.height).toBeLessThanOrEqual(line.y);
+      for (const side of ['Home', 'Away'] as const) {
+        expect(await half(side).evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+        const box = (await half(side).boundingBox())!;
+        expect(box.y + box.height).toBeLessThanOrEqual(line.y);
+      }
     },
     /** Opens a player's sheet, checks Done is the white primary button, then taps the dimmed backdrop. */
     async dismissByBackdrop(name: Name) {
@@ -139,7 +157,7 @@ export function ui(page: Page) {
     },
     /** The Bench card's count, as screen readers hear it. */
     expectBenchTechs: (n: number) =>
-      expect(page.getByRole('button', { name: /^Bench \/ coach tech/ })).toHaveAccessibleName(n === 0 ? 'Bench / coach tech' : `Bench / coach tech, ${n} tech${n === 1 ? '' : 's'}`),
+      expect(half(ours).getByRole('button', { name: /^Bench \/ coach tech/ })).toHaveAccessibleName(n === 0 ? 'Bench / coach tech' : `Bench / coach tech, ${n} tech${n === 1 ? '' : 's'}`),
     /** Setup with the opponent left blank (it defaults to the game date as MM-DD). */
     async fillSetupNoOpponent(team: string) {
       await page.getByText('Game details', { exact: true }).click();
@@ -163,9 +181,9 @@ export function ui(page: Page) {
       await page.getByRole('button', exact('Back')).click();
       await expect(page.getByRole('heading', exact('How to use'))).toHaveCount(0);
     },
-    async timeout(kind: 'Full' | '30s' | 'OT') {
-      await nav().getByRole('button', exact('Timeout')).click();
-      await dialog().getByRole('button', exact(kind)).click();
+    /** One tap on a team's timeout button (`Full: 2`), under its Bench card. */
+    async timeout(kind: 'Full' | '30s' | 'OT', side: Side = ours) {
+      await half(side).getByRole('button', { name: new RegExp(`^${TIMEOUT_KIND[kind]}: \\d+$`) }).click();
       await expect(dialog()).toHaveCount(0);
     },
     /** End Q1–Q3 directly. */
@@ -222,7 +240,8 @@ export function ui(page: Page) {
     logSection: (label: string) => page.getByRole('region', exact(label)),
     /** A Log row's text: `#44 Player Seven · +2`. */
     playText: (name: Name, play: '+2' | '+3') => `#${numberOf(name)} ${name} (Home) · ${play}`,
-    oppText: (n: 1 | 2 | 3) => `Opp +${n}`,
+    /** A Log row for the other team's no-number play from opp(n). Task 9 gives these rows their team name. */
+    oppText: (n: 1 | 2 | 3) => `#? (${other(ours)}) · ${n === 1 ? 'FT made' : `+${n}`}`,
     /** The Log row starting with `text` (an "edited" tag may follow it). */
     logRow: (scope: Locator, text: string) =>
       scope.getByRole('button', { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }),
@@ -280,17 +299,19 @@ export function ui(page: Page) {
     expectOppHint: (label: string, taps: number) =>
       expect(page.getByLabel(new RegExp(`Their game score after ${label}`))).toHaveAttribute('placeholder', `${taps} from taps`),
 
-    /** The status strip: score, period, team fouls, bonus chip, timeouts left. */
+    /** The strip (score home–away, period, the bonus badge) and our half's header and timeout buttons. */
     async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {
       const h = strip();
-      // Nothing on the strip may wrap at 390px: it is two lines high in every state.
+      // Nothing on the strip may wrap at 390px: it is one line high in every state.
       const box = await h.boundingBox();
       expect(box!.height).toBeLessThanOrEqual(STRIP_MAX_HEIGHT);
-      await expect(h.getByLabel(`Score ${s.us} to ${s.opp}`)).toBeVisible();
+      const [home, away] = ours === 'Home' ? [s.us, s.opp] : [s.opp, s.us];
+      await expect(h.getByLabel(`Score ${home} to ${away}`)).toBeVisible();
       await expect(h.getByText(s.period, { exact: true })).toBeVisible();
-      await expect(h.getByText(`Team fouls ${s.fouls}`, { exact: true })).toBeVisible();
-      await expect(h.getByText('Away shoots', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
-      await expect(h.getByText(timeoutsText(s.timeouts), { exact: true })).toBeVisible();
+      await expect(half(ours).getByText(`Team fouls ${s.fouls}`, { exact: true })).toBeVisible();
+      await expect(h.getByText(`${other(ours)} shoots`, { exact: true })).toHaveCount(s.bonus ? 1 : 0);
+      for (const t of timeoutButtons(s.timeouts)) await expect(half(ours).getByRole('button', exact(t))).toBeVisible();
+      if (s.timeouts.ot === undefined) await expect(half(ours).getByRole('button', { name: /^OT: / })).toHaveCount(0);
     },
     /** The feedback line above the bottom bar (it stays until the next entry). */
     expectToast: (text: string) => expect(page.getByTestId('feedback-text')).toHaveText(text),
@@ -335,5 +356,5 @@ export async function expectNoOverflow(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 }
 
-/** Two lines plus padding: score line (text-3xl) and the timeouts line. A wrap adds 20px or more. */
-const STRIP_MAX_HEIGHT = 80; // measured 77 at 390px, with the bonus pill in OT1
+/** One line plus padding: the score (text-3xl), the period and the bonus badges. A wrap adds 20px or more. */
+const STRIP_MAX_HEIGHT = 56;

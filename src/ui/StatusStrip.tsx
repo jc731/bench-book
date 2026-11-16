@@ -1,38 +1,33 @@
-import type { Derived } from '../core/derive';
-import { bonusText, stripPeriodText, teamFoulsWarn, timeoutsText } from './live-logic';
+import { bonusText, stripPeriodText, type TeamTag } from './live-logic';
 
 interface Props {
-  us: number;
-  opp: number;
+  home: number;
+  away: number;
   period: number;
   /** An ended game shows `Final` in place of the period. */
   ended: boolean;
-  derived: Derived;
-  /** Home or Away for the opponent: the team that shoots when we reach the bonus. */
-  oppTag: 'Home' | 'Away';
+  /** Which teams shoot free throws in the bonus: each badge sits over its own half. */
+  shooters: { home: boolean; away: boolean };
 }
 
-// Everything here must fit 390px without wrapping: line 1 is score, period and team fouls; line 2 is
-// timeouts left and, once the opponent is in the bonus, the bonus pill.
-export function StatusStrip({ us, opp, period, ended, derived, oppTag }: Props) {
-  const fouls = derived.teamFoulsForBonus(period);
+const badge = (tag: TeamTag) => (
+  <span class="whitespace-nowrap rounded bg-amber-400 px-2 text-xs font-bold leading-5 text-slate-900">{bonusText(tag)}</span>
+);
+
+// One line that must fit 390px without wrapping: Home's bonus badge over the Home half, the score
+// (home–away) and the period in the middle, Away's badge over the Away half. Each half's own header
+// carries its team fouls, and its timeout buttons say what is left.
+export function StatusStrip({ home, away, period, ended, shooters }: Props) {
   return (
-    <header class="sticky top-0 z-10 border-b border-slate-700 bg-slate-950 px-3 py-2">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-baseline gap-1 text-3xl font-bold tabular-nums" aria-label={`Score ${us} to ${opp}`}>
-          <span class="text-xs font-semibold text-slate-400">Us</span>
-          {us}–{opp}
-          <span class="text-xs font-semibold text-slate-400">Them</span>
+    <header class="sticky top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-slate-700 bg-slate-950 px-2 py-1">
+      <div class="flex justify-start">{shooters.home && badge('Home')}</div>
+      <div class="flex items-baseline gap-2">
+        <div class="text-3xl font-bold tabular-nums" aria-label={`Score ${home} to ${away}`}>
+          {home}–{away}
         </div>
         <div class="text-xl font-bold">{stripPeriodText(period, ended)}</div>
-        <div class={`text-base font-semibold ${teamFoulsWarn(fouls) ? 'text-amber-300' : ''}`}>Team fouls {fouls}</div>
       </div>
-      <div class="mt-1 flex items-center justify-between gap-2 text-sm text-slate-300">
-        <span class="whitespace-nowrap">{timeoutsText(derived.timeouts, period)}</span>
-        {derived.oppInBonus(period) && (
-          <span class="whitespace-nowrap rounded bg-amber-400 px-2 text-xs font-bold leading-5 text-slate-900">{bonusText(oppTag)}</span>
-        )}
-      </div>
+      <div class="flex justify-end">{shooters.away && badge('Away')}</div>
     </header>
   );
 }

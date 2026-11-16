@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  TAKE_ANYWAY, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
+  TAKE_ANYWAY, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
   stripPeriodText, undoAriaLabel,
 } from './live-logic';
 import { outReason } from './live-logic';
@@ -47,24 +47,6 @@ describe('a finished game looks finished', () => {
   it('stripPeriodText', () => {
     expect(stripPeriodText(5, false)).toBe('OT1');
     expect(stripPeriodText(5, true)).toBe('Final');
-  });
-});
-
-describe('timeoutsText', () => {
-  const t = {
-    full: { used: 1, total: 3 }, thirty: { used: 0, total: 2 }, ot: { used: 1, total: 2 },
-  };
-  it('omits OT before overtime', () => {
-    expect(timeoutsText(t, 4)).toBe('TO left: Full 2 · 30s 2');
-  });
-  it('shows OT timeouts from the first overtime period', () => {
-    expect(timeoutsText(t, 5)).toBe('TO left: Full 2 · 30s 2 · OT 1');
-  });
-  it('shows OT timeouts in overtime', () => {
-    expect(timeoutsText(t, 6)).toBe('TO left: Full 2 · 30s 2 · OT 1');
-  });
-  it('never goes negative when more timeouts are used than allowed', () => {
-    expect(timeoutsText({ ...t, full: { used: 5, total: 3 } }, 1)).toBe('TO left: Full 0 · 30s 2');
   });
 });
 

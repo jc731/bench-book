@@ -111,7 +111,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
   const app = ui(page);
   const FULL_TIMEOUTS = { full: 3, thirty: 2 };
 
-  await test.step('setup: 7 players with #0 and #00, opponent taps on', async () => {
+  await test.step('setup: 7 players with #0 and #00, their roster left empty', async () => {
     await page.goto('/');
     await app.fillSetup(OPPONENT, TEAM);
     await expectNoOverflow(page);
@@ -439,7 +439,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
 
     // The move: the first two Q4 rows are the plays entered before End Q3.
     const q4 = plays.filter((r) => r[c('period')] === 'Q4').map((r) => `${r[c('team')]} ${r[c('number')]} ${r[c('event')]}`);
-    expect(q4.slice(0, 2)).toEqual(['us 0 FG2', 'opp  OPP_PTS']);
+    // Their +2 goes through their + Play with no number, so it is a their-side FG2 with a blank number.
+    expect(q4.slice(0, 2)).toEqual(['us 0 FG2', 'opp  FG2']);
   });
 });
 

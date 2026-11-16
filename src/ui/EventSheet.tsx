@@ -29,7 +29,10 @@ const ROW1: PlayType[] = ['FG2', 'FG3', 'FTM'];
 const ROW2: PlayType[] = ['FTX', 'FOUL', 'TECH'];
 
 interface Props {
-  player: Player;
+  /** The picked player, or null for a team's + Play (then `title` names the team). */
+  player: Player | null;
+  /** The sheet's title when it is not a player's: `Away`. */
+  title?: string;
   /** Only feedback produced while this sheet is open; the caller passes null for anything older. */
   toast: Toast | null;
   onPlay: (type: PlayType) => void;
@@ -40,7 +43,7 @@ interface Props {
   out?: string | null;
 }
 
-export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose, out = null }: Props) {
+export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClose, out = null }: Props) {
   const [confirmed, setConfirmed] = useState(false);
   const locked = out !== null && !confirmed;
   const btn = (t: PlayType) => (
@@ -56,7 +59,7 @@ export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose, out
     </button>
   );
   return (
-    <Sheet title={`#${player.number} ${player.name}`.trim()} onClose={onClose}>
+    <Sheet title={title ?? (player ? `#${player.number} ${player.name}`.trim() : '')} onClose={onClose}>
       {locked && (
         <div class="mb-3 rounded-lg border border-red-500 bg-slate-900 p-3" role="alert" data-testid="out-warning">
           <p class="font-semibold text-red-300">Out: {out}. {OUT_WARNING}</p>

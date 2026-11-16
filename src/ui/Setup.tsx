@@ -71,7 +71,8 @@ export function Setup({ store }: { store: GameStore }) {
         new Date(),
         cleanOppRoster(oppRoster),
       ),
-      // Task 6 removes the dependency: until the live screen shows both teams, the Opp +1/+2/+3 row stays on.
+      // No longer drives the live screen (both halves always show). The quarter check still reads it to
+      // compare their score until Task 10 replaces that with the their-score warning.
       trackOpponentTaps: true,
     });
   };

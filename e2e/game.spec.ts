@@ -1,6 +1,7 @@
 import pkg from '../package.json' with { type: 'json' };
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { downloadCsv } from './csv';
+import { ui, type Side } from './fixture';
 
 // Invented names only: the roster is personal data about minors.
 const ROSTER = [
@@ -56,7 +57,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await tap(page, one, '+2');
   await tap(page, card(page, '00', 'Player Two'), 'FT made');
   await expect(score(3, 0)).toBeVisible();
-  await expect(one).toHaveClass(/border-slate-600/);
+  await expect(one).toHaveClass(/border-slate-\d00/); // the plain border: not amber, not red
   for (let i = 0; i < 4; i++) await tap(page, one, 'Foul');
   await expect(one).toHaveAccessibleName(/4 fouls/);
   await expect(one).toHaveClass(/border-amber-400/);
@@ -206,12 +207,9 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   const entry = page.getByTestId('feedback-text');
   await expect(entry).toHaveText(`#10 ${long} (Home) foul — 5th, out — bonus`);
   expect(await entry.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
-  // It wrapped (taller than one text line), and the cards still fit above it.
+  // It wrapped (taller than one text line), and both halves still fit above it.
   expect((await entry.boundingBox())!.height).toBeGreaterThan(24);
-  const grid = page.getByTestId('player-grid');
-  expect(await grid.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
-  const bench = (await page.getByRole('button', { name: 'Bench / coach tech', exact: true }).boundingBox())!;
-  expect(bench.y + bench.height).toBeLessThanOrEqual((await entry.boundingBox())!.y);
+  await ui(page).expectCardsFit();
 });
 
 async function onePlayerGame(page: Page) {
@@ -587,4 +585,177 @@ test("setup: the other team's roster is optional, numbered, and starts the game 
   await page.getByRole('button', { name: 'Discard and start new' }).click();
   await expect(page.getByLabel('Their player 1 number', { exact: true })).toHaveValue('');
   await expect(page.getByLabel('Their player 2 number', { exact: true })).toHaveCount(0);
+});
+
+// ---- Both teams on the live screen: Home vs Away halves ----------------------------------------
+
+/** A game with `ours` players (#10 up) and `theirs` (#50 up), at home unless `away`. */
+async function twoTeamGame(page: Page, { ours = 2, theirs = 2, away = false } = {}) {
+  await page.goto('/');
+  if (away) await page.getByRole('group', { name: 'Home or away' }).getByRole('button', { name: 'Away', exact: true }).click();
+  for (let i = 0; i < ours; i++) {
+    if (i > 0) await page.getByRole('button', { name: 'Add player', exact: true }).click();
+    await page.getByLabel(`Player ${i + 1} number`, { exact: true }).fill(String(10 + i));
+    await page.getByLabel(`Player ${i + 1} name`, { exact: true }).fill(`Player ${i + 1}`);
+  }
+  await ui(page).fillOppRoster(Array.from({ length: theirs }, (_, i) => ({ number: String(50 + i) })));
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
+}
+
+/** HSL lightness (0–1) of an element's background, whatever color syntax the browser reports. */
+const bgLightness = (l: Locator) =>
+  l.evaluate((el) => {
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    ctx.fillStyle = getComputedStyle(el).backgroundColor;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return (Math.max(r, g, b) + Math.min(r, g, b)) / 2 / 255;
+  });
+
+const scrolls = (l: Locator) => l.evaluate((el) => el.scrollHeight > el.clientHeight);
+
+test('both halves: Home left and light, Away right and dark, US tag on our side', async ({ page }) => {
+  for (const away of [false, true]) {
+    await twoTeamGame(page, { away });
+    const app = ui(page);
+    const home = app.half('Home');
+    const visitors = app.half('Away');
+    expect((await home.boundingBox())!.x).toBeLessThan((await visitors.boundingBox())!.x);
+    const [homeCard, awayCard] = away ? ['#50', '#10 Player 1'] : ['#10 Player 1', '#50'];
+    expect(await bgLightness(home.getByRole('button', { name: new RegExp(`^${homeCard},`) }))).toBeGreaterThan(0.8);
+    expect(await bgLightness(visitors.getByRole('button', { name: new RegExp(`^${awayCard},`) }))).toBeLessThan(0.3);
+    const [ours, theirs]: Side[] = away ? ['Away', 'Home'] : ['Home', 'Away'];
+    await expect(app.half(ours).getByText('US', { exact: true })).toBeVisible();
+    await expect(app.half(theirs).getByText('US', { exact: true })).toHaveCount(0);
+    // Both halves end with + Play, Bench and the timeout buttons.
+    for (const side of ['Home', 'Away'] as const) {
+      await expect(app.half(side).getByRole('button', { name: '+ Play', exact: true })).toBeVisible();
+      await expect(app.half(side).getByRole('button', { name: 'Bench / coach tech', exact: true })).toBeVisible();
+      await expect(app.half(side).getByRole('button', { name: 'Full: 3', exact: true })).toBeVisible();
+      await expect(app.half(side).getByRole('button', { name: '30s: 2', exact: true })).toBeVisible();
+    }
+    await page.evaluate(() => localStorage.clear());
+  }
+});
+
+test('10 players and the Bench card fit each half with no scroll', async ({ page }) => {
+  await twoTeamGame(page, { ours: 10, theirs: 10 });
+  const app = ui(page);
+  await app.expectCardsFit();
+  for (const side of ['Home', 'Away'] as const) {
+    const h = app.half(side);
+    const bench = (await h.getByRole('button', { name: 'Bench / coach tech', exact: true }).boundingBox())!;
+    const card = (await h.getByRole('button', { name: /^#\d+/ }).first().boundingBox())!;
+    expect(bench.height).toBeLessThan(0.6 * card.height);
+  }
+  expect(await noOverflow(page)).toBe(true);
+});
+
+test('11+ players scroll inside their half', async ({ page }) => {
+  await twoTeamGame(page, { ours: 12, theirs: 3 });
+  const app = ui(page);
+  expect(await scrolls(app.half('Home'))).toBe(true);
+  expect(await scrolls(app.half('Away'))).toBe(false);
+  // The page itself does not scroll: only our half does.
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+});
+
+test('the strip: score home–away, team fouls per half, the bonus badge over the team that shoots', async ({ page }) => {
+  await twoTeamGame(page, { ours: 5 });
+  const app = ui(page);
+  const strip = page.getByRole('banner');
+  await app.opp(3);
+  await expect(strip.getByLabel('Score 0 to 3')).toBeVisible();
+  for (let i = 0; i < 5; i++) await tap(page, card(page, String(10 + i), `Player ${i + 1}`), 'Foul');
+  await expect(app.half('Home').getByText('Team fouls 5', { exact: true })).toBeVisible();
+  await expect(app.half('Away').getByText('Team fouls 0', { exact: true })).toBeVisible();
+  // Our 5th foul puts Away in the bonus: the badge names the team that shoots, over its half.
+  const badge = strip.getByText('Away shoots', { exact: true });
+  await expect(badge).toBeVisible();
+  await expect(strip.getByText('Home shoots', { exact: true })).toHaveCount(0);
+  const b = (await badge.boundingBox())!;
+  const away = (await app.half('Away').boundingBox())!;
+  expect(b.x).toBeGreaterThanOrEqual(away.x);
+  expect(b.x + b.width).toBeLessThanOrEqual(away.x + away.width);
+
+  // On an away game the score still reads home–away: our +2 is the second number.
+  await page.evaluate(() => localStorage.clear());
+  await twoTeamGame(page, { away: true });
+  await tap(page, card(page, '10', 'Player 1'), '+2');
+  await expect(strip.getByLabel('Score 0 to 2')).toBeVisible();
+});
+
+test("each half records for its own team: + Play, their cards, Bench and timeouts", async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  const home = app.half('Home');
+  const away = app.half('Away');
+  const dialog = page.getByRole('dialog');
+  const toast = page.getByTestId('feedback-text');
+
+  // + Play, no number: FT made keeps the sheet open for the pair, titled with the team.
+  await away.getByRole('button', { name: '+ Play', exact: true }).click();
+  await expect(dialog).toHaveAccessibleName('Away');
+  await dialog.getByRole('button', { name: 'FT made', exact: true }).click();
+  await expect(dialog.getByTestId('sheet-status')).toHaveText('Away FT made');
+  await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByLabel('Score 0 to 1')).toBeVisible();
+  await tap(page, home.getByRole('button', { name: '+ Play', exact: true }), '+3');
+  await expect(toast).toHaveText('Home +3');
+  await expect(page.getByLabel('Score 3 to 1')).toBeVisible();
+
+  // Their player's card takes the same sheet and credits them.
+  await tap(page, away.getByRole('button', { name: /^#50,/ }), '+2');
+  await expect(toast).toHaveText('#50 (Away) +2');
+  await expect(away.getByRole('button', { name: /^#50,/ })).toHaveAccessibleName('#50, 2 points, 0 fouls');
+  await expect(page.getByLabel('Score 3 to 3')).toBeVisible();
+
+  // Their bench tech counts to their team fouls, not ours.
+  await app.benchTech('Away');
+  await expect(toast).toHaveText('Away bench tech');
+  await expect(away.getByText('Team fouls 1', { exact: true })).toBeVisible();
+  await expect(home.getByText('Team fouls 0', { exact: true })).toBeVisible();
+
+  // A timeout button takes that team's timeout in one tap.
+  await app.timeout('Full', 'Away');
+  await expect(toast).toHaveText('Away timeout (Full)');
+  await expect(away.getByRole('button', { name: 'Full: 2', exact: true })).toBeVisible();
+  await expect(home.getByRole('button', { name: 'Full: 3', exact: true })).toBeVisible();
+  // Undo puts it back.
+  await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(away.getByRole('button', { name: 'Full: 3', exact: true })).toBeVisible();
+});
+
+test('a timeout button at zero draws grayed and still records the timeout', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  for (let i = 0; i < 2; i++) await app.timeout('30s');
+  const zero = app.half('Home').getByRole('button', { name: '30s: 0', exact: true });
+  await expect(zero).toHaveClass(/opacity-50/);
+  await expect(zero).toBeEnabled();
+  await app.timeout('30s');
+  await expect(page.getByTestId('feedback-text')).toHaveText('Home timeout (30s)');
+  await expect(zero).toBeVisible(); // the count never shows below zero
+});
+
+test('a game saved before 0.8, with opponent taps and no their roster, opens in the two halves', async ({ page }) => {
+  const now = new Date().toISOString();
+  const ev = (order: number, rest: object) => ({ id: `e${order}`, order, period: 1, enteredAt: now, ...rest });
+  const legacy = {
+    version: 1, id: 'legacy-game', currentPeriod: 1, periods: [], trackOpponentTaps: true, createdAt: now, updatedAt: now,
+    info: { team: 'Test Home', opponent: 'Test Opp', date: now.slice(0, 10), homeAway: 'home', coach: '', scorer: '', timer: '' },
+    roster: [{ id: 'p1', number: '4', name: 'Player One', pos: '' }],
+    events: [ev(0, { type: 'FG2', playerId: 'p1' }), ev(1, { type: 'OPP_PTS', oppPoints: 3 }), ev(2, { type: 'OPP_PTS', oppPoints: 2 })],
+  };
+  await page.addInitScript((g) => localStorage.setItem('benchbook:game', JSON.stringify(g)), legacy);
+  await page.goto('/');
+  const away = ui(page).half('Away');
+  await expect(page.getByRole('banner').getByLabel('Score 2 to 5')).toBeVisible();
+  await expect(away.getByRole('button', { name: /^#/ })).toHaveCount(0);
+  await expect(away.getByRole('button', { name: '+ Play', exact: true })).toBeVisible();
+  await expect(away.getByRole('button', { name: 'Bench / coach tech', exact: true })).toBeVisible();
+  await expect(away.getByRole('button', { name: 'Full: 3', exact: true })).toBeVisible();
+  // New points for them go through + Play and add to the old taps.
+  await tap(page, away.getByRole('button', { name: '+ Play', exact: true }), '+2');
+  await expect(page.getByRole('banner').getByLabel('Score 2 to 7')).toBeVisible();
 });

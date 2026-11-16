@@ -98,21 +98,6 @@ export function mayEndGame(period: number): boolean {
   return period >= 4;
 }
 
-export interface TimeoutsLeft {
-  full: { used: number; total: number };
-  thirty: { used: number; total: number };
-  ot: { used: number; total: number };
-}
-
-const left = (t: { used: number; total: number }): number => Math.max(0, t.total - t.used);
-
-/** `TO left: Full 3 · 30s 2`, plus ` · OT 1` only in an OT period. Using a timeout is never blocked, so left never goes negative. */
-export function timeoutsText(t: TimeoutsLeft, period: number): string {
-  const parts = [`Full ${left(t.full)}`, `30s ${left(t.thirty)}`];
-  if (period > 4) parts.push(`OT ${left(t.ot)}`);
-  return `TO left: ${parts.join(' · ')}`;
-}
-
 /** Team fouls this many short of the bonus turn amber: the IESA bonus starts on the 5th, so amber from 4. */
 export const BONUS_AT = 5;
 export function teamFoulsWarn(fouls: number): boolean {
