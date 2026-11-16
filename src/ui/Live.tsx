@@ -123,7 +123,7 @@ export function Live({ store }: { store: GameStore }) {
           <button type="button" class={bar} onClick={() => setView('log')}>Log</button>
           <button
             type="button"
-            class={`${barBase} ${endTone[end.tone]}`}
+            class={`${barBase} whitespace-nowrap ${endTone[end.tone]}`}
             data-tone={end.tone}
             onClick={() => (end.opens === 'final' ? openEnd() : end.opens === 'endSheet' ? setSheet('endPeriod') : doEndPeriod())}
           >

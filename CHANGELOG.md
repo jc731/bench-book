@@ -5,6 +5,11 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- The end-of-game button reads "End Q4" (and "End OT1"…) on one line. With a trailing "…" it wrapped on a phone and looked cut off.
+- The quarter check labels the player foul list "Player fouls, whole game", apart from the quarter's team fouls, so the totals no longer read as that quarter's.
+- New game: the Opponent field no longer shows the date as a gray placeholder that looked like a score. A line under it says "Left blank, the game is named 11-16".
+- The 30-second timeout reads "30s" everywhere on screen, matching the timeouts-left count. The Book CSV is unchanged.
+- The page has a favicon.
 ## [0.6.0] - 2026-11-16
 
 - Colors have one job each. Amber now only warns (4 fouls, the bonus, a check that doesn't match, a file not saved). The action to take is blue: End Q1, Check, Undo, Redo, and the Check chip after a quarter. End Q4 and OT stay red. A player's first three fouls show as gray dots, turning amber at the 4th.

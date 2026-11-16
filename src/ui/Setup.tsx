@@ -198,10 +198,12 @@ export function Setup({ store }: { store: GameStore }) {
             <span class="text-sm text-slate-300">Opponent (optional)</span>
             <input
               class={input}
-              placeholder={defaultOpponent(info.date)}
+              aria-describedby="opponent-hint"
               value={info.opponent}
               onInput={(e) => setField('opponent', e.currentTarget.value)}
             />
+            {/* A gray "11-16" in the field read as a score (UX audit v0.6.0, F5), so the default is said in words. */}
+            <span id="opponent-hint" class="text-sm text-slate-400">Left blank, the game is named {defaultOpponent(info.date)}</span>
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm text-slate-300">Date</span>

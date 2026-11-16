@@ -17,7 +17,7 @@ export const BENCH_TECH_TEXT = 'Bench tech';
 /** The Bench card's label: says it records techs, so it is not mistaken for roster editing. */
 export const BENCH_CARD_TEXT = 'Bench / coach tech';
 
-const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30', ot: 'OT' };
+const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30s', ot: 'OT' };
 
 /** Feedback / undo label for a player entry, e.g. `#4 +2`. */
 export function playLabel(type: PlayType, number: string): string {
@@ -59,7 +59,8 @@ export type EndSlot = { text: string; mark?: string; opens: 'endPeriod' | 'endSh
 
 export function endSlot(period: number, ended: boolean): EndSlot {
   if (ended) return { text: 'Final', mark: '▸', opens: 'final', tone: 'final' };
-  if (mayEndGame(period)) return { text: `${endPeriodLabel(period)}…`, opens: 'endSheet', tone: 'game' };
+  // No "…": in the bar's narrow slot it wrapped to "End / Q4…" and read as a cut-off label (UX audit v0.6.0, F1).
+  if (mayEndGame(period)) return { text: endPeriodLabel(period), opens: 'endSheet', tone: 'game' };
   return { text: endPeriodLabel(period), opens: 'endPeriod', tone: 'quarter' };
 }
 

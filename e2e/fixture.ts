@@ -156,7 +156,7 @@ export function ui(page: Page) {
       await page.getByRole('button', exact('Back')).click();
       await expect(page.getByRole('heading', exact('How to use'))).toHaveCount(0);
     },
-    async timeout(kind: 'Full' | '30' | 'OT') {
+    async timeout(kind: 'Full' | '30s' | 'OT') {
       await nav().getByRole('button', exact('Timeout')).click();
       await dialog().getByRole('button', exact(kind)).click();
       await expect(dialog()).toHaveCount(0);
@@ -165,7 +165,16 @@ export function ui(page: Page) {
     endPeriod: (label: string) => nav().getByRole('button', exact(`End ${label}`)).click(),
     /** End Q4 or an OT: the button opens a sheet offering Start overtime / End game (no overtime). */
     async endPeriodThen(label: string, choice: 'Start overtime' | 'End game (no overtime)' | 'End game (no more overtime)') {
-      await nav().getByRole('button', exact(`End ${label}…`)).click();
+      const end = nav().getByRole('button', exact(`End ${label}`));
+      // The label sits on one line: wrapped to "End / Q4…" it read as cut off (UX audit v0.6.0, F1).
+      expect(await end.evaluate((el) => {
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        return new Set(Array.from(r.getClientRects(), (b) => Math.round(b.top))).size;
+      })).toBe(1);
+      // ...and inside the button, not spilling past its edges.
+      expect(await end.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await end.click();
       await dialog().getByRole('button', exact(choice)).click();
     },
     /** The check chip on the feedback line, by its full accessible name. */

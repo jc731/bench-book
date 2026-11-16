@@ -188,7 +188,9 @@ export function Reconcile({ store }: { store: GameStore }) {
         <section aria-label="Fouls">
           <h2 class="font-bold">Fouls (compare with the book by eye)</h2>
           <p class="text-slate-300">Team fouls in {periodLabel(period)}: <span class="font-bold text-white">{d.teamFoulsByPeriod[period] ?? 0}</span></p>
-          <ul class="mt-1 grid grid-cols-2 gap-x-3">
+          {/* Game totals, as the book keeps each player's fouls: labeled, so they are not read as this quarter's (UX audit v0.6.0, F2). */}
+          <h3 class="mt-2 text-sm text-slate-300">Player fouls, whole game</h3>
+          <ul class="mt-1 grid grid-cols-2 gap-x-3" aria-label="Player fouls, whole game">
             {d.players.map((l) => {
               const p = byId.get(l.playerId);
               return (

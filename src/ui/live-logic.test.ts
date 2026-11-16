@@ -22,7 +22,7 @@ describe('labels', () => {
   });
   it('names timeouts, opponent taps and period ends', () => {
     expect(timeoutLabel('full')).toBe('Timeout (Full)');
-    expect(timeoutLabel('thirty')).toBe('Timeout (30)');
+    expect(timeoutLabel('thirty')).toBe('Timeout (30s)');
     expect(timeoutLabel('ot')).toBe('Timeout (OT)');
     expect(oppLabel(2)).toBe('Opp +2');
     expect(endPeriodLabel(1)).toBe('End Q1');
@@ -37,8 +37,8 @@ describe('labels', () => {
 describe('a finished game looks finished', () => {
   it('endSlot', () => {
     expect(endSlot(2, false)).toEqual({ text: 'End Q2', opens: 'endPeriod', tone: 'quarter' });
-    expect(endSlot(4, false)).toEqual({ text: 'End Q4…', opens: 'endSheet', tone: 'game' });
-    expect(endSlot(6, false)).toEqual({ text: 'End OT2…', opens: 'endSheet', tone: 'game' });
+    expect(endSlot(4, false)).toEqual({ text: 'End Q4', opens: 'endSheet', tone: 'game' });
+    expect(endSlot(6, false)).toEqual({ text: 'End OT2', opens: 'endSheet', tone: 'game' });
     // The ▸ is a mark beside the name, hidden from screen readers, so the button is named "Final".
     expect(endSlot(5, true)).toEqual({ text: 'Final', mark: '▸', opens: 'final', tone: 'final' });
   });

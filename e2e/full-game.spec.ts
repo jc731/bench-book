@@ -69,7 +69,7 @@ import { expectNoOverflow, OPPONENT, TEAM, ui } from './fixture';
  *  43 | Q4  | Opp +3                                 |  28 |  25 |  4 |
  *  44 | Q4  | Opp +3                                 |  28 |  28 |  4 | TIED. Q4 us 2+3+1 = 6,
  *     |     |                                        |     |     |    |   opp 2+3+2+3+3 = 13
- *     |     | End Q4… -> Start overtime; Q4 unchecked|     |     |    | PENDING
+ *     |     | End Q4 -> Start overtime; Q4 unchecked|     |     |    | PENDING
  *     |     | OT1 strip: Fouls 4 (from Q4), no chip; Full 2/3 · 30 1/2 · OT 1/1
  *  45 | OT1 | #0  Player Three  Foul                 |  28 |  28 |  5 | 4 + 1 -> bonus pill
  *  46 | OT1 | Timeout OT                             |  28 |  28 |  5 | OT 0/1
@@ -78,7 +78,7 @@ import { expectNoOverflow, OPPONENT, TEAM, ui } from './fixture';
  *  49 | OT1 | #4  Player One    FT made              |  31 |  29 |  5 |
  *  50 | OT1 | #4  Player One    FT made (same sheet) |  32 |  29 |  5 |
  *  51 | OT1 | Opp +2                                 |  32 |  31 |  5 | OT1 us 2+1+1 = 4, opp 1+2 = 3
- *     |     | End OT1… -> End game. Open issues: Q4, OT1. Check OT1: book 4 / 3 -> MATCHED
+ *     |     | End OT1 -> End game. Open issues: Q4, OT1. Check OT1: book 4 / 3 -> MATCHED
  *
  * Events left: Q1 12 + Q2 12 + Q3 7 + Q4 13 + OT1 7 = 51 (the undone mis-tap is gone).
  * Final (app): us 8+9+5+6+4 = 32, opp 6+4+5+13+3 = 31.
@@ -217,7 +217,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectEntryWhole();
     await app.expectCardsFit();
     await app.expectPlayer('Player Four', 0, 5, true);
-    await app.timeout('30');
+    await app.timeout('30s');
     await app.tech('Player Five');
     await app.expectPlayer('Player Five', 2, 2, true);
     await app.score('Player Seven', '+3');

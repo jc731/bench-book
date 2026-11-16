@@ -105,6 +105,10 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     await page.goto('/');
     await app.fillSetupNoOpponent(TEAM);
     opponent = await app.defaultOpponent();
+    // The default is said in words, never as a gray "11-16" that reads as a score (UX audit v0.6.0, F5).
+    const opp = page.getByLabel('Opponent (optional)');
+    await expect(opp).not.toHaveAttribute('placeholder');
+    await expect(opp).toHaveAccessibleDescription(`Left blank, the game is named ${opponent}`);
     expect(opponent).toMatch(/^\d{2}-\d{2}$/);
     await app.startGame();
     await app.expectBenchTechs(0);
@@ -151,7 +155,7 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     await app.opp(1);
     await app.opp(2);
     await app.score('Player One', '+2');
-    await app.timeout('30');
+    await app.timeout('30s');
     await app.expectStrip({ us: 15, opp: 14, period: 'Q2', fouls: 6, bonus: true, timeouts: { full: 2, thirty: 1 } });
     await tally('Q2 plays');
     await app.endPeriod('Q2');
@@ -212,7 +216,7 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     await app.foul('Player Six');
     await app.opp(1);
     await app.opp(1);
-    await app.timeout('30');
+    await app.timeout('30s');
     await app.score('Player Seven', '+2');
     await app.opp(2);
     await app.ft('Player Two', true, false);

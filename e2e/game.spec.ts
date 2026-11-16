@@ -243,7 +243,7 @@ test('ended game: Final, reload, Reopen game', async ({ page }) => {
     await page.getByRole('button', { name: `End ${q}`, exact: true }).click();
     await checkZero(page, page.getByRole('button', { name: `Check ${q} — not checked against the book` }), q);
   }
-  await endSlotButton(page, 'End Q4…').click();
+  await endSlotButton(page, 'End Q4').click();
   await page.getByRole('dialog').getByRole('button', { name: 'End game (no overtime)' }).click();
   await expect(page.getByRole('heading', { name: 'Final' })).toBeVisible();
   await checkZero(page, page.getByRole('region', { name: 'Open issues' }).getByRole('button', { name: 'Check', exact: true }), 'Q4');
@@ -272,7 +272,7 @@ test('ended game: Final, reload, Reopen game', async ({ page }) => {
 
   await expect(stripPeriod(page, 'Q4')).toBeVisible();
   await expect(stripPeriod(page, 'Final')).toHaveCount(0);
-  await expect(endSlotButton(page, 'End Q4…')).toBeVisible();
+  await expect(endSlotButton(page, 'End Q4')).toBeVisible();
   await expect(endSlotButton(page, 'Final')).toHaveCount(0);
   await expect(notExportedChip(page)).toHaveCount(0);
   await expect(page.getByTestId('feedback-text')).toHaveText('Reopened game');
@@ -538,10 +538,28 @@ test('the End button is blue for a quarter, red once it can end the game, plain 
   await expect(tone('End Q1')).toHaveAttribute('data-tone', 'quarter');
   await expect(tone('End Q1')).toHaveCSS('border-color', 'oklch(0.746 0.16 232.661)'); // sky-400
   for (const q of ['Q1', 'Q2', 'Q3']) await tone(`End ${q}`).click();
-  await expect(tone('End Q4…')).toHaveAttribute('data-tone', 'game');
-  await expect(tone('End Q4…')).toHaveCSS('border-color', 'oklch(0.637 0.237 25.331)'); // red-500
-  await tone('End Q4…').click();
+  await expect(tone('End Q4')).toHaveAttribute('data-tone', 'game');
+  await expect(tone('End Q4')).toHaveCSS('border-color', 'oklch(0.637 0.237 25.331)'); // red-500
+  await tone('End Q4').click();
   await page.getByRole('dialog').getByRole('button', { name: /^End game/ }).click();
   await page.getByRole('button', { name: 'Back to game', exact: true }).click();
   await expect(tone('Final')).toHaveAttribute('data-tone', 'final');
+});
+
+test('the page has a favicon that loads', async ({ page, request }) => {
+  await page.goto('/');
+  const href = await page.locator('link[rel="icon"]').getAttribute('href');
+  expect((await request.get(href!)).status()).toBe(200);
+});
+
+test("the check's player fouls are labeled as whole-game totals, apart from the quarter's team fouls", async ({ page }) => {
+  await onePlayerGame(page);
+  await tap(page, card(page, '4', 'Player One'), 'Foul');
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await tap(page, card(page, '4', 'Player One'), 'Foul');
+  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+  await page.getByRole('region', { name: 'Q1', exact: true }).getByRole('button', { name: 'Not checked', exact: true }).click();
+  // Q1 had one of her two fouls: the quarter's count and her game total sit under separate labels.
+  await expect(page.getByText(/^Team fouls in Q1:/)).toHaveText('Team fouls in Q1: 1');
+  await expect(page.getByRole('list', { name: 'Player fouls, whole game' }).getByRole('listitem')).toHaveText(['#4 Player One2']);
 });

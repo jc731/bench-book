@@ -34,7 +34,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
   {
     id: 'timeouts',
     title: 'Timeouts and bench techs',
-    body: ['Timeout opens Full, 30 and OT. Bench and coach techs go on the Bench / coach tech card after the last player, which counts them.'],
+    body: ['Timeout opens Full, 30s and OT. Bench and coach techs go on the Bench / coach tech card after the last player, which counts them.'],
   },
   {
     id: 'theirs',
