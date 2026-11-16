@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-16
+
 - The opponent is optional and moved into Game details. Left blank, the game is named for its date as MM-DD (for example `11-13`), on screen and in both CSVs. Home/Away now has the top row to itself.
 - A player who is out (5 fouls or 2 techs) has a grayed card. Tapping it opens the sheet with every play grayed out and the warning "Are you sure? This player is supposed to be out.", and "Enter a play anyway" unlocks it for that one visit.
 - The Bench card is now "Bench / coach tech", so it no longer reads as editing the roster, and it fills the rest of its row: beside the last player with an odd roster, the full width with an even one. It shows how many techs there have been (for example `1 tech`, outlined in amber), and the Bench sheet says the game's count.
