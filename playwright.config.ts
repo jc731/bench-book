@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4400;
+declare const process: { env: Record<string, string | undefined> };
+const PORT = Number(process.env.E2E_PORT) || 4400;
 
 export default defineConfig({
   testDir: 'e2e',
