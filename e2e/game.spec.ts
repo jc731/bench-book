@@ -90,7 +90,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await page.reload();
   await expect(score(6, 5)).toBeVisible();
   // The line shows where it left off, beside the chip for the still-open Q2 check.
-  await expect(page.getByTestId('feedback-text')).toHaveText('Last: #0 +3');
+  await expect(page.getByTestId('feedback-text')).toHaveText('Last: #0 (Home) +3');
   await expect(page.getByRole('button', { name: 'Check Q2 — not checked against the book', exact: true })).toHaveText('Check Q2');
   await expect(
     page.getByRole('navigation').getByRole('button', { name: 'Undo (history clears when the app reloads — fix plays in Log)' }),
@@ -208,7 +208,7 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   for (let i = 0; i < 5; i++) await tap(page, first, 'Foul');
 
   const entry = page.getByTestId('feedback-text');
-  await expect(entry).toHaveText(`#10 ${long} foul — 5th, out — bonus`);
+  await expect(entry).toHaveText(`#10 ${long} (Home) foul — 5th, out — bonus`);
   expect(await entry.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
   // It wrapped (taller than one text line), and the cards still fit above it.
   expect((await entry.boundingBox())!.height).toBeGreaterThan(24);
@@ -388,7 +388,7 @@ test('the check screen scrolls its note and last row clear of the feedback line'
   await page.getByRole('region', { name: 'Plays to fix', exact: true }).getByRole('button', { name: 'Add play to Q1', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: '#4 Player One', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
-  await expect(page.getByTestId('feedback-text')).toHaveText(/^Added #4 \+2 to Q1/);
+  await expect(page.getByTestId('feedback-text')).toHaveText(/^Added #4 \(Home\) \+2 to Q1/);
 
   const scroller = page.getByTestId('app-has').locator('..');
   await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
@@ -415,22 +415,22 @@ test('Log: newest first, tap to fix, Delete and Undo', async ({ page }) => {
   const rows = q1.getByRole('button');
   await expect(rows).toHaveCount(2);
   // The chevron is decoration: the name is the row text alone.
-  await expect(rows.first()).toHaveAccessibleName('#4 Player One · Foul');
-  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · +2');
+  await expect(rows.first()).toHaveAccessibleName('#4 Player One (Home) · Foul');
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One (Home) · +2');
 
   await rows.nth(1).click();
   const fix = page.getByRole('dialog');
-  await expect(fix).toHaveAccessibleName('Fix: #4 +2 · Q1');
+  await expect(fix).toHaveAccessibleName('Fix: #4 (Home) +2 · Q1');
   await expect(fix.getByRole('group', { name: 'Play', exact: true })).toBeVisible();
   await expect(fix.getByRole('group', { name: 'Player', exact: true })).toBeVisible();
   await fix.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(fix).toHaveCount(0);
-  await expect(page.getByTestId('feedback-text')).toHaveText('Deleted #4 +2');
+  await expect(page.getByTestId('feedback-text')).toHaveText('Deleted #4 (Home) +2');
   await expect(rows).toHaveCount(1);
 
   await page.getByRole('status').getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · +2');
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One (Home) · +2');
 });
 
 test("the check's Add-play sheet shows only what was added while it is open, and its list is oldest first", async ({ page }) => {
@@ -443,7 +443,7 @@ test("the check's Add-play sheet shows only what was added while it is open, and
   await page.getByRole('button', { name: 'Add play to Q1' }).click();
   await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
-  await expect(page.getByTestId('feedback-text')).toHaveText(/^Added #4 \+2 to Q1/);
+  await expect(page.getByTestId('feedback-text')).toHaveText(/^Added #4 \(Home\) \+2 to Q1/);
 
   await page.getByRole('button', { name: 'Add play to Q1' }).click();
   await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
@@ -453,14 +453,14 @@ test("the check's Add-play sheet shows only what was added while it is open, and
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
   // An FT keeps the sheet open, and what it added does show.
   await page.getByRole('dialog').getByRole('button', { name: 'FT made', exact: true }).click();
-  await expect(status).toHaveText('Added #4 FT made to Q1');
+  await expect(status).toHaveText('Added #4 (Home) FT made to Q1');
   await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
   // The check's list stays oldest first, to walk beside the book.
   const rows = page.getByRole('region', { name: 'Plays to fix' }).getByRole('region', { name: 'Q1' }).getByRole('button');
   await expect(rows).toHaveCount(3);
-  await expect(rows.first()).toHaveAccessibleName('#4 Player One · +2');
-  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · +2');
-  await expect(rows.nth(2)).toHaveAccessibleName('#4 Player One · FT made');
+  await expect(rows.first()).toHaveAccessibleName('#4 Player One (Home) · +2');
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One (Home) · +2');
+  await expect(rows.nth(2)).toHaveAccessibleName('#4 Player One (Home) · FT made');
 });
 
 test('Log: a fix that changes the player and the quarter, with the plays after it, is one Undo', async ({ page }) => {
@@ -479,7 +479,7 @@ test('Log: a fix that changes the player and the quarter, with the plays after i
 
   const q1 = page.getByRole('region', { name: 'Q1', exact: true });
   const q2 = page.getByRole('region', { name: 'Q2', exact: true });
-  await q1.getByRole('button', { name: /^#4 Player One · \+2/ }).click();
+  await q1.getByRole('button', { name: /^#4 Player One \(Home\) · \+2/ }).click();
   const fix = page.getByRole('dialog');
   const quarter = fix.getByRole('group', { name: 'Quarter', exact: true });
   const also = fix.getByRole('checkbox', { name: 'Also move the 1 play after it in Q1', exact: true });
@@ -495,17 +495,17 @@ test('Log: a fix that changes the player and the quarter, with the plays after i
   await fix.getByRole('group', { name: 'Player', exact: true }).getByRole('button', { name: '#00 Player Two', exact: true }).click();
   await fix.getByRole('button', { name: 'Save', exact: true }).click();
 
-  await expect(page.getByTestId('feedback-text')).toHaveText('Edited #4 +2 → #00 +2; moved 2 plays to Q2');
+  await expect(page.getByTestId('feedback-text')).toHaveText('Edited #4 (Home) +2 → #00 (Home) +2; moved 2 plays to Q2');
   await expect(q1).toHaveCount(0);
   await expect(q2.getByRole('listitem')).toHaveCount(2);
-  await expect(q2.getByRole('button', { name: /^#00 Player Two · \+2/ })).toBeVisible();
+  await expect(q2.getByRole('button', { name: /^#00 Player Two \(Home\) · \+2/ })).toBeVisible();
 
   // One Undo restores both the player and the quarter.
   await page.getByRole('status').getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(q2).toHaveCount(0);
   await expect(q1.getByRole('listitem')).toHaveCount(2);
-  await expect(q1.getByRole('button', { name: '#4 Player One · +2', exact: true })).toBeVisible();
-  await expect(q1.getByRole('button', { name: '#4 Player One · Foul', exact: true })).toBeVisible();
+  await expect(q1.getByRole('button', { name: '#4 Player One (Home) · +2', exact: true })).toBeVisible();
+  await expect(q1.getByRole('button', { name: '#4 Player One (Home) · Foul', exact: true })).toBeVisible();
 });
 
 test('Redo: five Undos where four were meant, then Redo puts the last one back; a new play ends Redo', async ({ page }) => {
@@ -520,10 +520,10 @@ test('Redo: five Undos where four were meant, then Redo puts the last one back; 
   for (let i = 0; i < 5; i++) await undo.click();
   await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
   const redo = page.getByRole('button', { name: 'Redo', exact: true });
-  await expect(page.getByTestId('feedback-text')).toHaveText('Undid #4 +2');
+  await expect(page.getByTestId('feedback-text')).toHaveText('Undid #4 (Home) +2');
   await redo.click();
   await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
-  await expect(page.getByTestId('feedback-text')).toHaveText('Redid #4 +2');
+  await expect(page.getByTestId('feedback-text')).toHaveText('Redid #4 (Home) +2');
   // More is left to redo, so Redo stays; a new play forks the history and Redo goes.
   await expect(redo).toBeVisible();
   await card.click();

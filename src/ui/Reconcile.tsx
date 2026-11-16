@@ -2,13 +2,13 @@ import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
-import { appendEvent } from '../core/events';
+import { appendEvent, sideName } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
 import type { Player } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { addedLabel } from './log-logic';
-import { feedbackLine, type PlayType, type Toast } from './live-logic';
+import { feedbackLine, who, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
   MISMATCH_HINT, appHasText, compareText, isMismatch, oppCompareText, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
@@ -105,7 +105,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   };
   const addPlay = (type: PlayType) => {
     if (!addPlayer) return;
-    update((g, now) => appendEvent(g, { type, playerId: addPlayer.id, period }, now), addedLabel(type, addPlayer.number, period));
+    update((g, now) => appendEvent(g, { type, playerId: addPlayer.id, period }, now), addedLabel(type, who(addPlayer, sideName(game, 'us')), period));
     if (type !== 'FTM' && type !== 'FTX') closeAdd();
   };
   const closeAdd = () => { setAddStep('closed'); setAddPlayer(null); };

@@ -1,6 +1,9 @@
 import { periodLabel } from '../core/periods';
 import type { PeriodCheck } from '../core/reconcile';
+import type { TimeoutState } from '../core/derive';
 import type { EventType, Player, TimeoutKind } from '../core/types';
+
+export type TeamTag = 'Home' | 'Away';
 
 export type PlayType = Extract<EventType, 'FG2' | 'FG3' | 'FTM' | 'FTX' | 'FOUL' | 'TECH'>;
 
@@ -13,24 +16,50 @@ const PLAY_TEXT: Record<PlayType, string> = {
   TECH: 'Tech foul',
 };
 
+/** The Bench sheet's button; the logged play reads `benchTechLabel(tag)`. */
 export const BENCH_TECH_TEXT = 'Bench tech';
 /** The Bench card's label: says it records techs, so it is not mistaken for roster editing. */
 export const BENCH_CARD_TEXT = 'Bench / coach tech';
 
 const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30s', ot: 'OT' };
 
-/** Feedback / undo label for a player entry, e.g. `#4 +2`. */
-export function playLabel(type: PlayType, number: string): string {
-  return `#${number} ${PLAY_TEXT[type]}`;
+/** Who a play belongs to: `#4 (Home)`, `#14 (Away)`, or just `Away` with no player. */
+export function who(p: Player | null, tag: TeamTag): string {
+  return p ? `#${p.number} (${tag})` : tag;
+}
+
+/** Feedback / undo label for a player entry, e.g. `#4 (Home) +2`. */
+export function playLabel(type: PlayType, whoText: string): string {
+  return `${whoText} ${PLAY_TEXT[type]}`;
+}
+
+export function benchTechLabel(tag: TeamTag): string {
+  return `${tag} bench tech`;
 }
 
 export function playButtonText(type: PlayType): string {
   return PLAY_TEXT[type];
 }
 
-export function timeoutLabel(kind: TimeoutKind): string {
-  return `Timeout (${TIMEOUT_TEXT[kind]})`;
+export function timeoutLabel(kind: TimeoutKind, tag: TeamTag): string {
+  return `${tag} timeout (${TIMEOUT_TEXT[kind]})`;
 }
+
+export function timeoutsLeft(t: TimeoutState, kind: TimeoutKind): number {
+  return t[kind].total - t[kind].used;
+}
+
+/** A timeout button: `Full: 2`. The display never goes below 0. */
+export function timeoutButtonText(kind: TimeoutKind, left: number): string {
+  return `${TIMEOUT_TEXT[kind]}: ${Math.max(0, left)}`;
+}
+
+const TIMEOUT_WORD: Record<TimeoutKind, string> = { full: 'full', thirty: '30-second', ot: 'OT' };
+
+export function zeroTimeoutWarning(side: TeamTag, kind: TimeoutKind): string {
+  return `${side} has no ${TIMEOUT_WORD[kind]} timeouts left. Are you sure?`;
+}
+export const TAKE_ANYWAY = 'Take one anyway';
 
 export function timeoutKindText(kind: TimeoutKind): string {
   return TIMEOUT_TEXT[kind];
@@ -90,7 +119,10 @@ export function teamFoulsWarn(fouls: number): boolean {
   return fouls >= BONUS_AT - 1;
 }
 
-export const BONUS_TEXT = 'Bonus: they shoot FTs';
+/** The strip's badge: the team that shoots free throws. */
+export function bonusText(shooter: TeamTag): string {
+  return `${shooter} shoots`;
+}
 
 /** Screen-reader text for a card: `1 point`, `2 points`; `1 foul`, `3 fouls`. */
 export function countText(n: number, one: string, many: string): string {
@@ -102,22 +134,24 @@ export interface FoulContext {
   player: { p: Player; fouls: number; techs: number } | null;
   /** Team fouls toward the bonus before this entry. */
   teamFouls: number;
+  /** The fouling team. */
+  tag: TeamTag;
 }
 
 /**
- * The toast for a foul entry. The one that puts a player out names them: `#22 Player One foul — 5th, out`
+ * The toast for a foul entry. The one that puts a player out names them: `#22 Player One (Home) foul — 5th, out`
  * (or `tech foul — 2nd tech, out`), and the one that puts the opponent in the bonus adds ` — bonus`.
  */
 export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext): string {
   let label: string;
   if (type === 'BENCH_TECH' || !ctx.player) {
-    label = BENCH_TECH_TEXT;
+    label = benchTechLabel(ctx.tag);
   } else {
     const { p, fouls, techs } = ctx.player;
-    const who = `#${p.number} ${p.name}`.trim();
+    const named = `#${p.number} ${p.name}`.trim() + ` (${ctx.tag})`;
     const kind = type === 'TECH' ? 'tech foul' : 'foul';
     const out = fouls + 1 === 5 ? '5th, out' : type === 'TECH' && techs + 1 === 2 ? '2nd tech, out' : null;
-    label = out ? `${who} ${kind} — ${out}` : playLabel(type, p.number);
+    label = out ? `${named} ${kind} — ${out}` : playLabel(type, who(p, ctx.tag));
   }
   return ctx.teamFouls + 1 === BONUS_AT ? `${label} — bonus` : label;
 }

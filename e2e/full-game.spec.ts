@@ -183,7 +183,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.foul('Player Two');
     await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.benchTech();
-    await app.expectToast('Bench tech — bonus');
+    await app.expectToast('Home bench tech — bonus');
     await app.expectStrip({ us: 13, opp: 8, period: 'Q2', fouls: 5, bonus: true, timeouts: { full: 2, thirty: 2 } });
     await app.opp(2);
     await app.ft('Player Two', true, true);
@@ -213,7 +213,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.score('Player One', '+2'); // wrong player: it was #0 Player Three
     await app.opp(3);
     await app.foul('Player Four');
-    await app.expectToast('#12 Player Four foul — 5th, out');
+    await app.expectToast('#12 Player Four (Home) foul — 5th, out');
     await app.expectEntryWhole();
     await app.expectCardsFit();
     await app.expectPlayer('Player Four', 0, 5, true);

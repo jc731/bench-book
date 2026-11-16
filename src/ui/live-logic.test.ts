@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  BONUS_TEXT, UNDO_CLEARED_LABEL, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
+  TAKE_ANYWAY, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel, timeoutsText,
   stripPeriodText, undoAriaLabel,
 } from './live-logic';
 import { outReason } from './live-logic';
@@ -11,19 +11,21 @@ const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
   diff: null, oppSpanFrom: period, anchorOppBook: 0, bookOppTotal: null, bookOppSpan: null, oppTapped: 0, status, note: '',
 });
 
+const pl = (number: string) => ({ id: 'x', number, name: 'N', pos: '' });
+
 describe('labels', () => {
   it('names each play with the jersey number', () => {
-    expect(playLabel('FG2', '4')).toBe('#4 +2');
-    expect(playLabel('FG3', '12')).toBe('#12 +3');
-    expect(playLabel('FTM', '4')).toBe('#4 FT made');
-    expect(playLabel('FTX', '4')).toBe('#4 FT missed');
-    expect(playLabel('FOUL', '4')).toBe('#4 Foul');
-    expect(playLabel('TECH', '4')).toBe('#4 Tech foul');
+    expect(playLabel('FG2', who(pl('4'), 'Home'))).toBe('#4 (Home) +2');
+    expect(playLabel('FG3', who(pl('12'), 'Home'))).toBe('#12 (Home) +3');
+    expect(playLabel('FTM', who(pl('4'), 'Home'))).toBe('#4 (Home) FT made');
+    expect(playLabel('FTX', who(pl('4'), 'Home'))).toBe('#4 (Home) FT missed');
+    expect(playLabel('FOUL', who(pl('4'), 'Home'))).toBe('#4 (Home) Foul');
+    expect(playLabel('TECH', who(pl('4'), 'Home'))).toBe('#4 (Home) Tech foul');
   });
   it('names timeouts, opponent taps and period ends', () => {
-    expect(timeoutLabel('full')).toBe('Timeout (Full)');
-    expect(timeoutLabel('thirty')).toBe('Timeout (30s)');
-    expect(timeoutLabel('ot')).toBe('Timeout (OT)');
+    expect(timeoutLabel('full', 'Home')).toBe('Home timeout (Full)');
+    expect(timeoutLabel('thirty', 'Home')).toBe('Home timeout (30s)');
+    expect(timeoutLabel('ot', 'Away')).toBe('Away timeout (OT)');
     expect(oppLabel(2)).toBe('Opp +2');
     expect(endPeriodLabel(1)).toBe('End Q1');
     expect(endPeriodLabel(5)).toBe('End OT1');
@@ -92,20 +94,21 @@ describe('status and toast wording', () => {
   const p = { id: 'p', number: '22', name: 'Player One', pos: '' };
   it('turns team fouls amber from 4, one before the bonus on the 5th', () => {
     expect([3, 4, 5].map(teamFoulsWarn)).toEqual([false, true, true]);
-    expect(BONUS_TEXT).toBe('Bonus: they shoot FTs');
+    expect(bonusText('Away')).toBe('Away shoots');
+    expect(bonusText('Home')).toBe('Home shoots');
   });
   it('names the player on the foul that puts them out', () => {
-    expect(foulLabel('FOUL', { player: { p, fouls: 3, techs: 0 }, teamFouls: 1 })).toBe('#22 Foul');
-    expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 1 })).toBe('#22 Player One foul — 5th, out');
-    expect(foulLabel('FOUL', { player: { p: { ...p, name: '' }, fouls: 4, techs: 0 }, teamFouls: 1 })).toBe('#22 foul — 5th, out');
-    expect(foulLabel('TECH', { player: { p, fouls: 2, techs: 1 }, teamFouls: 1 })).toBe('#22 Player One tech foul — 2nd tech, out');
-    expect(foulLabel('TECH', { player: { p, fouls: 4, techs: 0 }, teamFouls: 1 })).toBe('#22 Player One tech foul — 5th, out');
-    expect(foulLabel('FOUL', { player: { p, fouls: 5, techs: 0 }, teamFouls: 1 })).toBe('#22 Foul');
+    expect(foulLabel('FOUL', { player: { p, fouls: 3, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 (Home) Foul');
+    expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 Player One (Home) foul — 5th, out');
+    expect(foulLabel('FOUL', { player: { p: { ...p, name: '' }, fouls: 4, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 (Home) foul — 5th, out');
+    expect(foulLabel('TECH', { player: { p, fouls: 2, techs: 1 }, teamFouls: 1, tag: 'Home' })).toBe('#22 Player One (Home) tech foul — 2nd tech, out');
+    expect(foulLabel('TECH', { player: { p, fouls: 4, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 Player One (Home) tech foul — 5th, out');
+    expect(foulLabel('FOUL', { player: { p, fouls: 5, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 (Home) Foul');
   });
   it('adds "— bonus" on the 5th team foul only', () => {
-    expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 4 })).toBe('Bench tech — bonus');
-    expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 5 })).toBe('Bench tech');
-    expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 4 })).toBe('#22 Player One foul — 5th, out — bonus');
+    expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 4, tag: 'Home' })).toBe('Home bench tech — bonus');
+    expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 5, tag: 'Away' })).toBe('Away bench tech');
+    expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 4, tag: 'Home' })).toBe('#22 Player One (Home) foul — 5th, out — bonus');
   });
   it('pluralizes card counts', () => {
     expect([0, 1, 2].map((n) => countText(n, 'point', 'points'))).toEqual(['0 points', '1 point', '2 points']);
@@ -160,5 +163,34 @@ describe('outReason', () => {
     expect(outReason({ fouls: 5, techs: 0 })).toBe('5 fouls');
     expect(outReason({ fouls: 2, techs: 2 })).toBe('2 techs');
     expect(outReason({ fouls: 6, techs: 2 })).toBe('6 fouls');
+  });
+});
+
+describe('two-team copy', () => {
+  it('who names the team, with or without a player', () => {
+    expect(who(pl('4'), 'Home')).toBe('#4 (Home)');
+    expect(who(pl('14'), 'Away')).toBe('#14 (Away)');
+    expect(who(null, 'Away')).toBe('Away');
+  });
+  it('names a bench tech by team', () => {
+    expect(benchTechLabel('Home')).toBe('Home bench tech');
+  });
+  it('timeout buttons show what is left, never below 0', () => {
+    expect(timeoutButtonText('full', 2)).toBe('Full: 2');
+    expect(timeoutButtonText('thirty', 0)).toBe('30s: 0');
+    expect(timeoutButtonText('ot', 1)).toBe('OT: 1');
+    expect(timeoutButtonText('full', -1)).toBe('Full: 0');
+  });
+  it('timeoutsLeft is total minus used', () => {
+    const t = { full: { used: 1, total: 3 as const }, thirty: { used: 2, total: 2 as const }, ot: { used: 0, total: 1 } };
+    expect(timeoutsLeft(t, 'full')).toBe(2);
+    expect(timeoutsLeft(t, 'thirty')).toBe(0);
+    expect(timeoutsLeft(t, 'ot')).toBe(1);
+  });
+  it('warns when a team has none of a kind left', () => {
+    expect(zeroTimeoutWarning('Away', 'full')).toBe('Away has no full timeouts left. Are you sure?');
+    expect(zeroTimeoutWarning('Home', 'thirty')).toBe('Home has no 30-second timeouts left. Are you sure?');
+    expect(zeroTimeoutWarning('Home', 'ot')).toBe('Home has no OT timeouts left. Are you sure?');
+    expect(TAKE_ANYWAY).toBe('Take one anyway');
   });
 });

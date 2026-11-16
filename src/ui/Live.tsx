@@ -1,13 +1,13 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
-import { appendEvent } from '../core/events';
+import { appendEvent, sideName } from '../core/events';
 import { periodLabel, isOvertime } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
 import type { EventDraft, Player, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, oppLabel, playLabel, reconcileBanner,
+  BENCH_TECH_TEXT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, oppLabel, playLabel, who, reconcileBanner,
   outReason, timeoutKindText, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
 } from './live-logic';
 import { notExportedText } from './reconcile-logic';
@@ -44,19 +44,20 @@ export function Live({ store }: { store: GameStore }) {
   const banner = reconcileBanner(openIssues(game));
 
   const add = (draft: EventDraft, label: string) => update((g, now) => appendEvent(g, draft, now), label);
+  const usTag = sideName(game, 'us');
   const teamFouls = d.teamFoulsForBonus(period);
   const play = (type: PlayType) => {
     if (!picked) return;
     const line = d.players.find((l) => l.playerId === picked.id);
     const label =
       type === 'FOUL' || type === 'TECH'
-        ? foulLabel(type, { player: { p: picked, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 }, teamFouls })
-        : playLabel(type, picked.number);
+        ? foulLabel(type, { player: { p: picked, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 }, teamFouls, tag: usTag })
+        : playLabel(type, who(picked, usTag));
     add({ type, playerId: picked.id }, label);
     if (type !== 'FTM' && type !== 'FTX') setPicked(null);
   };
   const timeout = (kind: TimeoutKind) => {
-    add({ type: 'TIMEOUT', timeoutKind: kind }, timeoutLabel(kind));
+    add({ type: 'TIMEOUT', timeoutKind: kind }, timeoutLabel(kind, usTag));
     setSheet(null);
   };
   const doEndPeriod = () => {
@@ -85,7 +86,7 @@ export function Live({ store }: { store: GameStore }) {
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
-      <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} ended={Boolean(game.endedAt)} derived={d} />
+      <StatusStrip us={d.usTotal} opp={oppTotal(game)} period={period} ended={Boolean(game.endedAt)} derived={d} oppTag={sideName(game, 'them')} />
       <div data-testid="player-grid" class="min-h-0 flex-1 overflow-y-auto">
         <PlayerGrid roster={game.roster} lines={d.players} onPick={pick} onBench={() => setSheet('bench')} benchTechs={d.benchTechs} />
       </div>
@@ -146,7 +147,7 @@ export function Live({ store }: { store: GameStore }) {
             type="button"
             class={`${opt} w-full`}
             onClick={() => {
-              add({ type: 'BENCH_TECH' }, foulLabel('BENCH_TECH', { player: null, teamFouls }));
+              add({ type: 'BENCH_TECH' }, foulLabel('BENCH_TECH', { player: null, teamFouls, tag: usTag }));
               setSheet(null);
             }}
           >

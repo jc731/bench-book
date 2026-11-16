@@ -31,16 +31,16 @@ describe('eventRowText', () => {
     { type: 'FTX', playerId: 'zz' },
   ]);
   it('reads number, name, then the play', () => {
-    expect(eventRowText(g, g.events[0])).toBe('#4 Player One · +2');
+    expect(eventRowText(g, g.events[0])).toBe('#4 Player One (Home) · +2');
   });
   it('drops the name when blank and tolerates an unknown player', () => {
-    expect(eventRowText(g, g.events[1])).toBe('#7 · Foul');
-    expect(eventRowText(g, g.events[5])).toBe('#? · FT missed');
+    expect(eventRowText(g, g.events[1])).toBe('#7 (Home) · Foul');
+    expect(eventRowText(g, g.events[5])).toBe('#? (Home) · FT missed');
   });
   it('writes non-player events without a player', () => {
     expect(eventRowText(g, g.events[2])).toBe('Opp +3');
-    expect(eventRowText(g, g.events[3])).toBe('Timeout (Full)');
-    expect(eventRowText(g, g.events[4])).toBe('Bench tech');
+    expect(eventRowText(g, g.events[3])).toBe('Home timeout (Full)');
+    expect(eventRowText(g, g.events[4])).toBe('Home bench tech');
   });
 });
 
@@ -105,20 +105,20 @@ describe('editing', () => {
   });
   it('labels edits for the toast', () => {
     const e = first(g);
-    expect(editLabel(g, e, { type: 'FG3' })).toBe('Edited #4 +2 → +3');
-    expect(editLabel(g, e, { playerId: 'b' })).toBe('Edited #4 +2 → #7 +2');
-    expect(editLabel(g, e, { period: 2 })).toBe('Moved #4 +2 to Q2');
-    expect(editLabel(g, e, { type: 'FOUL', period: 2 })).toBe('Edited #4 +2 → Foul, now in Q2');
+    expect(editLabel(g, e, { type: 'FG3' })).toBe('Edited #4 (Home) +2 → +3');
+    expect(editLabel(g, e, { playerId: 'b' })).toBe('Edited #4 (Home) +2 → #7 (Home) +2');
+    expect(editLabel(g, e, { period: 2 })).toBe('Moved #4 (Home) +2 to Q2');
+    expect(editLabel(g, e, { type: 'FOUL', period: 2 })).toBe('Edited #4 (Home) +2 → Foul, now in Q2');
     expect(editLabel(g, g.events[2], { oppPoints: 3 })).toBe('Edited Opp +2 → Opp +3');
   });
   it('labels an added play with the period', () => {
-    expect(addedLabel('FG2', '4', 2)).toBe('Added #4 +2 to Q2');
+    expect(addedLabel('FG2', '#4 (Home)', 2)).toBe('Added #4 (Home) +2 to Q2');
   });
   it('titles the fix sheet with the play and its quarter', () => {
     const q1 = game([{ type: 'FG2', playerId: 'a' }, { type: 'TIMEOUT', timeoutKind: 'full' }], 1);
-    expect(editTitle(q1, q1.events[0])).toBe('Fix: #4 +2 · Q1');
-    expect(editTitle(q1, q1.events[1])).toBe('Fix: Timeout (Full) · Q1');
-    expect(editTitle(g, first(g))).toBe('Fix: #4 +2 · Q3');
+    expect(editTitle(q1, q1.events[0])).toBe('Fix: #4 (Home) +2 · Q1');
+    expect(editTitle(q1, q1.events[1])).toBe('Fix: Home timeout (Full) · Q1');
+    expect(editTitle(g, first(g))).toBe('Fix: #4 (Home) +2 · Q3');
   });
 });
 
@@ -195,7 +195,7 @@ describe('editSave', () => {
     const d = { ...draftOf(e), playerId: 'b', period: 4 };
     const s = editSave(g, e, d, true)!;
     const prefix = editLabel(g, e, { playerId: 'b' });
-    expect(prefix).toBe('Edited #4 +2 → #7 +2');
+    expect(prefix).toBe('Edited #4 (Home) +2 → #7 (Home) +2');
     expect(s.label).toBe(`${prefix}; moved 3 plays to Q4`);
     const next = apply(s);
     const fixed = next.events.find((x) => x.id === e.id)!;
@@ -216,7 +216,7 @@ describe('editSave', () => {
   });
   it('moves only the play when not ticked', () => {
     const s = editSave(g, e, { ...draftOf(e), period: 4 }, false)!;
-    expect(s.label).toBe('Moved #4 +2 to Q4');
+    expect(s.label).toBe('Moved #4 (Home) +2 to Q4');
     expect(periods(apply(s))).toEqual([1, 2, 4, 3, 3, 4]);
   });
   it('moves backward too, to a quarter that is not next to it', () => {
@@ -235,7 +235,7 @@ describe('editSave', () => {
   });
   it('ignores the tick when the quarter did not change', () => {
     const s = editSave(g, e, { ...draftOf(e), type: 'FG3' }, true)!;
-    expect(s.label).toBe('Edited #4 +2 → +3');
+    expect(s.label).toBe('Edited #4 (Home) +2 → +3');
     expect(periods(apply(s))).toEqual([1, 2, 3, 3, 3, 4]);
   });
 });
@@ -252,10 +252,10 @@ describe('resumeText', () => {
   it('names the most recently entered play, by number', () => {
     let g = game([{ type: 'FG2', playerId: 'b' }]);
     g = appendEvent(g, { type: 'FG2', playerId: 'a' }, new Date(NOW.getTime() + 1000));
-    expect(resumeText(g)).toBe('Last: #4 +2');
+    expect(resumeText(g)).toBe('Last: #4 (Home) +2');
     // A play that sorts first but was entered last is still "last".
     const early = { ...g, events: g.events.map((e, i) => (i === 1 ? { ...e, order: -1 } : e)) };
-    expect(resumeText(early)).toBe('Last: #4 +2');
+    expect(resumeText(early)).toBe('Last: #4 (Home) +2');
   });
   it('words non-player events like the feedback line', () => {
     expect(resumeText(game([{ type: 'OPP_PTS', oppPoints: 3 }]))).toBe('Last: Opp +3');

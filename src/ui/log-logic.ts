@@ -1,7 +1,7 @@
 import { periodLabel } from '../core/periods';
-import { editEvent, moveFrom, orderedEvents } from '../core/events';
+import { editEvent, moveFrom, orderedEvents, rosterOf, sideName, sideOf } from '../core/events';
 import type { EventType, Game, GameEvent, TimeoutKind } from '../core/types';
-import { BENCH_TECH_TEXT, oppLabel, playLabel, timeoutLabel, type PlayType } from './live-logic';
+import { benchTechLabel, oppLabel, playButtonText, playLabel, timeoutLabel, who, type PlayType } from './live-logic';
 
 export const PLAY_TYPES: PlayType[] = ['FG2', 'FG3', 'FTM', 'FTX', 'FOUL', 'TECH'];
 const TIMEOUT_KINDS: TimeoutKind[] = ['full', 'thirty', 'ot'];
@@ -10,21 +10,22 @@ export function isPlayType(t: EventType): t is PlayType {
   return (PLAY_TYPES as EventType[]).includes(t);
 }
 
-/** Short label, no name: `#4 +2`, `Opp +3`, `Timeout (Full)`, `Bench tech`. Used in toasts. */
+/** Short label, no name: `#4 (Home) +2`, `Opp +3`, `Home timeout (Full)`, `Home bench tech`. Used in toasts. */
 export function eventLabel(g: Game, e: GameEvent): string {
-  if (e.type === 'BENCH_TECH') return BENCH_TECH_TEXT;
-  if (e.type === 'TIMEOUT') return timeoutLabel(e.timeoutKind ?? 'full');
+  const tag = sideName(g, sideOf(e));
+  if (e.type === 'BENCH_TECH') return benchTechLabel(tag);
+  if (e.type === 'TIMEOUT') return timeoutLabel(e.timeoutKind ?? 'full', tag);
   if (e.type === 'OPP_PTS') return oppLabel(e.oppPoints ?? 2);
-  const number = g.roster.find((p) => p.id === e.playerId)?.number ?? '?';
-  return playLabel(e.type as PlayType, number);
+  const p = rosterOf(g, sideOf(e)).find((x) => x.id === e.playerId);
+  return playLabel(e.type as PlayType, who(p ?? { id: '', number: '?', name: '', pos: '' }, tag));
 }
 
-/** Log row text: `#4 Player One · +2`; the name is dropped when blank. */
+/** Log row text: `#4 Player One (Home) · +2`; the name is dropped when blank. */
 export function eventRowText(g: Game, e: GameEvent): string {
   if (!isPlayType(e.type)) return eventLabel(g, e);
-  const p = g.roster.find((x) => x.id === e.playerId);
-  const who = p ? `#${p.number} ${p.name}`.trim() : '#?';
-  return `${who} · ${eventLabel(g, e).replace(/^#\S+ /, '')}`;
+  const p = rosterOf(g, sideOf(e)).find((x) => x.id === e.playerId);
+  const name = p ? `#${p.number} ${p.name}`.trim() : '#?';
+  return `${name} (${sideName(g, sideOf(e))}) · ${playButtonText(e.type)}`;
 }
 
 export interface PeriodGroup {
@@ -102,8 +103,8 @@ export function editLabel(g: Game, e: GameEvent, patch: EditPatch): string {
   const now = eventLabel(g, after);
   const moved = patch.period !== undefined && patch.period !== e.period;
   if (before === now) return moved ? `Moved ${before} to ${periodLabel(after.period)}` : `Edited ${before}`;
-  const who = before.startsWith('#') ? before.split(' ')[0] + ' ' : null;
-  const text = `Edited ${before} → ${who && now.startsWith(who) ? now.slice(who.length) : now}`;
+  const lead = /^#\S+ \((?:Home|Away)\) /.exec(before)?.[0] ?? null;
+  const text = `Edited ${before} → ${lead && now.startsWith(lead) ? now.slice(lead.length) : now}`;
   return moved ? `${text}, now in ${periodLabel(after.period)}` : text;
 }
 
@@ -165,8 +166,8 @@ export function editSave(
   };
 }
 
-export function addedLabel(type: PlayType, number: string, period: number): string {
-  return `Added ${playLabel(type, number)} to ${periodLabel(period)}`;
+export function addedLabel(type: PlayType, whoText: string, period: number): string {
+  return `Added ${playLabel(type, whoText)} to ${periodLabel(period)}`;
 }
 
 /** The feedback line on reopening a game in progress: `Last: #3 +2`; null with no plays or once ended. */

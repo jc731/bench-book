@@ -146,7 +146,7 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     await app.expectWarning('Player Four');
     await app.expectStrip({ us: 10, opp: 9, period: 'Q2', fouls: 4, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await app.benchTech();
-    await app.expectToast('Bench tech — bonus');
+    await app.expectToast('Home bench tech — bonus');
     await app.expectBenchTechs(1);
     await app.opp(1);
     await app.opp(1);
@@ -167,7 +167,7 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
 
   await test.step('Q3: a foul-out, a 2-tech ejection, the out guard', async () => {
     await app.foul('Player Four');
-    await app.expectToast('#12 Player Four foul — 5th, out');
+    await app.expectToast('#12 Player Four (Home) foul — 5th, out');
     await app.expectPlayer('Player Four', 0, 5, true);
     await app.opp(1);
     await app.expectOutGuard('Player Four', '5 fouls');
@@ -177,7 +177,7 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     await app.opp(1);
     await app.score('Player Six', '+2');
     await app.tech('Player Five');
-    await app.expectToast('#23 Player Five tech foul — 2nd tech, out');
+    await app.expectToast('#23 Player Five (Home) tech foul — 2nd tech, out');
     await app.expectPlayer('Player Five', 0, 4, true);
     await app.expectOutGuard('Player Five', '2 techs');
     await app.opp(1);

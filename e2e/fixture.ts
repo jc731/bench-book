@@ -214,7 +214,7 @@ export function ui(page: Page) {
     back: () => page.getByRole('button', exact('Back')).click(),
     logSection: (label: string) => page.getByRole('region', exact(label)),
     /** A Log row's text: `#44 Player Seven · +2`. */
-    playText: (name: Name, play: '+2' | '+3') => `#${numberOf(name)} ${name} · ${play}`,
+    playText: (name: Name, play: '+2' | '+3') => `#${numberOf(name)} ${name} (Home) · ${play}`,
     oppText: (n: 1 | 2 | 3) => `Opp +${n}`,
     /** The Log row starting with `text` (an "edited" tag may follow it). */
     logRow: (scope: Locator, text: string) =>
@@ -225,7 +225,7 @@ export function ui(page: Page) {
       await dialog().getByRole('button', exact(`#${numberOf(name)} ${name}`)).click();
       await dialog().getByRole('button', exact(pts)).click();
       await expect(dialog()).toHaveCount(0);
-      await this.expectToast(`Added #${numberOf(name)} ${pts} to ${label}`);
+      await this.expectToast(`Added #${numberOf(name)} (Home) ${pts} to ${label}`);
     },
     /** Taps a row, picks another quarter and ticks "Also move" for the `after` plays that follow it. */
     async moveFrom(rowScope: Locator, fromLabel: string, rowText: string, toLabel: string, after: number) {
@@ -282,7 +282,7 @@ export function ui(page: Page) {
       await expect(h.getByLabel(`Score ${s.us} to ${s.opp}`)).toBeVisible();
       await expect(h.getByText(s.period, { exact: true })).toBeVisible();
       await expect(h.getByText(`Team fouls ${s.fouls}`, { exact: true })).toBeVisible();
-      await expect(h.getByText('Bonus: they shoot FTs', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
+      await expect(h.getByText('Away shoots', { exact: true })).toHaveCount(s.bonus ? 1 : 0);
       await expect(h.getByText(timeoutsText(s.timeouts), { exact: true })).toBeVisible();
     },
     /** The feedback line above the bottom bar (it stays until the next entry). */

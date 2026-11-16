@@ -1,5 +1,5 @@
 import type { Derived } from '../core/derive';
-import { BONUS_TEXT, stripPeriodText, teamFoulsWarn, timeoutsText } from './live-logic';
+import { bonusText, stripPeriodText, teamFoulsWarn, timeoutsText } from './live-logic';
 
 interface Props {
   us: number;
@@ -8,11 +8,13 @@ interface Props {
   /** An ended game shows `Final` in place of the period. */
   ended: boolean;
   derived: Derived;
+  /** Home or Away for the opponent: the team that shoots when we reach the bonus. */
+  oppTag: 'Home' | 'Away';
 }
 
 // Everything here must fit 390px without wrapping: line 1 is score, period and team fouls; line 2 is
 // timeouts left and, once the opponent is in the bonus, the bonus pill.
-export function StatusStrip({ us, opp, period, ended, derived }: Props) {
+export function StatusStrip({ us, opp, period, ended, derived, oppTag }: Props) {
   const fouls = derived.teamFoulsForBonus(period);
   return (
     <header class="sticky top-0 z-10 border-b border-slate-700 bg-slate-950 px-3 py-2">
@@ -28,7 +30,7 @@ export function StatusStrip({ us, opp, period, ended, derived }: Props) {
       <div class="mt-1 flex items-center justify-between gap-2 text-sm text-slate-300">
         <span class="whitespace-nowrap">{timeoutsText(derived.timeouts, period)}</span>
         {derived.oppInBonus(period) && (
-          <span class="whitespace-nowrap rounded bg-amber-400 px-2 text-xs font-bold leading-5 text-slate-900">{BONUS_TEXT}</span>
+          <span class="whitespace-nowrap rounded bg-amber-400 px-2 text-xs font-bold leading-5 text-slate-900">{bonusText(oppTag)}</span>
         )}
       </div>
     </header>

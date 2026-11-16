@@ -35,7 +35,7 @@ test('How-to screenshots', async ({ page }) => {
   await app.opp(3);
   await app.score('Player Five', '+2');
   await app.expectWarning('Player Four');
-  await expect(page.getByRole('banner').getByText('Bonus: they shoot FTs', { exact: true })).toBeVisible();
+  await expect(page.getByRole('banner').getByText('Away shoots', { exact: true })).toBeVisible();
   await shot('reading-the-screen');
 
   // Mistakes: Log, with one row's fix sheet open.
