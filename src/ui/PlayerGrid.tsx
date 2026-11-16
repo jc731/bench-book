@@ -10,8 +10,9 @@ interface Props {
   benchTechs: number;
 }
 
-// An out player's card is grayed (still red-bordered) so a tap on it reads as a mistake before it is one.
-const border = { ok: 'border-slate-600', warn: 'border-amber-400', out: 'border-red-500 opacity-50' } as const;
+// An out player's number, name and points are grayed so a tap on the card reads as a mistake before it
+// is one. The red border, red dots and OUT stay at full strength: graying the whole card took OUT to 2.2:1.
+const border = { ok: 'border-slate-600', warn: 'border-amber-400', out: 'border-red-500' } as const;
 
 export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props) {
   const wide = roster.length % 2 === 0;
@@ -30,13 +31,13 @@ export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props
             onClick={() => onPick(p)}
             aria-label={`#${p.number} ${p.name}, ${countText(points, 'point', 'points')}, ${countText(fouls, 'foul', 'fouls')}${state === 'out' ? ', out' : ''}`}
           >
-            <div class="flex items-baseline justify-between">
+            <div class={`flex items-baseline justify-between ${state === 'out' ? 'opacity-50' : ''}`}>
               <span class="text-3xl font-bold leading-none">{p.number}</span>
               <span class="text-lg font-semibold tabular-nums">
                 {points} <span class="text-sm font-normal text-slate-300">pts</span>
               </span>
             </div>
-            <div class="mt-1 truncate text-sm text-slate-300">{p.name || ' '}</div>
+            <div class={`mt-1 truncate text-sm text-slate-300 ${state === 'out' ? 'opacity-50' : ''}`}>{p.name || ' '}</div>
             <div class="mt-1 flex items-center gap-1" aria-hidden="true">
               {[0, 1, 2, 3, 4].map((n) => (
                 <span

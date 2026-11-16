@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- An out player's card keeps its OUT label, red dots and red border at full strength; only the number, name and points are grayed. The OUT label had been the hardest thing on the card to read.
+
 ## [0.5.0] - 2026-11-16
 
 - The opponent is optional and moved into Game details. Left blank, the game is named for its date as MM-DD (for example `11-13`), on screen and in both CSVs. Home/Away now has the top row to itself.

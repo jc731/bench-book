@@ -107,6 +107,13 @@ export function ui(page: Page) {
     },
     /** An out player's sheet: the warning shows and every play is grayed out. Closes with Done. */
     async expectOutGuard(name: Name, reason: string) {
+      // The card's OUT label is drawn at full strength: graying the whole card once took it to 2.2:1.
+      const out = card(name).getByText('OUT', { exact: true });
+      expect(await out.evaluate((el) => {
+        let o = 1;
+        for (let e: Element | null = el; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
+        return o;
+      })).toBe(1);
       await card(name).click();
       await expect(dialog().getByTestId('out-warning')).toContainText(`Out: ${reason}. Are you sure? This player is supposed to be out.`);
       for (const p of ['+2', '+3', 'FT made', 'FT missed', 'Foul', 'Tech foul']) {
