@@ -34,8 +34,8 @@ describe('buildCells', () => {
 
 describe('MARK_LEGEND', () => {
   it('names every mark', () => ['X', '●', '/'].forEach((m) => expect(MARK_LEGEND).toContain(m)));
-  it('names the shaded cells and the amber edge', () => {
+  it('names the shaded cells and the quarter edge', () => {
     expect(MARK_LEGEND).toMatch(/shaded/i);
-    expect(MARK_LEGEND).toMatch(/amber/);
+    expect(MARK_LEGEND).toMatch(/thick white edge ends a quarter/);
   });
 });

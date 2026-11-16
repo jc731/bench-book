@@ -52,7 +52,7 @@ export function stripPeriodText(period: number, ended: boolean): string {
 /** The bar's End slot: ends a quarter, opens the Q4/OT sheet that can end the game, or, once ended, opens Final. */
 /** `mark` is decoration after the text, hidden from screen readers so it is not part of the button's name. */
 /**
- * `tone` sets the button's color so the End slot stands apart from the rest of the bar: amber when it
+ * `tone` sets the button's color so the End slot stands apart from the rest of the bar: blue when it
  * ends a quarter, red when it can end the game (Q4 and OT), plain once the game is over.
  */
 export type EndSlot = { text: string; mark?: string; opens: 'endPeriod' | 'endSheet' | 'final'; tone: 'quarter' | 'game' | 'final' };

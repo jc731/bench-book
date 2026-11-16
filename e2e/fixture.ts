@@ -250,7 +250,10 @@ export function ui(page: Page) {
       await this.issue(label, status).locator('..').getByRole('button', exact(action)).click();
     },
     expectFinalScore: (us: number, opp: number) =>
-      expect(page.getByTestId('final-score')).toHaveText(`${TEAM} ${us} – ${opp} ${OPPONENT}`),
+      Promise.all([
+        expect(page.getByTestId('final-us')).toHaveText(`${TEAM} ${us}`),
+        expect(page.getByTestId('final-them')).toHaveText(`${OPPONENT} ${opp}`),
+      ]),
     exportButton: (which: 'Book CSV' | 'Plays CSV') => page.getByRole('button', exact(which)),
     /** Each file's saved state on the Final screen. */
     async expectExportState(book: boolean, plays: boolean) {

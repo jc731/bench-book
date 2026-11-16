@@ -10,7 +10,7 @@ import { getStorage, type GameStore } from './store';
 import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
 
 const input =
-  'min-h-11 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-base text-white placeholder:text-slate-400 focus:border-amber-400 focus:outline-none';
+  'min-h-11 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-base text-white placeholder:text-slate-400 focus:border-sky-400 focus:outline-none';
 const btn = 'min-h-11 rounded-lg px-4 font-semibold';
 const secondary = `${btn} border border-slate-500 bg-slate-800 text-white`;
 
@@ -29,7 +29,7 @@ function UpdateBanner() {
   useEffect(() => onUpdateWaiting(() => setReady(true)), []);
   if (!ready) return null;
   return (
-    <button class={`${secondary} mb-4 w-full border-amber-400 text-amber-300`} onClick={applyUpdate}>
+    <button class={`${secondary} mb-4 w-full border-sky-400 text-sky-300`} onClick={applyUpdate}>
       Update available — reload
     </button>
   );
@@ -84,9 +84,9 @@ export function Setup({ store }: { store: GameStore }) {
     const warning = notExportedText(game, new Date());
     const exportBtn = { label: 'Export', onClick: () => store.setView('end') };
     const discardBtn = { label: 'Discard and start new', onClick: discardAndStart };
-    // Exported: discarding loses nothing, so it is the amber primary. Not exported: Export is, and
+    // Exported: discarding loses nothing, so it is the white primary. Not exported: Export is, and
     // Discard reads as the danger it is.
-    const primary = `${btn} bg-amber-400 text-slate-900`;
+    const primary = `${btn} bg-white text-slate-900`;
     const danger = `${btn} border border-red-400 bg-slate-900 text-red-300`;
     const [first, second] = exported
       ? [{ ...discardBtn, class: primary }, { ...exportBtn, class: secondary }]
@@ -127,7 +127,7 @@ export function Setup({ store }: { store: GameStore }) {
 
       <button
         type="button"
-        class="mb-4 min-h-11 text-left text-base text-amber-300 underline"
+        class="mb-4 min-h-11 text-left text-base text-sky-300 underline"
         onClick={() => store.openHowto('setup')}
       >
         First time here? How to use
@@ -138,7 +138,7 @@ export function Setup({ store }: { store: GameStore }) {
           <button
             type="button"
             aria-pressed={info.homeAway === h}
-            class={`min-h-11 flex-1 border px-3 font-semibold ${h === 'home' ? 'rounded-l-lg' : 'rounded-r-lg border-l-0'} ${info.homeAway === h ? 'border-amber-400 bg-amber-400 text-slate-900' : 'border-slate-500 bg-slate-800 text-white'}`}
+            class={`min-h-11 flex-1 border px-3 font-semibold ${h === 'home' ? 'rounded-l-lg' : 'rounded-r-lg border-l-0'} ${info.homeAway === h ? 'border-sky-400 bg-sky-400 text-slate-900' : 'border-slate-500 bg-slate-800 text-white'}`}
             onClick={() => setField('homeAway', h)}
           >
             {h === 'home' ? 'Home' : 'Away'}
@@ -223,7 +223,7 @@ export function Setup({ store }: { store: GameStore }) {
           <label class="flex min-h-11 items-center gap-3">
             <input
               type="checkbox"
-              class="h-6 w-6 accent-amber-400"
+              class="h-6 w-6 accent-sky-400"
               checked={track}
               onChange={(e) => setTrack(e.currentTarget.checked)}
             />
@@ -244,7 +244,7 @@ export function Setup({ store }: { store: GameStore }) {
       )}
 
       <div class="flex flex-col gap-3">
-        <button class={`${btn} bg-amber-400 text-lg text-slate-900`} onClick={onStart}>
+        <button class={`${btn} bg-white text-lg text-slate-900`} onClick={onStart}>
           Start game
         </button>
         {game && (

@@ -88,7 +88,7 @@ export function Log({ store, period, fromPeriod, order = 'newest', onClose, head
                   >
                     <span class="min-w-0 flex-1 truncate">{eventRowText(game, e)}</span>
                     {e.editedAt && (
-                      <span class="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-xs font-semibold text-amber-300">edited</span>
+                      <span class="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-xs font-semibold text-slate-200">edited</span>
                     )}
                     <span class="shrink-0 text-2xl leading-none text-slate-400" aria-hidden="true">›</span>
                   </button>
@@ -206,7 +206,7 @@ function EditSheet({ game, event, draft, setDraft, alsoMove, setAlsoMove, onSave
         <label class="mt-3 flex min-h-11 items-center gap-3 font-semibold">
           <input
             type="checkbox"
-            class="h-6 w-6 shrink-0 accent-amber-400"
+            class="h-6 w-6 shrink-0 accent-sky-400"
             checked={alsoMove}
             onChange={(e) => setAlsoMove(e.currentTarget.checked)}
           />

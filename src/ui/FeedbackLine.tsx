@@ -30,19 +30,19 @@ export function FeedbackLine({ line, class: cls = '', onPrompt, onUndo, onRedo }
     >
       <span id="feedback-text" data-testid="feedback-text" class="min-w-0 flex-1 break-words leading-tight">{text}</span>
       {entry?.undoable && onUndo && (
-        <button type="button" class="-mr-3 min-h-11 shrink-0 px-3 font-bold text-amber-300" onClick={onUndo}>
+        <button type="button" class="-mr-3 min-h-11 shrink-0 px-3 font-bold text-sky-300" onClick={onUndo}>
           Undo
         </button>
       )}
       {entry?.redoable && onRedo && (
-        <button type="button" class="min-h-11 shrink-0 rounded-lg border border-amber-300 px-3 font-bold text-amber-300" onClick={onRedo}>
+        <button type="button" class="min-h-11 shrink-0 rounded-lg border border-sky-300 px-3 font-bold text-sky-300" onClick={onRedo}>
           Redo
         </button>
       )}
       {prompt && (
         <button
           type="button"
-          class="min-h-11 shrink-0 rounded-lg bg-amber-400 px-3 text-sm font-bold text-slate-900 active:bg-amber-300"
+          class="min-h-11 shrink-0 rounded-lg bg-sky-400 px-3 text-sm font-bold text-slate-900 active:bg-sky-300"
           aria-label={prompt.text}
           onClick={() => onPrompt?.(prompt)}
         >

@@ -24,12 +24,12 @@ export function RunningScore({ store }: { store: GameStore }) {
               data-cell={c.n}
               class={`flex h-12 flex-col items-center justify-start border-b border-l border-slate-700 text-center leading-none ${
                 c.passedThrough ? 'bg-slate-700' : 'bg-slate-800'
-              } ${c.endsPeriod ? 'border-r-4 border-r-amber-400' : ''}`}
+              } ${c.endsPeriod ? 'border-r-4 border-r-slate-200' : ''}`}
             >
               <span class="mt-0.5 text-[8px] text-slate-400">{c.n}</span>
               <span class="text-sm font-bold text-white">{c.mark ?? ''}</span>
-              <span class="text-[9px] text-amber-200">{c.number ?? ''}</span>
-              {c.periodLabel && <span class="text-[8px] font-semibold text-amber-400">{c.periodLabel}</span>}
+              <span class="text-[9px] text-slate-300">{c.number ?? ''}</span>
+              {c.periodLabel && <span class="text-[8px] font-semibold text-slate-200">{c.periodLabel}</span>}
             </div>
           ))}
         </div>

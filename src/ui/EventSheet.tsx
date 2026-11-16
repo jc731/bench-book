@@ -84,7 +84,7 @@ export function EventSheet({ player, toast, onPlay, onUndo, onRedo, onClose, out
             </button>
           )}
           {toast?.canRedo && onRedo && (
-            <button type="button" class="min-h-11 rounded-lg border border-amber-300 px-4 font-semibold text-amber-300" onClick={onRedo}>
+            <button type="button" class="min-h-11 rounded-lg border border-sky-300 px-4 font-semibold text-sky-300" onClick={onRedo}>
               Redo
             </button>
           )}

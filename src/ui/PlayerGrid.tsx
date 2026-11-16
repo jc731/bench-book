@@ -42,7 +42,7 @@ export function PlayerGrid({ roster, lines, onPick, onBench, benchTechs }: Props
               {[0, 1, 2, 3, 4].map((n) => (
                 <span
                   key={n}
-                  class={`h-2.5 w-2.5 rounded-full ${n < fouls ? (state === 'out' ? 'bg-red-500' : 'bg-amber-400') : 'border border-slate-500'}`}
+                  class={`h-2.5 w-2.5 rounded-full ${n >= fouls ? 'border border-slate-500' : state === 'out' ? 'bg-red-500' : state === 'warn' ? 'bg-amber-400' : 'bg-slate-300'}`}
                 />
               ))}
               {state === 'out' && <span class="ml-1 text-xs font-bold text-red-400">OUT</span>}

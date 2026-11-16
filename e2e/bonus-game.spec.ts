@@ -221,7 +221,8 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     await app.expectStrip({ us: 31, opp: 29, period: 'Q4', fouls: 5, bonus: true, timeouts: { full: 0, thirty: 0 } });
     await tally('Q4 plays (1 anyway + undo)');
     await app.endPeriodThen('Q4', 'End game (no overtime)');
-    await expect(page.getByTestId('final-score')).toHaveText(`${TEAM} 31 – 29 ${opponent}`);
+    await expect(page.getByTestId('final-us')).toHaveText(`${TEAM} 31`);
+    await expect(page.getByTestId('final-them')).toHaveText(`${opponent} 29`);
     await app.reopen('Q4', 'pending');
     await app.fillCheck('Q4', 31, 29);
     await app.expectMatches();

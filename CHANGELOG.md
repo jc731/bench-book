@@ -5,6 +5,12 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- Colors have one job each. Amber now only warns (4 fouls, the bonus, a check that doesn't match, a file not saved). The action to take is blue: End Q1, Check, Undo, Redo, and the Check chip after a quarter. End Q4 and OT stay red. A player's first three fouls show as gray dots, turning amber at the 4th.
+- Start game and the new-game screen's main button are white, like every other main button.
+- The Final score shows one team per row with its score at the right, so a long team name wraps inside its own row instead of splitting the score.
+- Book CSV and Plays CSV are equal-weight buttons, since the coach wants both.
+- The quarter check no longer opens with the End-of-quarter notice covering the plays to fix. Plays added from the check still show their notice.
+- The check's "Not checked" status is an outline, so it no longer looks like a button.
 - An out player's card keeps its OUT label, red dots and red border at full strength; only the number, name and points are grayed. The OUT label had been the hardest thing on the card to read.
 
 ## [0.5.0] - 2026-11-16

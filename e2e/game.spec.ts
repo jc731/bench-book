@@ -320,8 +320,8 @@ test('New game over an exported game: Exported ✓, and Discard is the primary b
   await expect(page.getByText('Exported ✓', { exact: true })).toBeVisible();
   const buttons = page.getByRole('main').getByRole('button');
   await expect(buttons.first()).toHaveText('Discard and start new');
-  await expect(buttons.first()).toHaveClass(/bg-amber-400/);
-  await expect(page.getByRole('button', { name: 'Export', exact: true })).not.toHaveClass(/bg-amber-400/);
+  await expect(buttons.first()).toHaveClass(/bg-white/);
+  await expect(page.getByRole('button', { name: 'Export', exact: true })).not.toHaveClass(/bg-white/);
 });
 
 test('a play added after both exports marks both files not saved again', async ({ page }) => {
@@ -381,8 +381,14 @@ test('the check screen scrolls its note and last row clear of the feedback line'
   await tap(page, card(page, '4', 'Player One'), '+2');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
-  await page.getByLabel(/Our game score after Q1/).fill('5'); // a mismatch, so the plays list shows too
-  await expect(page.getByTestId('feedback-text')).not.toHaveText('');
+  await page.getByLabel(/Our game score after Q1/).fill('7'); // a mismatch, so the plays list shows too
+  // The End Q1 notice stays behind on Live: it would cover the plays to fix.
+  await expect(page.getByTestId('feedback-text')).toHaveCount(0);
+  // A play added from the check does show its notice, and the list scrolls clear of it.
+  await page.getByRole('region', { name: 'Plays to fix', exact: true }).getByRole('button', { name: 'Add play to Q1', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '#4 Player One', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  await expect(page.getByTestId('feedback-text')).toHaveText(/^Added #4 \+2 to Q1/);
 
   const scroller = page.getByTestId('app-has').locator('..');
   await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
@@ -432,9 +438,12 @@ test("the check's Add-play sheet shows only what was added while it is open, and
   await tap(page, card(page, '4', 'Player One'), '+2');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
-  await page.getByLabel(/Our game score after Q1/).fill('5');
-  // An entry from before the sheet opens is on the check's own line...
-  await expect(page.getByTestId('feedback-text')).not.toHaveText('');
+  await page.getByLabel(/Our game score after Q1/).fill('9');
+  // An entry from before the sheet opens is on the check's own line (End Q1's stays on Live, so add one here)...
+  await page.getByRole('button', { name: 'Add play to Q1' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  await expect(page.getByTestId('feedback-text')).toHaveText(/^Added #4 \+2 to Q1/);
 
   await page.getByRole('button', { name: 'Add play to Q1' }).click();
   await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
@@ -448,9 +457,10 @@ test("the check's Add-play sheet shows only what was added while it is open, and
   await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
   // The check's list stays oldest first, to walk beside the book.
   const rows = page.getByRole('region', { name: 'Plays to fix' }).getByRole('region', { name: 'Q1' }).getByRole('button');
-  await expect(rows).toHaveCount(2);
+  await expect(rows).toHaveCount(3);
   await expect(rows.first()).toHaveAccessibleName('#4 Player One · +2');
-  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · FT made');
+  await expect(rows.nth(1)).toHaveAccessibleName('#4 Player One · +2');
+  await expect(rows.nth(2)).toHaveAccessibleName('#4 Player One · FT made');
 });
 
 test('Log: a fix that changes the player and the quarter, with the plays after it, is one Undo', async ({ page }) => {
@@ -522,11 +532,11 @@ test('Redo: five Undos where four were meant, then Redo puts the last one back; 
   await expect(redo).toHaveCount(0);
 });
 
-test('the End button is amber for a quarter, red once it can end the game, plain at Final', async ({ page }) => {
+test('the End button is blue for a quarter, red once it can end the game, plain at Final', async ({ page }) => {
   await onePlayerGame(page);
   const tone = (name: string) => page.getByRole('navigation').getByRole('button', { name, exact: true });
   await expect(tone('End Q1')).toHaveAttribute('data-tone', 'quarter');
-  await expect(tone('End Q1')).toHaveCSS('border-color', 'oklch(0.828 0.189 84.429)'); // amber-400
+  await expect(tone('End Q1')).toHaveCSS('border-color', 'oklch(0.746 0.16 232.661)'); // sky-400
   for (const q of ['Q1', 'Q2', 'Q3']) await tone(`End ${q}`).click();
   await expect(tone('End Q4…')).toHaveAttribute('data-tone', 'game');
   await expect(tone('End Q4…')).toHaveCSS('border-color', 'oklch(0.637 0.237 25.331)'); // red-500

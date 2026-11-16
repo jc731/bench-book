@@ -18,9 +18,9 @@ import type { GameStore } from './store';
 const barBase = 'min-h-12 rounded-lg bg-slate-800 px-1 text-sm font-semibold active:bg-slate-700 disabled:opacity-40';
 const bar = `${barBase} border border-slate-500`;
 const opt = 'min-h-14 rounded-xl bg-slate-600 text-xl font-bold active:bg-slate-500';
-// The End slot's color says what it ends: amber a quarter, red the game (Q4 and OT). Final is plain.
+// The End slot's color says what it ends: blue (the action color) a quarter, red the game (Q4 and OT). Final is plain.
 const endTone = {
-  quarter: 'border-2 border-amber-400 text-amber-300',
+  quarter: 'border-2 border-sky-400 text-sky-300',
   game: 'border-2 border-red-500 text-red-300',
   final: 'border border-slate-500',
 } as const;
@@ -168,7 +168,7 @@ export function Live({ store }: { store: GameStore }) {
       {sheet === 'endPeriod' && (
         <Sheet title={`End ${periodLabel(period)}`} onClose={() => setSheet(null)}>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" class={`${opt} border-2 border-amber-400`} onClick={startOt}>{endChoices(period).overtime}</button>
+            <button type="button" class={`${opt} border-2 border-sky-400`} onClick={startOt}>{endChoices(period).overtime}</button>
             <button type="button" class={`${opt} border-2 border-red-500 leading-tight`} onClick={doEndGame}>
               <span class="block">{endChoices(period).endGameMain}</span>{' '}
               <span class="block text-sm font-semibold">{endChoices(period).endGameNote}</span>

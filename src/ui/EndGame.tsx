@@ -51,16 +51,24 @@ export function EndGame({ store }: { store: GameStore }) {
     <main class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pb-24">
       <h1 class="text-2xl font-bold">Final</h1>
 
-      <p class="text-3xl font-bold" data-testid="final-score">
-        {game.info.team || 'Us'} {d.usTotal} – {oppTotal(game)} {game.info.opponent}
-      </p>
+      {/* Scoreboard rows, one team each: a long name wraps inside its own row and never splits the score. */}
+      <div class="space-y-1 text-3xl font-bold" data-testid="final-score">
+        {[
+          { side: 'us', name: game.info.team || 'Us', pts: d.usTotal },
+          { side: 'them', name: game.info.opponent, pts: oppTotal(game) },
+        ].map((r) => (
+          <p key={r.side} class="flex items-baseline justify-between gap-3" data-testid={`final-${r.side}`}>
+            <span class="min-w-0 break-words">{r.name}</span> <span class="shrink-0 tabular-nums">{r.pts}</span>
+          </p>
+        ))}
+      </div>
 
       <section class="space-y-3" aria-label="Export">
         {(['book', 'plays'] as const).map((kind) => (
           <div key={kind} class="space-y-1">
             <button
               type="button"
-              class={`${btn} ${kind === 'book' ? 'bg-white text-slate-900' : 'bg-slate-600'}`}
+              class={`${btn} bg-white text-slate-900`}
               aria-describedby={`export-${kind}`}
               onClick={() => exportOne(kind)}
             >
@@ -86,7 +94,7 @@ export function EndGame({ store }: { store: GameStore }) {
               <div key={p} class="space-y-2 rounded-xl border border-slate-700 bg-slate-800 p-3">
                 <div class="flex items-center justify-between">
                   <span class="font-bold">{periodLabel(p)} · {statusChipText(c.status)}</span>
-                  <button type="button" class="min-h-11 px-3 font-semibold text-amber-300" onClick={() => reopen(p)}>
+                  <button type="button" class="min-h-11 px-3 font-semibold text-sky-300" onClick={() => reopen(p)}>
                     {issueAction(c.status)}
                   </button>
                 </div>

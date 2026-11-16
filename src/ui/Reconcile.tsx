@@ -16,7 +16,7 @@ import {
 import type { GameStore } from './store';
 
 const field =
-  'min-h-12 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-xl text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none';
+  'min-h-12 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-xl text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none';
 
 /** Status chip for a period; opens that period's Reconcile view. */
 export function StatusChip({ store, period }: { store: GameStore; period: number }) {
@@ -50,6 +50,8 @@ export function Reconcile({ store }: { store: GameStore }) {
   const seeded = useRef<number | null>(null);
   // The feedback present when Add play opened: its sheet shows only what came after it.
   const addOpenedWith = useRef<Toast | null>(null);
+  // The feedback present when the check opened (End Q1 · Undo): it stays behind, so it does not cover the plays.
+  const openedWith = useRef<Toast | null>(null);
   // The app's points over the checked span when the check was first opened (kept through Later in the
   // draft): a book number that disagreed with it was a mismatch, even if the plays were fixed before Save.
   const appAtOpen = useRef<number | null>(null);
@@ -58,6 +60,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   // box is never prefilled from taps: a number in it must be one the scorer read off the book.
   if (game && seeded.current !== period) {
     seeded.current = period;
+    openedWith.current = toast;
     const seed = checkSeed(game, period);
     appAtOpen.current = seed.appSpanAtOpen;
     setUsText(seed.us);
@@ -120,7 +123,7 @@ export function Reconcile({ store }: { store: GameStore }) {
     <div class="flex min-h-0 flex-1 flex-col">
       <header class="flex min-h-15 shrink-0 items-center gap-3 border-b border-slate-700 px-3 py-2">
         <h1 class="text-xl font-bold">Check {periodLabel(period)}</h1>
-        <span class="ml-auto rounded bg-slate-700 px-2 py-1 text-sm font-semibold" data-testid="check-status">{statusChipText(c.status)}</span>
+        <span class="ml-auto rounded border border-slate-500 px-2 py-1 text-sm font-semibold text-slate-200" data-testid="check-status">{statusChipText(c.status)}</span>
       </header>
 
       {/* Clear of the fixed bar (64px) and the feedback line above it (44px, more when an entry wraps). */}
@@ -219,7 +222,7 @@ export function Reconcile({ store }: { store: GameStore }) {
         <EventSheet player={addPlayer} toast={toast === addOpenedWith.current ? null : toast} onPlay={addPlay} onUndo={undo} onRedo={redo} onClose={closeAdd} />
       )}
 
-      {toast && (
+      {toast && toast !== openedWith.current && (
         <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-16 z-10 border-t border-slate-600" onUndo={undo} onRedo={redo} />
       )}
       <div class="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-slate-700 bg-slate-950 p-2">
