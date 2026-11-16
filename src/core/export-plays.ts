@@ -1,6 +1,6 @@
 import { toCsv } from './csv';
 import { POINTS } from './derive';
-import { orderedEvents } from './events';
+import { orderedEvents, sideName, sideOf } from './events';
 import { periodLabel } from './periods';
 import type { Game } from './types';
 
@@ -13,10 +13,13 @@ export function exportFilename(g: Game, kind: 'book' | 'plays'): string {
 }
 
 export function playsCsv(g: Game): string {
-  const byId = new Map(g.roster.map((p) => [p.id, p]));
+  const byId = {
+    us: new Map(g.roster.map((p) => [p.id, p])),
+    them: new Map(g.oppRoster.map((p) => [p.id, p])),
+  };
   const rows: (string | number)[][] = [[
     'seq', 'period', 'team', 'number', 'player', 'event', 'points', 'us_score', 'opp_score',
-    'entered_at', 'edited', 'detail',
+    'entered_at', 'edited', 'detail', 'side',
   ]];
   let us = 0;
   let opp = 0;
@@ -24,18 +27,19 @@ export function playsCsv(g: Game): string {
     let points: number | '' = '';
     if (e.type === 'FG2' || e.type === 'FG3' || e.type === 'FTM') {
       points = POINTS[e.type];
-      us += points;
+      if (sideOf(e) === 'them') opp += points; else us += points;
     } else if (e.type === 'FTX') {
       points = 0;
     } else if (e.type === 'OPP_PTS') {
       points = e.oppPoints ?? 0;
       opp += points;
     }
-    const p = e.playerId ? byId.get(e.playerId) : undefined;
+    const side = sideOf(e);
+    const p = e.playerId ? byId[side].get(e.playerId) : undefined;
     rows.push([
-      i + 1, periodLabel(e.period), e.type === 'OPP_PTS' ? 'opp' : 'us', p?.number ?? '',
+      i + 1, periodLabel(e.period), e.type === 'OPP_PTS' || side === 'them' ? 'opp' : 'us', p?.number ?? '',
       p?.name ?? '', e.type, points, us, opp, e.enteredAt, e.editedAt ? 'yes' : 'no',
-      e.type === 'TIMEOUT' ? (e.timeoutKind ?? '') : '',
+      e.type === 'TIMEOUT' ? (e.timeoutKind ?? '') : '', sideName(g, side).toLowerCase(),
     ]);
   }
   return toCsv(rows);

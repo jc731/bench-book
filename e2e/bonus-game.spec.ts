@@ -258,9 +258,9 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
     const totals = rows[at('TEAM TOTALS')];
     expect(['FOULS', 'TECHS', "2'S", "3'S", 'FTA', 'FTM', 'TP'].map((k) => totals[col(k)]).join(' ')).toBe('17 2 6 4 10 7 31');
 
-    expect(rows.filter((r) => r[0] === 'Team fouls').map((r) => r[2])).toEqual(['3', '6', '5', '5']);
+    expect(ours(rows).filter((r) => r[0] === 'Team fouls').map((r) => r[2])).toEqual(['3', '6', '5', '5']);
     expect(rows[at('Bench technicals')]).toEqual(['Bench technicals', '2']);
-    expect(rows.filter((r) => r[0] === 'Timeouts used').map((r) => r[2])).toEqual(['3 of 3', '2 of 2', '0 of 0']);
+    expect(ours(rows).filter((r) => r[0] === 'Timeouts used').map((r) => r[2])).toEqual(['3 of 3', '2 of 2', '0 of 0']);
     const rec = at('Reconcile');
     expect(rows.slice(rec + 2).map((r) => r[7])).toEqual(['matched', 'matched', 'matched', 'matched']);
 
@@ -276,3 +276,9 @@ test('bonus game: 31–29 with foul-outs, bench techs and every timeout', async 
   test.info().annotations.push({ type: 'taps', description: report });
   console.log(`\nTaps per part of the bonus game:\n${report}`);
 });
+
+// Our block only: the Book CSV now carries the other team's block (its own fouls and timeouts) after ours.
+function ours(rows: string[][]): string[][] {
+  const at = rows.findIndex((r) => /\((Home|Away)\)$/.test(r[0]));
+  return at < 0 ? rows : rows.slice(0, at);
+}

@@ -383,7 +383,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     expect(marks('Player Three')).toEqual(['3', '', '2', '2', '2']);
     expect(marks('Player Six')).toEqual(['', '3 2', '', '0 FT', '']);
 
-    expect(rows.filter((r) => r[0] === 'Team fouls')).toEqual([
+    expect(ours(rows).filter((r) => r[0] === 'Team fouls')).toEqual([
       ['Team fouls', 'Q1', '3'],
       ['Team fouls', 'Q2', '5'],
       ['Team fouls', 'Q3', '2'],
@@ -391,7 +391,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
       ['Team fouls', 'OT1', '1'],
     ]);
     expect(rows[at('Bench technicals')]).toEqual(['Bench technicals', '1']);
-    expect(rows.filter((r) => r[0] === 'Timeouts used')).toEqual([
+    expect(ours(rows).filter((r) => r[0] === 'Timeouts used')).toEqual([
       ['Timeouts used', 'Full', '1 of 3'],
       ['Timeouts used', '30', '1 of 2'],
       ['Timeouts used', 'OT', '1 of 1'],
@@ -442,3 +442,9 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     expect(q4.slice(0, 2)).toEqual(['us 0 FG2', 'opp  OPP_PTS']);
   });
 });
+
+// Our block only: the Book CSV now carries the other team's block (its own fouls and timeouts) after ours.
+function ours(rows: string[][]): string[][] {
+  const at = rows.findIndex((r) => /\((Home|Away)\)$/.test(r[0]));
+  return at < 0 ? rows : rows.slice(0, at);
+}

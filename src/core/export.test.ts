@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { bookCsv } from './export-book';
 import { exportFilename, playsCsv } from './export-plays';
 import { appendEvent, editEvent, insertEventBefore, newGame, orderedEvents } from './events';
-import { derive } from './derive';
+import { derive, hasOppRecord, oppPointsRecorded } from './derive';
 import { saveReconcile } from './reconcile';
 import type { EventDraft, Game, GameInfo, Player } from './types';
 
@@ -114,7 +114,8 @@ describe('bookCsv', () => {
   });
 
   test('with taps off, an opponent period nobody entered prints blank; an entered one still prints', () => {
-    const g = saveReconcile(sample(), 1, 8, null, '', now); // taps off: the Q1 tap of 2 is not a figure anyone counted
+    // Nothing recorded for them (keyed on oppPointsRecorded, not the taps switch), so there is no figure to estimate from.
+    const g = saveReconcile(add(game(), 1, { type: 'FG2', playerId: 'p4' }), 1, 8, null, '', now);
     expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['', '', '', '', '']);
     const h = saveReconcile(g, 2, 8, 7, '', now);
     expect(scoreRow(parse(bookCsv(h)), "St. Mary's").slice(1, 6)).toEqual(['', '7', '', '', '']);
@@ -180,7 +181,7 @@ describe('playsCsv', () => {
     g = editEvent(g, orderedEvents(g)[1].id, { type: 'FG2', playerId: 'p4' }, now);
     const rows = parse(playsCsv(g));
     expect(rows[0]).toEqual(['seq', 'period', 'team', 'number', 'player', 'event', 'points',
-      'us_score', 'opp_score', 'entered_at', 'edited', 'detail']);
+      'us_score', 'opp_score', 'entered_at', 'edited', 'detail', 'side']);
     expect(rows.length).toBe(1 + orderedEvents(g).length);
     expect(rows.slice(1).map((r) => r[0])).toEqual(['1', '2', '3', '4', '5']);
     expect(rows.slice(1, 4).map((r) => r[7])).toEqual(['2', '4', '5']);
@@ -242,5 +243,92 @@ describe('exportFilename', () => {
     expect(exportFilename({ ...game(), info: { ...info, opponent: '  Lincoln Jr. High! ' } }, 'plays'))
       .toBe('bench-book_2026-11-14_lincoln-jr-high_plays.csv');
     expect(exportFilename(game(), 'plays')).toBe('bench-book_2026-11-14_st-mary-s_plays.csv');
+  });
+});
+
+const BOOK_BEFORE =
+  '\uFEFF' + "Team,Opponent,Date,Home/Away,Coach,Scorer,Timekeeper\r\nTeam A,St. Mary's,2026-11-14,home,Coach One,Scorer One,Timer One\r\n\r\nScore by period (running score after each)\r\n,Q1,Q2,Q3,Q4,Final\r\nTeam A,2*,2*,2*,2*,2*\r\nSt. Mary's,,,,,\r\n\r\nPOS,PLAYER,NO.,FOULS,TECHS,Q1,Q2,Q3,Q4,2'S,3'S,FTA,FTM,TP\r\nC,Player Four,#4,1,0,2,,,,1,0,0,0,2\r\nTEAM TOTALS,,,1,0,,,,,1,0,0,0,2\r\n\r\nTeam fouls,Q1,1\r\nTeam fouls,Q2,0\r\nTeam fouls,Q3,0\r\nTeam fouls,Q4,0\r\nBench technicals,0\r\nTimeouts used,Full,0 of 3\r\nTimeouts used,30,0 of 2\r\nTimeouts used,OT,0 of 0\r\n\r\nReconcile\r\nPeriod,Book total,App total,Compared,Book,App,Diff,Status,Opp book total,Opp taps,Note\r\nQ1,,2,Q1,,2,,pending,,0,\r\nQ2,,2,Q1\u2013Q2,,2,,pending,,0,\r\nQ3,,2,Q1\u2013Q3,,2,,pending,,0,\r\nQ4,,2,Q1\u2013Q4,,2,,pending,,0,";
+
+describe('both teams in the exports', () => {
+  const oppRoster: Player[] = [{ id: 't14', number: '14', name: 'Rival Fourteen', pos: 'G' }];
+  const them = (): Game => newGame(info, roster, now, oppRoster);
+
+  test('a game with nothing recorded for them exports byte-identical to before', () => {
+    let g = add(game(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'FOUL', playerId: 'p4' });
+    g = { ...g, roster: [roster[2]] };
+    expect(bookCsv(g)).toBe(BOOK_BEFORE);
+  });
+
+  test('their block follows ours, before Reconcile', () => {
+    const g = add(them(), 1, { type: 'FG2', playerId: 't14', side: 'them' }, { type: 'FOUL', side: 'them' },
+      { type: 'TIMEOUT', timeoutKind: 'full', side: 'them' });
+    const rows = parse(bookCsv(g));
+    const at = rows.findIndex((r) => r[0] === "St. Mary's (Away)");
+    expect(at).toBeGreaterThan(rows.findIndex((r) => r[0] === 'Timeouts used'));
+    expect(at).toBeLessThan(rows.findIndex((r) => r[0] === 'Reconcile'));
+    const block = rows.slice(at, rows.findIndex((r) => r[0] === 'Reconcile'));
+    expect(block[1].slice(0, 5)).toEqual(['POS', 'PLAYER', 'NO.', 'FOULS', 'TECHS']);
+    const line = block.find((r) => r[2] === '#14')!;
+    expect(line[1]).toBe('Rival Fourteen');
+    expect(line[line.length - 1]).toBe('2');
+    expect(block.filter((r) => r[0] === 'Team fouls').length).toBe(4);
+    expect(block.find((r) => r[0] === 'Team fouls' && r[1] === 'Q1')![2]).toBe('1');
+    expect(block.some((r) => r[0] === 'Bench technicals')).toBe(true);
+    expect(block.filter((r) => r[0] === 'Timeouts used').map((r) => r[2])).toEqual(['1 of 3', '0 of 2', '0 of 0']);
+  });
+
+  test('no block when nothing is recorded for them', () => {
+    expect(parse(bookCsv(game())).some((r) => /\((Home|Away)\)$/.test(r[0]))).toBe(false);
+  });
+
+  test('opponent running score is blank when no points are recorded, even with taps on', () => {
+    const g = { ...add(game(), 1, { type: 'FG2', playerId: 'p4' }), trackOpponentTaps: true };
+    const row = scoreRow(parse(bookCsv(g)), "St. Mary's");
+    expect(row.slice(1)).toEqual(['', '', '', '', '']);
+  });
+
+  test('opponent running score is estimated once their points are recorded, taps off', () => {
+    const g = add(them(), 1, { type: 'FG2', playerId: 't14', side: 'them' });
+    const row = scoreRow(parse(bookCsv(g)), "St. Mary's");
+    expect(row[1]).toBe('2*');
+  });
+
+  test('plays CSV ends with a side column', () => {
+    let g = add(them(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'FG2', playerId: 't14', side: 'them' },
+      { type: 'OPP_PTS', oppPoints: 3 });
+    const rows = parse(playsCsv(g));
+    const h = rows[0];
+    expect(h[h.length - 1]).toBe('side');
+    const col = (r: string[], n: string) => r[h.indexOf(n)];
+    expect(col(rows[1], 'side')).toBe('home');
+    expect(col(rows[1], 'team')).toBe('us');
+    expect(col(rows[2], 'team')).toBe('opp');
+    expect(col(rows[2], 'number')).toBe('14');
+    expect(col(rows[2], 'player')).toBe('Rival Fourteen');
+    expect(col(rows[2], 'event')).toBe('FG2');
+    expect(col(rows[2], 'side')).toBe('away');
+    expect(col(rows[2], 'opp_score')).toBe('2');
+    expect(col(rows[3], 'team')).toBe('opp');
+    expect(col(rows[3], 'number')).toBe('');
+    expect(col(rows[3], 'player')).toBe('');
+    expect(col(rows[3], 'opp_score')).toBe('5');
+  });
+});
+
+describe('opp-record predicates', () => {
+  const r: Player[] = [{ id: 't1', number: '1', name: 'Rival One', pos: 'G' }];
+  test('hasOppRecord', () => {
+    expect(hasOppRecord(game())).toBe(false);
+    expect(hasOppRecord(newGame(info, roster, now, r))).toBe(true);
+    expect(hasOppRecord(add(game(), 1, { type: 'OPP_PTS', oppPoints: 2 }))).toBe(true);
+    expect(hasOppRecord(add(game(), 1, { type: 'FOUL', side: 'them' }))).toBe(true);
+  });
+  test('oppPointsRecorded', () => {
+    expect(oppPointsRecorded(game())).toBe(false);
+    expect(oppPointsRecorded(add(newGame(info, roster, now, r), 1, { type: 'FOUL', side: 'them' }))).toBe(false);
+    expect(oppPointsRecorded(add(game(), 1, { type: 'OPP_PTS', oppPoints: 2 }))).toBe(true);
+    for (const type of ['FG2', 'FG3', 'FTM', 'FTX'] as const) {
+      expect(oppPointsRecorded(add(game(), 1, { type, side: 'them' }))).toBe(true);
+    }
   });
 });

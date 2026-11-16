@@ -157,3 +157,14 @@ export function derive(g: Game): Derived {
     timeouts: us.timeouts,
   };
 }
+
+/** True when anything at all is recorded for the other team: their plays, legacy opponent points, or a roster. */
+export function hasOppRecord(g: Game): boolean {
+  return g.oppRoster.length > 0 || g.events.some((e) => e.type === 'OPP_PTS' || e.side === 'them');
+}
+
+/** True when their points are on record: legacy opponent points or one of their scoring plays. */
+export function oppPointsRecorded(g: Game): boolean {
+  return g.events.some((e) =>
+    e.type === 'OPP_PTS' || (e.side === 'them' && (e.type === 'FG2' || e.type === 'FG3' || e.type === 'FTM' || e.type === 'FTX')));
+}
