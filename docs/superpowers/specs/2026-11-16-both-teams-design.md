@@ -82,16 +82,18 @@ It fails, even if it works, if:
      home or away color, and our timeout buttons under our Bench card.
    - Our team now has half the screen: up to 10 players fit; 11 to 15 scroll inside the half
      until the active lineup (1.0) lands. The owner accepted this gap.
-8. **"+ Play" on their half, and building their roster as you go** (owner, 2026-11-16, after
-   a side review found the no-number plays hidden behind their Bench card). Their half always
-   ends with a dashed **+ Play** card, like the Bench card. Tap it, pick the play (+2, +3, FT
-   made, FT missed, Foul, Tech foul), then a **Whose number?** prompt: a typed number credits the
-   play and adds that player to their roster if new; **No number** records it for the team
-   only. The prompt also offers **Stop asking this game** (kept on the game), after which + Play
-   records team-only plays in two taps. This replaces the Opp +1/+2/+3 taps and nudges a scorer
-   who never entered their roster into building one. A play without a number counts toward
-   their score, team fouls and bonus, but no player's line. Their Bench card sheet holds only
-   the bench tech; **Add a player** is on **our** Bench sheet (a late arrival on our side).
+8. **"+ Play" on both halves, and building rosters as you go** (owner, 2026-11-16: first for
+   their half, after a side review found their no-number plays hidden behind their Bench card;
+   then for ours too, "to circumvent a mis-entered lineup"). **Each** half ends with a dashed
+   **+ Play** card, like the Bench card. Tap it, pick the play (+2, +3, FT made, FT missed, Foul,
+   Tech foul), then a **Whose number?** prompt: a typed number credits the play and adds that
+   player to that team's roster if new; **No number** records it for the team only. The prompt
+   also offers **Stop asking this game**, per team and kept on the game, after which that team's
+   + Play records team-only plays in two taps. This replaces the Opp +1/+2/+3 taps, and nudges a
+   scorer who never entered a roster into building one. A play without a number counts toward
+   that team's score, team fouls and bonus, but no player's line. **Both rosters are optional in
+   Setup** (our saved roster still prefills ours). Both Bench sheets hold only the bench tech;
+   there is no separate Add a player.
 9. **The quarter check and their score**: if the scorer types their book total and it differs
    from the app's, the check shows an **amber warning** ("Their score: book 22 · app 20 — 2
    off"). It is a warning only: the quarter's status (matched / fixed / doesn't match), the
@@ -111,8 +113,8 @@ It fails, even if it works, if:
   since they live on the per-team buttons.
 - **Their roster**: numbers required for each row entered, names optional, up to 15, like ours
   (`MAX_PLAYERS`). An empty roster is valid.
-- **A number that is not on their roster**: typed at **Whose number?** (decision 8). Ours: **Add
-  a player** on our Bench sheet.
+- **A number that is not on a roster** (a late arrival, or a mis-entered roster): typed at **Whose
+  number?** on that team's + Play (decision 8).
 - **Exports**: the Book CSV gets both teams; the Plays CSV marks each play Home or Away.
 - **Old saved games keep working**: their opponent points stay team totals (no number).
 

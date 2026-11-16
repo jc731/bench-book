@@ -138,6 +138,8 @@
 
 ### Task 5: Setup — the other team's roster
 
+> **Revised (spec D8):** our roster is optional too. `validateRoster` drops `'Add at least one player.'` (an empty roster is valid for both teams; the other checks stay), and Start with no players at all succeeds. Our saved roster still prefills ours.
+
 **Files:**
 - Create: `src/ui/RosterEditor.tsx` (extracted from `Setup.tsx`'s roster section: rows, Add player, remove)
 - Modify: `src/ui/Setup.tsx`
@@ -215,7 +217,7 @@
 
 ### Task 8: Live sheets — their numbered plays, + Play and Whose number?, Add a player, the zero-timeout guard
 
-> **Revised (spec D8):** their half ends with a dashed **+ Play** card. It opens the play sheet, then **Whose number?** (a number field, **Save**, **No number**, **Stop asking this game**). A typed number adds the player if new (`addPlayer`) and credits the play. `Game.oppNoNumbers?: boolean` is set by "Stop asking", after which + Play records team-only. Their Bench sheet holds only the bench tech. **Add a player** is on **our** Bench sheet only. Wherever this task says "their Bench sheet's no-number plays", read "+ Play → No number". Task 6 builds + Play with No number only, so the scripted games stay green; this task adds the number path, Stop asking, and our Add a player.
+> **Revised (spec D8, twice):** **each** half ends with a dashed **+ Play** card, which opens the play sheet, then **Whose number?** (a number field, **Save**, **No number**, **Stop asking this game**). A typed number adds that player to that team's roster if new (`addPlayer`) and credits the play. `Game.noNumbers?: Partial<Record<Side, boolean>>` is set per team by "Stop asking", after which that team's + Play records team-only. Both Bench sheets hold only the bench tech, and there is **no** separate Add a player. Wherever this task says "their Bench sheet's no-number plays" or "Add a player", read "+ Play → No number" and "+ Play → a new number". Task 6 builds + Play on both halves with No number only, so the scripted games stay green; this task adds the number path and Stop asking.
 
 **Files:**
 - Modify: `src/ui/Live.tsx`, `src/ui/EventSheet.tsx`
