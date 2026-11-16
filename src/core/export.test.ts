@@ -293,6 +293,11 @@ describe('both teams in the exports', () => {
     expect(row[1]).toBe('2*');
   });
 
+  test('a legacy game with taps off and an OPP_PTS tap estimates the opponent running score', () => {
+    const g = { ...add(game(), 1, { type: 'OPP_PTS', oppPoints: 3 }), trackOpponentTaps: false };
+    expect(scoreRow(parse(bookCsv(g)), "St. Mary's").slice(1, 6)).toEqual(['3*', '3*', '3*', '3*', '3*']);
+  });
+
   test('plays CSV ends with a side column', () => {
     let g = add(them(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'FG2', playerId: 't14', side: 'them' },
       { type: 'OPP_PTS', oppPoints: 3 });
@@ -309,6 +314,7 @@ describe('both teams in the exports', () => {
     expect(col(rows[2], 'side')).toBe('away');
     expect(col(rows[2], 'opp_score')).toBe('2');
     expect(col(rows[3], 'team')).toBe('opp');
+    expect(col(rows[3], 'side')).toBe('away');
     expect(col(rows[3], 'number')).toBe('');
     expect(col(rows[3], 'player')).toBe('');
     expect(col(rows[3], 'opp_score')).toBe('5');

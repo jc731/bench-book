@@ -34,10 +34,10 @@ export function playsCsv(g: Game): string {
       points = e.oppPoints ?? 0;
       opp += points;
     }
-    const side = sideOf(e);
+    const side = e.type === 'OPP_PTS' ? 'them' : sideOf(e);
     const p = e.playerId ? byId[side].get(e.playerId) : undefined;
     rows.push([
-      i + 1, periodLabel(e.period), e.type === 'OPP_PTS' || side === 'them' ? 'opp' : 'us', p?.number ?? '',
+      i + 1, periodLabel(e.period), side === 'them' ? 'opp' : 'us', p?.number ?? '',
       p?.name ?? '', e.type, points, us, opp, e.enteredAt, e.editedAt ? 'yes' : 'no',
       e.type === 'TIMEOUT' ? (e.timeoutKind ?? '') : '', sideName(g, side).toLowerCase(),
     ]);
