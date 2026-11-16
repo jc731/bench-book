@@ -9,11 +9,28 @@ The product is built in phases, called **Phase 1/2/3**. Version numbers follow t
 
 | Version | Means | When |
 |---|---|---|
-| **0.x** | Phase 1 (book companion), still being proven | a batch of fixes or features is a **minor** bump (0.2, 0.3...); a single bug fix is a **patch** (0.2.1) |
-| **1.0** | Phase 1 trusted: used at real games beside the paper book without surprises | when the owner says it held up |
+| **0.x** | Phase 1 (book companion), on the way to the 1.0 checklist | a batch of fixes or features is a **minor** bump (0.2, 0.3...); a single bug fix is a **patch** (0.2.1) |
+| **1.0** | Phase 1 for any scorer: a scorer who keeps both teams can use it beside the paper book | when every item on the checklist below is done |
 | **2.0** | Phase 2: update the book after each quarter, from the app | major bump when it lands |
 | **3.0** | Phase 3: the app replaces the book | major bump |
 | 1.x / 2.x minors | features within a phase | as they land |
+
+### The 1.0 checklist
+
+Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met at a real game on
+0.4, so it no longer marked anything. The list is fixed: anything not on it goes to 1.x.
+
+- [ ] Opponent team stats on the live screen: their fouls (and our bonus), their timeouts, their
+      points by player number.
+- [ ] Active lineup with substitutions: the live screen shows only the players on the floor, and a
+      fouled-out player prompts a sub.
+- [ ] Both teams in the Book CSV, and the quarter check compares both scores.
+- [ ] The How-to covers both-team scoring, and `/ux-audit` finishes a scripted both-team game with
+      nothing blocking.
+- [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,
+      with no lost data and no hand-fixed CSV.
+- Out of scope for 1.0: missed shots, rebounds, assists, configurable rule sets, the cross-scorer
+  check (1.x), and anything from Phase 2.
 
 ## Claude owns versioning
 
@@ -49,6 +66,8 @@ runs as `/ux-audit`.
 
 ## Style
 
+- Colors have one job each (amber caution, red out, blue action, white main button, green done,
+  gray the rest). The table is in `README.md` § Colors: follow it, and update it with any change.
 - US English in all prose, comments and commit messages.
 - Commit messages carry no Claude or Anthropic attribution trailer.
 - Test data uses invented names only. The repo is public.

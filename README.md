@@ -54,6 +54,23 @@ pnpm howto:shots # refresh the How-to screenshots in public/howto/ (pnpm release
 
 The first `pnpm test:e2e` run needs the browser once: `pnpm exec playwright install chromium`.
 
+## Colors
+
+Each color has one job, so a color on screen says what kind of thing it is. Keep to these
+when adding to the interface:
+
+| Color | Means | Examples |
+|---|---|---|
+| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving |
+| **Red** | Out, or ends something for good | an out player, End Q4 / OT (can end the game), Discard when the game is not exported |
+| **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
+| **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
+| **Green** | Done and fine | Matched, Fixed, saved files |
+| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards, a player's first three fouls, the bar |
+
+A status shown on a button (the amber check chip for a quarter that doesn't match) is still a
+state color: the color says what is true, and the button shape says it can be tapped.
+
 ## Releases
 
 Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
@@ -61,9 +78,21 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 
 ## Backlog
 
-- Tablet-size release test (after 1.0)
-- Opponent tracking, in steps: their fouls first (loosely tied to our free throws), then their
-  timeouts, then a full opponent roster with player stats. Setup will need an opponent roster.
+**For 1.0** (the checklist in `CLAUDE.md`): keeping both teams. Most scorers do: at the
+owner's games, each team's scorer keeps both teams.
+
+- Opponent team stats on the live screen: their fouls (and so our bonus), their timeouts,
+  their points by player number. Team-level stats first (0.6/0.7), then the opponent roster.
+- Active lineup with substitutions: the live screen shows only who is on the floor, and a
+  fouled-out player prompts a sub. This is also the fix for large rosters: 14 players measured
+  750 px of cards in 474 px of screen (design audit v0.5.0, D1).
+- Both teams in the Book CSV, and the quarter check compares both scores.
+
+**After 1.0 (1.x):**
+
+- Cross-scorer check at halftime and end of game: compare what you recorded with the other
+  team's scorer and talk through any difference.
+- Tablet-size release test.
 
 ## Deploy
 
