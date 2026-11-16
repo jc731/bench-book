@@ -27,7 +27,7 @@
 1. **Any code that reads events by type counts the other team's plays as ours unless it checks the side.** Today that's `derive.ts`, `running.ts`, `export-plays.ts`, `log-logic.ts` and `Log.tsx`. Expected: the running score, our player lines, our team fouls and our timeouts ignore `side: 'them'`. Pinned in Tasks 2 and 3.
 2. **A play for the other team with no number** (`side: 'them'`, no `playerId`). Expected: it counts toward their score and team fouls, never toward any player line, and it shows as "Away +2" in the Log and toast. Pinned in Tasks 2 and 9.
 3. **A game saved before 0.8 that is in progress** (`trackOpponentTaps: true`, `OPP_PTS` events, no `oppRoster`). Expected: it loads, their score includes the old taps, and their half shows only Bench and timeouts. Pinned in Task 1.
-4. **The same jersey number on both teams** (#4 Home and #4 Away). Expected: each toast, Log row and fix sheet says which team; fixing one never touches the other. Pinned in Tasks 6 and 9.
+4. **The same jersey number on both teams** (#4 Home and #4 Away). Expected: each toast, Log row and fix sheet says which team; fixing one never touches the other. Pinned in Tasks 8 and 9.
 5. **The light (home) card's warn and out states.** Expected: still readable on white (OUT text ≥ 4.5:1). Pinned in Task 7.
 
 ---
@@ -125,17 +125,15 @@
   - `timeoutsLeft(t: TimeoutState, kind: TimeoutKind): number`, which is `total - used`.
   - `zeroTimeoutWarning(side: 'Home' | 'Away', kind: TimeoutKind): string`, giving `'Away has no full timeouts left. Are you sure?'`. The kind words are `full`, `30-second` and `OT`.
   - `TAKE_ANYWAY = 'Take one anyway'`.
-  - `who(p: Player | null, tag: 'Home' | 'Away' | null): string`:
-    - ours (`tag` null) gives `'#4'`, so today's labels stay the same;
-    - theirs gives `'#14 (Away)'`;
-    - theirs with no number gives `'Away'`.
-  - `playLabel(type, number)` becomes `playLabel(type: PlayType, whoText: string)`. `foulLabel`'s context gains `tag: 'Home' | 'Away' | null`, so a foul-out reads `'#24 (Away) foul — 5th, out'`, and `— bonus` applies to the fouling team's count.
-  - `timeoutLabel(kind, tag: 'Home' | 'Away' | null)` gives `'Timeout (Full)'` for ours and `'Away timeout (Full)'` for theirs.
+  - **Every play names its team, ours included** (owner, 2026-11-16): the screen is Home vs Away and "us" is only a marker.
+  - `who(p: Player | null, tag: 'Home' | 'Away'): string`: `'#4 (Home)'`, `'#14 (Away)'`, and with no player `'Away'`.
+  - `playLabel(type, number)` becomes `playLabel(type: PlayType, whoText: string)`, so the toast reads `'#4 (Home) +2'`. `foulLabel`'s context gains `tag: 'Home' | 'Away'`, so a foul-out reads `'#24 (Away) foul — 5th, out'`, and `— bonus` applies to the fouling team's count.
+  - A bench tech reads `'Home bench tech'`, and a timeout `'Away timeout (Full)'` (`timeoutLabel(kind, tag)`).
 
-- [ ] **Step 1: Write the failing tests**, one per function above. Copy the exact strings from Global Constraints and the bullets above. Keep the existing `playLabel` and `foulLabel` cases, with `who(p, null)` passed in.
+- [ ] **Step 1: Write the failing tests**, one per function above. Copy the exact strings from Global Constraints and the bullets above. Update the existing `playLabel`, `foulLabel` and `timeoutLabel` cases to the tagged wording (`'#4 (Home) +2'`, `'Home timeout (Full)'`).
 - [ ] **Step 2: Run `pnpm vitest run src/ui/live-logic.test.ts`.** Expected: FAIL.
 - [ ] **Step 3: Implement.** Update the callers, so `pnpm check` compiles (`Live.tsx`, `log-logic.ts`).
-- [ ] **Step 4: Run `pnpm check`.** Expected: PASS.
+- [ ] **Step 4: Run `pnpm check && pnpm test:e2e`.** Expected: PASS. The e2e toast and Log assertions change to the tagged wording here. Most go through the fixture's `playText`, which becomes `` `#${n} ${name} (${side}) · ${play}` ``; the rest is a search for `toHaveText('#` and `'Bench tech'` in `e2e/` and `scripts/howto/`.
 - [ ] **Step 5: Commit** with the message `Live copy for two teams: who, bonus, timeout buttons`.
 
 ### Task 5: Setup — the other team's roster
@@ -239,7 +237,7 @@
     - a tap opens the warning `Away has no full timeouts left. Are you sure?`;
     - **Take one anyway** records it (the Log has 4 Away full timeouts);
     - Cancel records nothing.
-  - `same number on both teams`: our #4 and their #4 each take a +2; each card shows 2, and the two toasts differ (`#4 +2` and `#4 (Away) +2`).
+  - `same number on both teams`: our #4 and their #4 each take a +2; each card shows 2, and the two toasts differ (`#4 (Home) +2` and `#4 (Away) +2`).
 - [ ] **Step 2: Run `pnpm test:e2e game`.** Expected: FAIL.
 - [ ] **Step 3: Implement.**
   - `picked` carries its `side`. `play()` adds `side: 'them'` for theirs, and the sheet title uses `who`.
@@ -262,15 +260,15 @@
 - Produces:
   - `EditDraft` and `EditPatch` gain `side?: 'them'`.
   - `editPatch` clears `playerId` when the side changes and the chosen player isn't on the new side.
-  - `eventLabel(g, e)` uses `who` with the event's side (Review Focus 2 and 4).
+  - `eventLabel(g, e)` names the team for every event: `'#4 Player One (Home) · +2'`, `'#14 (Away) · +2'` (no name), `'Away · +2'` (no number), `'Home bench tech'` (Review Focus 2 and 4).
 
 - [ ] **Step 1: Write the failing tests.**
-  - Unit: `eventLabel` for a their-side FG2 on #14 is `'#14 (Away) · +2'`. A no-number one is `'Away · +2'`. A legacy `OPP_PTS` keeps today's text.
+  - Unit: `eventLabel` for our FG2 on #4 Player One is `'#4 Player One (Home) · +2'` on a home game. A their-side FG2 on #14 with no name is `'#14 (Away) · +2'`, and a no-number one is `'Away · +2'`. A legacy `OPP_PTS` keeps today's text.
   - Unit: `editPatch` from their #14 to our side with our #4 gives `{ side: undefined, playerId: '<our #4 id>' }`.
   - E2e: `fix sheet: a play entered on the wrong team moves to the other team`.
     - Enter a +2 on their #4 that was ours.
     - In Log, tap it, then pick **Home** under Team and #4 under Player, then Save.
-    - Home's score goes up by 2, Away's down by 2, and the row has no `(Away)`.
+    - Home's score goes up by 2, Away's down by 2, and the row reads `#4 Player One (Home) · +2`.
 - [ ] **Step 2: Run** `pnpm vitest run src/ui/log-logic.test.ts && pnpm test:e2e game`. Expected: FAIL.
 - [ ] **Step 3: Implement.** The fix sheet gets a `Team` group (Home and Away buttons) above `Player`. The Player group lists the chosen side's roster, plus `No number` for their side.
 - [ ] **Step 4: Run `pnpm check && pnpm test:e2e`.** Expected: PASS.
