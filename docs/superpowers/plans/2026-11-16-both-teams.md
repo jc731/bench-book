@@ -8,7 +8,7 @@
 
 **Tech Stack:** Astro 5 + Preact, Tailwind 4, Vitest (unit), Playwright as iPhone 13 (e2e), pnpm.
 
-**Spec:** `docs/superpowers/specs/2026-11-16-both-teams-design.md`. Read it first; decisions are numbered 1–10 there and cited as D1–D10 below.
+**Spec:** `docs/superpowers/specs/2026-11-16-both-teams-design.md` (D8 revised 2026-11-16: their "+ Play" card and the Whose number? prompt). Read it first; decisions are numbered 1–10 there and cited as D1–D10 below.
 
 ## Global Constraints
 
@@ -213,7 +213,9 @@
 - [ ] **Step 4: Run `pnpm check && pnpm test:e2e`.** Expected: PASS.
 - [ ] **Step 5: Commit** with the message `Light cards: readable warn and out states`.
 
-### Task 8: Live sheets — their plays, Bench, Add a player, the zero-timeout guard
+### Task 8: Live sheets — their numbered plays, + Play and Whose number?, Add a player, the zero-timeout guard
+
+> **Revised (spec D8):** their half ends with a dashed **+ Play** card. It opens the play sheet, then **Whose number?** (a number field, **Save**, **No number**, **Stop asking this game**). A typed number adds the player if new (`addPlayer`) and credits the play. `Game.oppNoNumbers?: boolean` is set by "Stop asking", after which + Play records team-only. Their Bench sheet holds only the bench tech. **Add a player** is on **our** Bench sheet only. Wherever this task says "their Bench sheet's no-number plays", read "+ Play → No number". Task 6 builds + Play with No number only, so the scripted games stay green; this task adds the number path, Stop asking, and our Add a player.
 
 **Files:**
 - Modify: `src/ui/Live.tsx`, `src/ui/EventSheet.tsx`
