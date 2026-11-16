@@ -40,8 +40,8 @@ test('scripted game reconciles and exports', async ({ page }) => {
   for (let i = 0; i < ROSTER.length; i++) {
     if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();
     const n = i + 1;
-    await page.getByLabel(`Player ${n} name`).fill(ROSTER[i].name);
-    await page.getByLabel(`Player ${n} number`).fill(ROSTER[i].number);
+    await page.getByLabel(`Player ${n} name`, { exact: true }).fill(ROSTER[i].name);
+    await page.getByLabel(`Player ${n} number`, { exact: true }).fill(ROSTER[i].number);
   }
   expect(await noOverflow(page)).toBe(true);
   await page.getByRole('button', { name: 'Start game' }).click();
@@ -119,7 +119,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(page.getByText(/A game is in progress/)).toBeVisible();
   await page.getByRole('button', { name: 'Discard and start new' }).click();
-  await expect(page.getByLabel('Player 3 name')).toHaveValue('Player Three');
+  await expect(page.getByLabel('Player 3 name', { exact: true })).toHaveValue('Player Three');
   await page.getByRole('button', { name: 'Start game' }).click();
   await expect(score(0, 0)).toBeVisible();
 });
@@ -128,9 +128,8 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
   await page.goto('/');
   await page.getByText('Game details', { exact: true }).click();
   await page.getByLabel('Opponent (optional)').fill('First Opp');
-  await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
-  await page.getByLabel('Player 1 number').fill('4');
-  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
   await tap(page, card(page, '4', 'Player One'), '+2');
   await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
@@ -145,10 +144,8 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: 'New game' }).click();
   await page.getByRole('button', { name: 'Discard and start new' }).click();
-  await expect(page.getByLabel('Player 1 name')).toHaveValue('Player One');
-  // "Also keep their score" is remembered from the first game.
+  await expect(page.getByLabel('Player 1 name', { exact: true })).toHaveValue('Player One');
   await page.getByText('Game details', { exact: true }).click();
-  await expect(page.getByLabel('Also keep their score (Opp +1/+2/+3)')).toBeChecked();
   await page.getByRole('button', { name: 'Start game' }).click();
   await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
   await expect(page.getByText('Q1', { exact: true })).toBeVisible();
@@ -156,8 +153,8 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
 
 test('Clear saved roster: Cancel keeps it, Clear empties it', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Player 1 number').fill('4');
-  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: 'New game' }).click();
@@ -168,18 +165,18 @@ test('Clear saved roster: Cancel keeps it, Clear empties it', async ({ page }) =
   await page.getByRole('button', { name: 'Clear saved roster' }).click();
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByLabel('Player 1 name')).toHaveValue('Player One');
+  await expect(page.getByLabel('Player 1 name', { exact: true })).toHaveValue('Player One');
 
   await page.getByRole('button', { name: 'Clear saved roster' }).click();
   await dialog.getByRole('button', { name: 'Clear', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByLabel('Player 1 name')).toHaveValue('');
+  await expect(page.getByLabel('Player 1 name', { exact: true })).toHaveValue('');
 });
 
 test('reconcile can add a play to a period that has none', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Player 1 number').fill('4');
-  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
@@ -195,11 +192,10 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   const long = 'Player With A Very Long Nam'; // 27 characters
   await page.goto('/');
   await page.getByText('Game details', { exact: true }).click();
-  await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
   for (let i = 0; i < 7; i++) {
     if (i > 0) await page.getByRole('button', { name: 'Add player' }).click();
-    await page.getByLabel(`Player ${i + 1} name`).fill(i === 0 ? long : `Player ${i + 1}`);
-    await page.getByLabel(`Player ${i + 1} number`).fill(String(i + 10));
+    await page.getByLabel(`Player ${i + 1} name`, { exact: true }).fill(i === 0 ? long : `Player ${i + 1}`);
+    await page.getByLabel(`Player ${i + 1} number`, { exact: true }).fill(String(i + 10));
   }
   await page.getByRole('button', { name: 'Start game' }).click();
   await page.getByRole('button', { name: 'End Q1', exact: true }).click(); // leaves Check Q1 pending
@@ -220,8 +216,8 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
 
 async function onePlayerGame(page: Page) {
   await page.goto('/');
-  await page.getByLabel('Player 1 number').fill('4');
-  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
 }
 
@@ -465,11 +461,11 @@ test("the check's Add-play sheet shows only what was added while it is open, and
 
 test('Log: a fix that changes the player and the quarter, with the plays after it, is one Undo', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Player 1 number').fill('4');
-  await page.getByLabel('Player 1 name').fill('Player One');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
   await page.getByRole('button', { name: 'Add player' }).click();
-  await page.getByLabel('Player 2 number').fill('00');
-  await page.getByLabel('Player 2 name').fill('Player Two');
+  await page.getByLabel('Player 2 number', { exact: true }).fill('00');
+  await page.getByLabel('Player 2 name', { exact: true }).fill('Player Two');
   await page.getByRole('button', { name: 'Start game' }).click();
   const one = card(page, '4', 'Player One');
   await tap(page, one, '+2');
@@ -562,4 +558,33 @@ test("the check's player fouls are labeled as whole-game totals, apart from the 
   // Q1 had one of her two fouls: the quarter's count and her game total sit under separate labels.
   await expect(page.getByText(/^Team fouls in Q1:/)).toHaveText('Team fouls in Q1: 1');
   await expect(page.getByRole('list', { name: 'Player fouls, whole game' }).getByRole('listitem')).toHaveText(['#4 Player One2']);
+});
+
+test("setup: the other team's roster is optional, numbered, and starts the game with it", async ({ page }) => {
+  const score = (us: number, opp: number) => page.getByLabel(`Score ${us} to ${opp}`);
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Their roster \(optional\)/ })).toBeVisible();
+  // No players at all, theirs or ours: Start succeeds.
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await expect(score(0, 0)).toBeVisible();
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'New game' }).click();
+  await page.getByRole('button', { name: 'Discard and start new' }).click();
+  await page.getByLabel('Their player 1 name', { exact: true }).fill('Visitor One');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await expect(page.getByRole('alert')).toContainText('Every player needs a jersey number.');
+
+  await page.getByLabel('Their player 1 number', { exact: true }).fill('14');
+  await page.getByRole('button', { name: 'Add their player' }).click();
+  await page.getByLabel('Their player 2 number', { exact: true }).fill('24');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await expect(score(0, 0)).toBeVisible();
+
+  // Theirs is not saved: a new game starts with it empty.
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'New game' }).click();
+  await page.getByRole('button', { name: 'Discard and start new' }).click();
+  await expect(page.getByLabel('Their player 1 number', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Their player 2 number', { exact: true })).toHaveCount(0);
 });

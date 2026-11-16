@@ -48,17 +48,25 @@ export function ui(page: Page) {
   }
 
   return {
-    /** Setup: opponent, our team, opponent taps on, and the whole roster. */
+    /** Setup: opponent, our team, and the whole roster. */
     async fillSetup(opponent: string, team: string) {
       await page.getByText('Game details', { exact: true }).click();
       await page.getByLabel('Opponent (optional)').fill(opponent);
       await page.getByLabel('Our team (optional)').fill(team);
-      await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
       for (let i = 0; i < ROSTER.length; i++) {
         if (i > 0) await page.getByRole('button', exact('Add player')).click();
         const n = i + 1;
-        await page.getByLabel(`Player ${n} name`).fill(ROSTER[i].name);
-        await page.getByLabel(`Player ${n} number`).fill(ROSTER[i].number);
+        await page.getByLabel(`Player ${n} name`, { exact: true }).fill(ROSTER[i].name);
+        await page.getByLabel(`Player ${n} number`, { exact: true }).fill(ROSTER[i].number);
+      }
+    },
+    /** The other team's roster, in Setup's "Their roster (optional)" section. */
+    async fillOppRoster(players: { number: string; name?: string }[]) {
+      for (let i = 0; i < players.length; i++) {
+        if (i > 0) await page.getByRole('button', exact('Add their player')).click();
+        const n = i + 1;
+        await page.getByLabel(`Their player ${n} number`, { exact: true }).fill(players[i].number);
+        if (players[i].name) await page.getByLabel(`Their player ${n} name`, { exact: true }).fill(players[i].name!);
       }
     },
     startGame: () => page.getByRole('button', exact('Start game')).click(),
@@ -136,11 +144,10 @@ export function ui(page: Page) {
     async fillSetupNoOpponent(team: string) {
       await page.getByText('Game details', { exact: true }).click();
       await page.getByLabel('Our team (optional)').fill(team);
-      await page.getByLabel('Also keep their score (Opp +1/+2/+3)').check();
       for (let i = 0; i < ROSTER.length; i++) {
         if (i > 0) await page.getByRole('button', exact('Add player')).click();
-        await page.getByLabel(`Player ${i + 1} name`).fill(ROSTER[i].name);
-        await page.getByLabel(`Player ${i + 1} number`).fill(ROSTER[i].number);
+        await page.getByLabel(`Player ${i + 1} name`, { exact: true }).fill(ROSTER[i].name);
+        await page.getByLabel(`Player ${i + 1} number`, { exact: true }).fill(ROSTER[i].number);
       }
     },
     /** The Date field's value as MM-DD: the opponent a blank Opponent field becomes. */

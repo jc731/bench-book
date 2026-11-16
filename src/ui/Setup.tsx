@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import { newGame } from '../core/events';
-import { clearRoster, loadPrefs, loadRoster, saveRoster, savePrefs } from '../core/storage';
+import { clearRoster, loadRoster, saveRoster } from '../core/storage';
 import type { GameInfo, Player } from '../core/types';
 import { isExported } from '../core/reconcile';
 import { notExportedText } from './reconcile-logic';
-import { cleanRoster, defaultOpponent, MAX_PLAYERS, opponentOrDefault, validateRoster } from './roster';
+import { cleanOppRoster, defaultOpponent, opponentOrDefault, validateOppRoster } from './roster';
+import { blankPlayer, RosterEditor } from './RosterEditor';
 import { Sheet } from './EventSheet';
 import { getStorage, type GameStore } from './store';
 import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
@@ -18,10 +19,6 @@ function today(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-function blankPlayer(): Player {
-  return { id: crypto.randomUUID(), number: '', name: '', pos: '' };
 }
 
 function UpdateBanner() {
@@ -51,26 +48,31 @@ export function Setup({ store }: { store: GameStore }) {
     scorer: '',
     timer: '',
   });
-  const [track, setTrack] = useState(() => loadPrefs(storage).trackOpponentTaps);
+  const [oppRoster, setOppRoster] = useState<Player[]>(() => [blankPlayer()]);
   const [clearing, setClearing] = useState(false);
   const [tried, setTried] = useState(false);
   const [confirming, setConfirming] = useState(game !== null);
 
   const setField = (k: keyof GameInfo, v: string) => setInfo((i) => ({ ...i, [k]: v }));
-  const setPlayer = (id: string, k: keyof Player, v: string) =>
-    setRoster((r) => r.map((p) => (p.id === id ? { ...p, [k]: v } : p)));
 
-  const errors = validateRoster(roster);
+  // Both rosters are optional; fully blank rows are dropped before validating and saving.
+  const errors = [...new Set([...validateOppRoster(roster), ...validateOppRoster(oppRoster)])];
 
   const onStart = () => {
     setTried(true);
     if (errors.length) return;
-    const clean = cleanRoster(roster);
+    const clean = cleanOppRoster(roster);
+    // Ours prefills the next game; theirs is deliberately not saved.
     saveRoster(storage, clean);
-    savePrefs(storage, { trackOpponentTaps: track });
     store.start({
-      ...newGame({ ...info, opponent: opponentOrDefault(info.opponent, info.date) }, clean, new Date()),
-      trackOpponentTaps: track,
+      ...newGame(
+        { ...info, opponent: opponentOrDefault(info.opponent, info.date) },
+        clean,
+        new Date(),
+        cleanOppRoster(oppRoster),
+      ),
+      // Task 6 removes the dependency: until the live screen shows both teams, the Opp +1/+2/+3 row stays on.
+      trackOpponentTaps: true,
     });
   };
 
@@ -146,50 +148,8 @@ export function Setup({ store }: { store: GameStore }) {
         ))}
       </div>
 
-      <section class="mb-4">
-        <h2 class="mb-2 text-lg font-semibold">
-          Roster <span class="text-sm font-normal text-slate-300">({roster.length}/{MAX_PLAYERS})</span>
-        </h2>
-        <div class="flex flex-col gap-2">
-          {roster.map((p, i) => (
-            <div class="flex items-center gap-2">
-              <input
-                class={`${input} w-[4.5rem]! min-w-0 shrink-0`}
-                aria-label={`Player ${i + 1} number`}
-                placeholder="#"
-                inputMode="numeric"
-                value={p.number}
-                onInput={(e) => setPlayer(p.id, 'number', e.currentTarget.value)}
-              />
-              <input
-                class={`${input} min-w-0 flex-1`}
-                aria-label={`Player ${i + 1} name`}
-                placeholder="Name"
-                value={p.name}
-                onInput={(e) => setPlayer(p.id, 'name', e.currentTarget.value)}
-              />
-              <button
-                type="button"
-                class="h-11 w-11 shrink-0 rounded-lg border border-slate-500 bg-slate-800 text-xl text-white"
-                aria-label={`Remove player ${i + 1}`}
-                onClick={() => setRoster((r) => r.filter((x) => x.id !== p.id))}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-        <div class="mt-3">
-          <button
-            type="button"
-            class={secondary}
-            disabled={roster.length >= MAX_PLAYERS}
-            onClick={() => setRoster((r) => [...r, blankPlayer()])}
-          >
-            Add player
-          </button>
-        </div>
-      </section>
+      <RosterEditor label="Roster" players={roster} onChange={setRoster} idPrefix="Player" />
+      <RosterEditor label="Their roster (optional)" players={oppRoster} onChange={setOppRoster} idPrefix="Their player" />
 
       <details class="mb-6 rounded-lg border border-slate-600 bg-slate-800/50 p-3">
         <summary class="min-h-11 cursor-pointer py-2 font-semibold">Game details</summary>
@@ -222,15 +182,6 @@ export function Setup({ store }: { store: GameStore }) {
               <input class={input} value={info[k]} onInput={(e) => setField(k, e.currentTarget.value)} />
             </label>
           ))}
-          <label class="flex min-h-11 items-center gap-3">
-            <input
-              type="checkbox"
-              class="h-6 w-6 accent-sky-400"
-              checked={track}
-              onChange={(e) => setTrack(e.currentTarget.checked)}
-            />
-            <span>Also keep their score (Opp +1/+2/+3)</span>
-          </label>
           <button type="button" class={`${secondary} self-start`} onClick={() => setClearing(true)}>
             Clear saved roster
           </button>

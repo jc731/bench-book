@@ -4,7 +4,6 @@ export const MAX_PLAYERS = 15;
 
 export function validateRoster(players: Player[]): string[] {
   const errors: string[] = [];
-  if (players.length < 1) errors.push('Add at least one player.');
   if (players.length > MAX_PLAYERS) errors.push(`At most ${MAX_PLAYERS} players.`);
   if (players.some((p) => p.number.trim() === '')) errors.push('Every player needs a jersey number.');
   const seen = new Set<string>();

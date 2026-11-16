@@ -20,8 +20,8 @@ describe('validateRoster', () => {
     expect(validateRoster([P('', 1)])).toEqual(['Every player needs a jersey number.']);
     expect(validateRoster([P('   ', 1)])).toEqual(['Every player needs a jersey number.']);
   });
-  it('rejects zero players', () => {
-    expect(validateRoster([])).toEqual(['Add at least one player.']);
+  it('allows zero players', () => {
+    expect(validateRoster([])).toEqual([]);
   });
 });
 
