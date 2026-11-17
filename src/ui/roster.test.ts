@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Player } from '../core/types';
-import { cleanOppRoster, validateOppRoster, cleanRoster, defaultOpponent, opponentOrDefault, validateRoster } from './roster';
+import { setupRosterErrors, cleanOppRoster, validateOppRoster, cleanRoster, defaultOpponent, opponentOrDefault, validateRoster } from './roster';
 
 const P = (number: string, i = 0): Player => ({ id: String(i), number, name: `Player ${i}`, pos: '' });
 const many = (n: number) => Array.from({ length: n }, (_, i) => P(String(i + 1), i));
@@ -55,5 +55,14 @@ describe('validateOppRoster', () => {
   it('needs a number when there is a name, and flags duplicates', () => {
     expect(validateOppRoster([P('', 1)])).toEqual(['Every player needs a jersey number.']);
     expect(validateOppRoster([P('4', 1), P('4', 2)])).toEqual(['Duplicate number: #4.']);
+  });
+});
+
+describe('setupRosterErrors', () => {
+  const dup = [{ id: 'a', number: '4', name: 'One', pos: '' }, { id: 'b', number: '4', name: 'Two', pos: '' }];
+  it('leaves ours bare, prefixes theirs, and does not merge identical messages across teams', () => {
+    expect(setupRosterErrors(dup, [])).toEqual(['Duplicate number: #4.']);
+    expect(setupRosterErrors([], dup)).toEqual(['Their roster: Duplicate number: #4.']);
+    expect(setupRosterErrors(dup, dup)).toEqual(['Duplicate number: #4.', 'Their roster: Duplicate number: #4.']);
   });
 });

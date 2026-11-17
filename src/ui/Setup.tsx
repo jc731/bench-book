@@ -4,7 +4,7 @@ import { clearRoster, loadRoster, saveRoster } from '../core/storage';
 import type { GameInfo, Player } from '../core/types';
 import { isExported } from '../core/reconcile';
 import { notExportedText } from './reconcile-logic';
-import { cleanOppRoster, defaultOpponent, opponentOrDefault, validateOppRoster } from './roster';
+import { cleanOppRoster, defaultOpponent, opponentOrDefault, setupRosterErrors } from './roster';
 import { blankPlayer, RosterEditor } from './RosterEditor';
 import { Sheet } from './EventSheet';
 import { getStorage, type GameStore } from './store';
@@ -56,7 +56,7 @@ export function Setup({ store }: { store: GameStore }) {
   const setField = (k: keyof GameInfo, v: string) => setInfo((i) => ({ ...i, [k]: v }));
 
   // Both rosters are optional; fully blank rows are dropped before validating and saving.
-  const errors = [...new Set([...validateOppRoster(roster), ...validateOppRoster(oppRoster)])];
+  const errors = setupRosterErrors(roster, oppRoster);
 
   const onStart = () => {
     setTried(true);

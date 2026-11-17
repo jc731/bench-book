@@ -29,6 +29,11 @@ export function validateOppRoster(players: Player[]): string[] {
   return kept.length === 0 ? [] : validateRoster(kept);
 }
 
+/** Both rosters' problems for Setup; theirs are prefixed so the scorer knows which list to fix. */
+export function setupRosterErrors(ours: Player[], theirs: Player[]): string[] {
+  return [...validateOppRoster(ours), ...validateOppRoster(theirs).map((e) => `Their roster: ${e}`)];
+}
+
 /** The roster as saved: trimmed, with no position (Setup no longer asks for one). */
 export function cleanRoster(players: Player[]): Player[] {
   return players.map((p) => ({ ...p, number: p.number.trim(), name: (p.name ?? '').trim(), pos: '' }));
