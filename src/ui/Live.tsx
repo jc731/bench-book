@@ -17,7 +17,8 @@ import { validateRoster } from './roster';
 import { notExportedText } from './reconcile-logic';
 import { StatusStrip } from './StatusStrip';
 import { TeamHalf } from './TeamHalf';
-import type { GameStore } from './store';
+import { demoActive, resetDemo } from './demo';
+import { getStorage, type GameStore } from './store';
 
 const barBase = 'min-h-12 rounded-lg bg-slate-800 px-1 text-sm font-semibold active:bg-slate-700 disabled:opacity-40';
 const bar = `${barBase} border border-slate-500`;
@@ -335,6 +336,15 @@ export function Live({ store }: { store: GameStore }) {
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>Final / export</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('setup'); }}>New game</button>
+          {demoActive() && (
+            <button
+              type="button"
+              class={`${opt} mt-2 w-full`}
+              onClick={() => { setSheet(null); resetDemo(getStorage().storage); store.discard(); }}
+            >
+              Reset demo
+            </button>
+          )}
         </Sheet>
       )}
     </div>

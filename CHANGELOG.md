@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- Demo mode for development and showing the app off: open the app with `?demo` (or run `pnpm dev:demo`) and both rosters and team names are filled in. Demo keeps its own saved game and rosters, so a real game or roster is never touched. A small gray "Demo" marker shows on every screen, and More has "Reset demo".
+
 ## [0.8.0] - 2026-11-16
 
 - Both teams on one live screen. Home is always on the left with light cards and Away on the right with dark ones; a small US tag marks your team, the one thing that changes between a home night and an away night. Every play, for either team, is tap the player, then the play. The Opp +1/+2/+3 taps and the "Also keep their score" option are gone.

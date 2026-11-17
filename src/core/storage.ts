@@ -1,8 +1,11 @@
+import { storageKeys, type StorageKeys } from '../ui/demo';
 import type { Game, Player } from './types';
 
-export const GAME_KEY = 'benchbook:game';
-export const ROSTER_KEY = 'benchbook:roster';
-export const PREFS_KEY = 'benchbook:prefs';
+/** The real keys; every load/save/clear takes the keys of the current mode (`storageKeys(demo)`) and defaults to these. */
+const REAL = storageKeys(false);
+export const GAME_KEY = REAL.game;
+export const ROSTER_KEY = REAL.roster;
+export const PREFS_KEY = REAL.prefs;
 export const GAME_TTL_MS = 72 * 60 * 60 * 1000;
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -75,8 +78,8 @@ function migrateChecks(g: Game): Game {
   return { ...rest, periods, ...(oldDrafts || !g.checkDrafts ? {} : { checkDrafts: g.checkDrafts }) };
 }
 
-export function loadGame(s: Storage, now: Date): Game | null {
-  const raw = safeRead(s, GAME_KEY);
+export function loadGame(s: Storage, now: Date, keys: StorageKeys = REAL): Game | null {
+  const raw = safeRead(s, keys.game);
   if (raw === null) return null;
   let game: Game | null = null;
   try {
@@ -89,18 +92,18 @@ export function loadGame(s: Storage, now: Date): Game | null {
   }
   const updated = game ? Date.parse(game.updatedAt) : NaN;
   if (!game || Number.isNaN(updated) || now.getTime() - updated > GAME_TTL_MS) {
-    safeRemove(s, GAME_KEY);
+    safeRemove(s, keys.game);
     return null;
   }
   return migrateGame(game);
 }
 
-export function saveGame(s: Storage, g: Game): boolean {
-  return safeWrite(s, GAME_KEY, g);
+export function saveGame(s: Storage, g: Game, keys: StorageKeys = REAL): boolean {
+  return safeWrite(s, keys.game, g);
 }
 
-export function clearGame(s: Storage): void {
-  safeRemove(s, GAME_KEY);
+export function clearGame(s: Storage, keys: StorageKeys = REAL): void {
+  safeRemove(s, keys.game);
 }
 
 function isPlayer(p: unknown): p is Player {
@@ -109,8 +112,8 @@ function isPlayer(p: unknown): p is Player {
   return typeof o.id === 'string' && typeof o.number === 'string' && typeof o.name === 'string';
 }
 
-export function loadRoster(s: Storage): Player[] {
-  const raw = safeRead(s, ROSTER_KEY);
+export function loadRoster(s: Storage, keys: StorageKeys = REAL): Player[] {
+  const raw = safeRead(s, keys.roster);
   if (raw === null) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -120,21 +123,21 @@ export function loadRoster(s: Storage): Player[] {
   }
 }
 
-export function saveRoster(s: Storage, r: Player[]): boolean {
-  return safeWrite(s, ROSTER_KEY, r);
+export function saveRoster(s: Storage, r: Player[], keys: StorageKeys = REAL): boolean {
+  return safeWrite(s, keys.roster, r);
 }
 
-export function clearRoster(s: Storage): void {
-  safeRemove(s, ROSTER_KEY);
+export function clearRoster(s: Storage, keys: StorageKeys = REAL): void {
+  safeRemove(s, keys.roster);
 }
 
 export interface Prefs {
   trackOpponentTaps: boolean;
 }
 
-export function loadPrefs(s: Storage): Prefs {
+export function loadPrefs(s: Storage, keys: StorageKeys = REAL): Prefs {
   const fallback: Prefs = { trackOpponentTaps: false };
-  const raw = safeRead(s, PREFS_KEY);
+  const raw = safeRead(s, keys.prefs);
   if (raw === null) return fallback;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown> | null;
@@ -144,8 +147,8 @@ export function loadPrefs(s: Storage): Prefs {
   }
 }
 
-export function savePrefs(s: Storage, p: Prefs): boolean {
-  return safeWrite(s, PREFS_KEY, p);
+export function savePrefs(s: Storage, p: Prefs, keys: StorageKeys = REAL): boolean {
+  return safeWrite(s, keys.prefs, p);
 }
 
 export function hoursUntilPurge(g: Game, now: Date): number {

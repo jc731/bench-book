@@ -7,6 +7,7 @@ import { notExportedText } from './reconcile-logic';
 import { cleanOppRoster, defaultOpponent, opponentOrDefault, setupRosterErrors } from './roster';
 import { blankPlayer, RosterEditor } from './RosterEditor';
 import { Sheet } from './EventSheet';
+import { DEMO_SETUP, demoActive, storageKeys } from './demo';
 import { getStorage, type GameStore } from './store';
 import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
 
@@ -34,21 +35,24 @@ function UpdateBanner() {
 
 export function Setup({ store }: { store: GameStore }) {
   const { storage } = getStorage();
+  const demo = demoActive();
+  const keys = storageKeys(demo);
   const { game } = store;
   const [roster, setRoster] = useState<Player[]>(() => {
-    const saved = loadRoster(storage);
-    return saved.length ? saved : [blankPlayer()];
+    const saved = loadRoster(storage, keys);
+    if (saved.length) return saved;
+    return demo ? DEMO_SETUP.ours.map((q) => ({ ...q })) : [blankPlayer()];
   });
   const [info, setInfo] = useState<GameInfo>({
-    team: '',
-    opponent: '',
+    team: demo ? DEMO_SETUP.team : '',
+    opponent: demo ? DEMO_SETUP.opponent : '',
     date: today(),
     homeAway: 'home',
     coach: '',
     scorer: '',
     timer: '',
   });
-  const [oppRoster, setOppRoster] = useState<Player[]>(() => [blankPlayer()]);
+  const [oppRoster, setOppRoster] = useState<Player[]>(() => (demo ? DEMO_SETUP.theirs.map((q) => ({ ...q })) : [blankPlayer()]));
   const [clearing, setClearing] = useState(false);
   const [tried, setTried] = useState(false);
   const [confirming, setConfirming] = useState(game !== null);
@@ -63,7 +67,7 @@ export function Setup({ store }: { store: GameStore }) {
     if (errors.length) return;
     const clean = cleanOppRoster(roster);
     // Ours prefills the next game; theirs is deliberately not saved.
-    saveRoster(storage, clean);
+    saveRoster(storage, clean, keys);
     store.start({
       ...newGame(
         { ...info, opponent: opponentOrDefault(info.opponent, info.date) },
@@ -211,7 +215,7 @@ export function Setup({ store }: { store: GameStore }) {
               type="button"
               class={`${btn} border border-red-400 bg-slate-900 text-red-300`}
               onClick={() => {
-                clearRoster(storage);
+                clearRoster(storage, keys);
                 setRoster([blankPlayer()]);
                 setClearing(false);
               }}

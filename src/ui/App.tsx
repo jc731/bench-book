@@ -1,3 +1,4 @@
+import { demoActive } from './demo';
 import { EndGame } from './EndGame';
 import { HowTo } from './HowTo';
 import { Live } from './Live';
@@ -40,6 +41,10 @@ export function App() {
       {view === 'reconcile' && <Reconcile store={store} />}
       {view === 'end' && <EndGame store={store} />}
       {view === 'howto' && <HowTo store={store} />}
+      {/* Gray, no color job; pointer-events-none so it never blocks a control under it. */}
+      {demoActive() && (
+        <div class="pointer-events-none fixed bottom-1 right-1 z-50 rounded bg-slate-700/80 px-1.5 text-xs text-slate-300">Demo</div>
+      )}
       {view === 'running' && <RunningScore store={store} />}
     </div>
   );

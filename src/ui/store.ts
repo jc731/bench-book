@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
+import { demoActive, storageKeys } from './demo';
 import { applyLabeled, applyRedo, applyUndo, applyUpdate, type GameState, type Updater } from './game-state';
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
@@ -38,7 +39,8 @@ export function getStorage(): { storage: Storage; persistent: boolean } {
 
 export function useGameStore() {
   const [{ storage, persistent }] = useState(getStorage);
-  const state = useRef<GameState>({ game: loadGame(storage, new Date()), stack: [] });
+  const keys = storageKeys(demoActive());
+  const state = useRef<GameState>({ game: loadGame(storage, new Date(), keys), stack: [] });
   const [game, setGame] = useState<Game | null>(state.current.game);
   const [saving, setSaving] = useState(persistent);
   const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
@@ -57,9 +59,9 @@ export function useGameStore() {
     (next: GameState) => {
       state.current = next;
       setGame(next.game);
-      if (next.game) setSaving(persistent && saveGame(storage, next.game));
+      if (next.game) setSaving(persistent && saveGame(storage, next.game, keys));
     },
-    [storage, persistent],
+    [storage, persistent, keys],
   );
 
   /** `undoable: false` is for facts, not edits (a file was saved): no undo step and no Undo on the feedback line. */
@@ -120,13 +122,13 @@ export function useGameStore() {
   );
 
   const discard = useCallback(() => {
-    clearGame(storage);
+    clearGame(storage, keys);
     state.current = { game: null, stack: [] };
     setGame(null);
     setToast(null);
     setReconcilePeriod(null);
     setView('setup');
-  }, [storage]);
+  }, [storage, keys]);
 
   /** Opens Reconcile for a period; Later and Save come back to `from`. */
   const openReconcile = useCallback((period: number, from: View) => {
