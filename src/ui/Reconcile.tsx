@@ -82,7 +82,8 @@ export function Reconcile({ store }: { store: GameStore }) {
   const blocked = invalid || usProblem !== null || oppProblem !== null;
   const live = usProblem ? null : compareText(bookUsTotal, c);
   const recorded = oppPointsRecorded(game);
-  // Gated on their points being recorded (controller ruling): with none, there is no app total to compare, so a warning would be noise.
+  // Gated on their points being recorded: a scorer who records nothing for the other team may still type their book
+  // total, and warning "app 0 — 22 off" every quarter would be noise.
   const theirs = oppProblem ? null : theirScoreLineIfRecorded(c, bookOppTotal, recorded);
   const mismatch = !usProblem && isMismatch(bookUsTotal, c);
   const span = spanLabel(c.spanFrom, period);

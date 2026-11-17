@@ -17,14 +17,17 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'tip-off',
     title: 'Before tip-off',
     body: [
-      'Pick Home or Away, enter your roster (number and name), and tap Start. The opponent, date, team, coach and extras such as keeping their points are under Game details; left blank, the opponent is the date, for example 11-13.',
-      'On iPhone, tap Share, then Add to Home Screen: it keeps your roster saved between games.',
+      'Pick Home or Away, enter your roster (number and name) and, if you keep the other team too, their roster under it: numbers, names if you have them. Both are optional. Tap Start game. The opponent, date, team and coach are under Game details; left blank, the opponent is the date, for example 11-13.',
+      'On iPhone, tap Share, then Add to Home Screen: it keeps your roster saved between games. Theirs is not saved, since the opponent changes.',
     ],
   },
   {
     id: 'play',
     title: 'Record a play',
-    body: ['Tap the player, then the play: +2, +3, a foul or a free throw.'],
+    body: [
+      'Home is on the left with light cards, Away on the right with dark ones, and a small US tag marks your team.',
+      'Tap any player, on either team, then the play: +2, +3, a foul or a free throw. The line above the bar names the team, for example #4 (Home) +2.',
+    ],
   },
   {
     id: 'free-throws',
@@ -32,29 +35,35 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     body: ['Tap the player, then FT made or FT missed; the sheet stays open for the second shot. Tap Done when finished.'],
   },
   {
-    id: 'timeouts',
-    title: 'Timeouts and bench techs',
-    body: ['Timeout opens Full, 30s and OT. Bench and coach techs go on the Bench / coach tech card after the last player, which counts them.'],
+    id: 'no-card',
+    title: 'A player with no card',
+    body: [
+      'Each half ends with a + Play card. Tap it, pick the play, and Whose number? asks who: type the number to credit that player (a new number joins that team), or tap No number to give it to the team only.',
+      'Stop asking this game does the same as No number and skips the question for that team from then on.',
+    ],
   },
   {
-    id: 'theirs',
-    title: 'Their points',
-    body: ['Turn them on in Game details; then Opp +1, +2 and +3 appear in the bar at the bottom, above Timeout.'],
+    id: 'timeouts',
+    title: 'Timeouts and bench techs',
+    body: [
+      "Each team's timeouts are the buttons under its Bench card: Full: 3 means three full ones left, and OT: 1 shows in overtime. One tap takes one. At 0 the button is grayed; a tap asks first, and Take one anyway records it.",
+      "Bench and coach techs go on that team's Bench / coach tech card, which counts them.",
+    ],
   },
   {
     id: 'mistakes',
     title: 'Mistakes',
-    body: ['Tap Undo right away, or open Log and tap the line to fix or delete it. Fix can also move the plays after it.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
-    image: { src: '/howto/mistakes.png', alt: 'The Log with one play tapped: its fix sheet offers another play or player, Delete, Cancel and Save.' },
+    body: ['Tap Undo right away, or open Log and tap the line to fix or delete it. Fix can change the play, the team, the player or the quarter, and can move the plays after it too.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
+    image: { src: '/howto/mistakes.png', alt: 'The Log with one play tapped: its fix sheet offers another play, team or player, Delete, Cancel and Save.' },
   },
   {
     id: 'quarter',
     title: 'End of quarter',
     body: [
-      "Tap End Q1 (End Q2 and so on; it's outlined in blue, and in red once it can end the game), then type the game score after that quarter, the running score in the book's Score by Qtr box. The app checks the quarter's own points, so a gap you noted earlier isn't counted twice.",
-      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed one. Later keeps what you typed.',
+      "Tap End Q1 (End Q2 and so on; it's outlined in blue, and in red once it can end the game), then type the game score after that quarter, the running score in the book's Score by Qtr box: yours, and theirs if you keep it. The app checks the quarter's own points, so a gap you noted earlier isn't counted twice.",
+      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed one of yours with Add play; it stays there after the score matches, for a foul the book has and the app doesn\'t. Their score only warns, in amber. Later keeps what you typed.',
     ],
-    image: { src: '/howto/end-of-quarter.png', alt: "Check Q1 with the book's 8 and 5 typed in, showing Matches above the Later and Save buttons." },
+    image: { src: '/howto/end-of-quarter.png', alt: "Check Q1 with the book's 8 and 5 typed in: Matches, their score agreeing, and Add play to Q1 above the quarter's plays." },
   },
   {
     id: 'overtime',
@@ -76,10 +85,10 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'screen',
     title: 'Reading the screen',
     body: [
-      'Foul dots turn amber at 4 and red at OUT, and an out player\'s card is grayed: tapping it asks first. The strip at the top shows the bonus and timeouts left.',
-      MARK_LEGEND,
+      "Each half's header shows that team's fouls this quarter, amber from 4. In the bonus, the strip at the top says which team shoots, over its half. Foul dots turn amber at 4 and red at OUT, and an out player's card is grayed: tapping it asks first.",
+      `Running score, under ⋯, shows your team only. ${MARK_LEGEND}`,
     ],
-    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: the score, team fouls 5 with the bonus, and timeouts left at the top, and #12 with four amber foul dots.' },
+    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: Home, marked US, on the left with team fouls 5 and #12 at four amber foul dots; Away shoots; under each half, + Play, the Bench card and the timeout buttons.' },
   },
   {
     id: 'wrong',

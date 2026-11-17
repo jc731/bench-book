@@ -5,10 +5,19 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
-- + Play on either half asks "Whose number?" after the play. A typed number credits that player and adds them to the team if they are new; No number records the play for the team only; Stop asking this game skips the question for that team from then on.
-- A timeout button at zero asks first ("Away has no full timeouts left. Are you sure?"), and Take one anyway records it.
-- Each play sheet's title names the team, like the toasts (`#14 (Away)`), and the score reads "Score Home 2, Away 3" to screen readers.
+- Both teams on one live screen. Home is always on the left with light cards and Away on the right with dark ones; a small US tag marks your team, the one thing that changes between a home night and an away night. Every play, for either team, is tap the player, then the play. The Opp +1/+2/+3 taps and the "Also keep their score" option are gone.
+- Setup has a second roster for the other team: numbers, with names if you have them. Both rosters are optional. Yours still prefills from the saved roster; theirs is not saved, since the opponent changes every game.
+- + Play, at the foot of each half, records a play without tapping a card. After the play, "Whose number?" asks who: a typed number credits that player and adds them to that team if they are new (a late arrival, or a mis-entered roster); No number records the play for the team only; Stop asking this game skips the question for that team from then on. Each team's Bench sheet now holds only the bench tech.
+- Timeouts are per team, as buttons under each team's Bench card: `Full: 2`, `30s: 1`, and `OT: 1` in overtime, each showing what is left. One tap takes one. The bar's Timeout button is gone; the bar is Undo, Log, End Q, and ⋯.
+- A timeout button at zero is grayed but still asks first ("Away has no full timeouts left. Are you sure?"), and Take one anyway records it.
+- Both bonuses: each half's header shows that team's fouls, and the bonus badge names the team that shoots ("Home shoots"), over its half.
+- Every play names its team: in the line above the bar, the Log and each play sheet's title (`#4 (Home) +2`, `Away +2`, `Home bench tech`). The score reads "Score Home 2, Away 3" to screen readers.
+- The Log's fix sheet has a Team choice, to move a play to the other team.
+- The quarter check shows their score when any of their points were recorded: "Their score: book 22 · app 20 — 2 off" in amber, as a warning only (the quarter's status still follows your score). The team fouls and "Player fouls, whole game" show both teams once the other team has any record.
+- Add play to Q1 (and so on) stays on the quarter check after the score matches, so a missed foul can be added once the score is fixed.
+- The Book CSV adds the other team's block (its players, team fouls, bench techs and timeouts) when any of their plays were recorded; a game with none exports as before. The Plays CSV has a new `side` column, `home` or `away`; the `team` column is unchanged.
 - Light (home) cards: the 4-foul warning, OUT, and bench-tech colors use darker amber and red shades so they stay readable on white.
+- Games saved before 0.8 open in the new layout; their opponent points still count toward their score.
 
 ## [0.7.0] - 2026-11-16
 

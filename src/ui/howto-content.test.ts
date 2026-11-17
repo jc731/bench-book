@@ -12,14 +12,41 @@ const text = (t: string) => byTitle(t).body.join(' ');
 describe('how-to content', () => {
   it('has the twelve sections in order', () =>
     expect(HOWTO_SECTIONS.map((s) => s.title)).toEqual([
-      'What this is', 'Before tip-off', 'Record a play', 'Free throws', 'Timeouts and bench techs',
-      'Their points', 'Mistakes', 'End of quarter', 'Overtime and end of game', 'Export',
+      'What this is', 'Before tip-off', 'Record a play', 'Free throws', 'A player with no card',
+      'Timeouts and bench techs', 'Mistakes', 'End of quarter', 'Overtime and end of game', 'Export',
       'Reading the screen', "If something's wrong",
     ]));
   it('keeps each section short', () => HOWTO_SECTIONS.forEach((s) => expect(s.body.length).toBeLessThanOrEqual(2)));
   it('gives every section a distinct id', () =>
     expect(new Set(HOWTO_SECTIONS.map((s) => s.id)).size).toBe(HOWTO_SECTIONS.length));
   it('puts bench techs on the Bench card', () => expect(text('Timeouts and bench techs')).toMatch(/Bench \/ coach tech card/));
+  it('puts each team\'s timeouts under its Bench card, with the guard at zero', () => {
+    expect(text('Timeouts and bench techs')).toMatch(/buttons under its Bench card/);
+    expect(text('Timeouts and bench techs')).toMatch(/Full: 3.*OT: 1/);
+    expect(text('Timeouts and bench techs')).toMatch(/At 0 .*Take one anyway/);
+  });
+  it('lays out Home and Away and the US tag', () => {
+    expect(text('Record a play')).toMatch(/Home is on the left with light cards, Away on the right with dark ones/);
+    expect(text('Record a play')).toMatch(/US tag/);
+    expect(text('Record a play')).toMatch(/Tap any player, on either team/);
+  });
+  it('explains + Play and Whose number?', () => {
+    const t = text('A player with no card');
+    for (const words of ['+ Play', 'Whose number?', 'No number', 'Stop asking this game', 'joins that team']) expect(t).toContain(words);
+  });
+  it('makes both rosters optional and keeps only ours', () => {
+    expect(text('Before tip-off')).toMatch(/their roster.*Both are optional/);
+    expect(text('Before tip-off')).toMatch(/Theirs is not saved/);
+  });
+  it('says Add play stays on the check and their score only warns', () => {
+    expect(text('End of quarter')).toMatch(/Add play; it stays there after the score matches/);
+    expect(text('End of quarter')).toMatch(/Their score only warns/);
+  });
+  it('drops the controls 0.8 removed', () => {
+    const all = HOWTO_SECTIONS.map((s) => `${s.title} ${s.body.join(' ')} ${s.image?.alt ?? ''}`).join(' ');
+    for (const gone of [/Opp \+/, /keep(ing)? their (score|points)/i, /Add a player/i, /Timeout opens/, /timeouts left at the top/])
+      expect(all).not.toMatch(gone);
+  });
   it('carries the iPhone home-screen tip and names Game details', () => {
     expect(text('Before tip-off')).toMatch(/Add to Home Screen/);
     expect(text('Before tip-off')).toMatch(/Game details/);
@@ -34,7 +61,10 @@ describe('how-to content', () => {
     expect(text('Export')).toMatch(/Not checked.*pending/);
     expect(text('Export')).toMatch(/Mismatch.*unresolved/);
   });
-  it('carries the running-score legend', () => expect(text('Reading the screen')).toContain(MARK_LEGEND));
+  it('carries the running-score legend, ours only', () => {
+    expect(text('Reading the screen')).toContain(MARK_LEGEND);
+    expect(text('Reading the screen')).toMatch(/Running score.*your team only/);
+  });
   it('points to the Setup update button', () => expect(text("If something's wrong")).toMatch(/Setup shows .*Update available/));
   it('covers the banner and what a reload clears', () => {
     expect(text("If something's wrong")).toMatch(/Not saving/);
