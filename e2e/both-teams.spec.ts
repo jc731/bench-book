@@ -135,7 +135,9 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     // The out warning shows on their sheet and every play is grayed out.
     await theirCard(page, '24').click();
     await expect(dialog.getByTestId('out-warning')).toContainText('Out: 5 fouls.');
-    await expect(dialog.getByRole('button', exact('+2'))).toBeDisabled();
+    for (const play of ['+2', '+3', 'FT made', 'FT missed', 'Foul', 'Tech foul']) {
+      await expect(dialog.getByRole('button', exact(play))).toBeDisabled();
+    }
     await dialog.getByRole('button', exact('Done')).click();
     await expect(dialog).toHaveCount(0);
 
@@ -169,18 +171,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 2');
     await expect(awayFouls).toHaveText('Team fouls in Q2 (Away): 3');
 
-    // b) A foul never logged: the book has 3. Adding it moves the fouls, not the score.
-    await app.fixRegion().getByRole('button', exact('Add play to Q2')).click();
-    await dialog.getByRole('button', exact('#31 Player Six')).click();
-    await dialog.getByRole('button', exact('Foul')).click();
-    await expect(dialog).toHaveCount(0);
-    await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 3');
-    await expect(awayFouls).toHaveText('Team fouls in Q2 (Away): 3');
-    await app.expectAppHas('Q2', 4, 6, 11, 11);
-    await app.expectShort('Q2', 12, 11, 1);
-    await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem').filter({ hasText: '#31 Player Six' })).toHaveText('#31 Player Six1');
-
-    // a) A free throw logged as missed that went in: change its type in the fix sheet.
+    // A free throw logged as missed that went in: change its type in the fix sheet.
     const row = app.logRow(app.fixRegion(), '#00 Player Two (Home) · FT missed');
     await expect(row).toHaveCount(1);
     await row.click();
@@ -189,7 +180,18 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(dialog).toHaveCount(0);
     await app.expectAppHas('Q2', 5, 6, 12, 11);
     await app.expectMatches();
+    await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 2');
+
+    // A foul never logged: the book has 3. Still offered once the score matches; it moves the fouls, not the score.
+    await app.fixRegion().getByRole('button', exact('Add play to Q2')).click();
+    await dialog.getByRole('button', exact('#31 Player Six')).click();
+    await dialog.getByRole('button', exact('Foul')).click();
+    await expect(dialog).toHaveCount(0);
     await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 3');
+    await expect(awayFouls).toHaveText('Team fouls in Q2 (Away): 3');
+    await app.expectAppHas('Q2', 5, 6, 12, 11);
+    await app.expectMatches();
+    await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem').filter({ hasText: '#31 Player Six' })).toHaveText('#31 Player Six1');
     await app.saveCheck();
     await expect(app.banner('Q2')).toHaveCount(0);
   });

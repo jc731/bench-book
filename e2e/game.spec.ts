@@ -189,6 +189,26 @@ test('reconcile can add a play to a period that has none', async ({ page }) => {
   await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
 });
 
+test('check: Add play stays available after the score matches', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
+  await page.getByRole('button', { name: 'Start game' }).click();
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await page.getByRole('button', { name: 'Check Q1 — not checked against the book' }).click();
+  await page.getByLabel(/Our game score after Q1/).fill('0');
+  await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
+  const teamFouls = page.getByText(/^Team fouls in Q1:/);
+  await expect(teamFouls).toHaveText('Team fouls in Q1: 0');
+  const region = page.getByRole('region', { name: 'Plays to fix', exact: true });
+  await region.getByRole('button', { name: 'Add play to Q1', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /#4 Player One/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Foul', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(teamFouls).toHaveText('Team fouls in Q1: 1');
+  await expect(page.getByTestId('compare')).toHaveText('✓ Matches');
+});
+
 test('a long foul-out entry wraps whole beside the check chip and every card still fits', async ({ page }) => {
   const long = 'Player With A Very Long Nam'; // 27 characters
   await page.goto('/');

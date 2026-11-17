@@ -168,21 +168,20 @@ export function Reconcile({ store }: { store: GameStore }) {
         )}
         {theirs && <p class={theirs.warn ? 'font-semibold text-amber-300' : 'text-slate-300'} data-testid="compare-opp">{theirs.text}</p>}
 
-        {mismatch && (
-          <section aria-label="Plays to fix">
-            <h2 class="mb-2 font-bold">Fix the plays{span !== periodLabel(period) && ` in ${span}`}</h2>
-            <button
-              type="button"
-              class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
-              onClick={() => { addOpenedWith.current = toast; setAddStep('player'); }}
-            >
-              Add play to {periodLabel(period)}
-            </button>
-            <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
-              <Log store={store} period={period} fromPeriod={c.spanFrom} order="oldest" showToast={false} embedded />
-            </div>
-          </section>
-        )}
+        {/* Always offered: a missed foul never moves the score, so it is caught here after the score matches. */}
+        <section aria-label="Plays to fix">
+          <h2 class="mb-2 font-bold">Fix the plays{span !== periodLabel(period) && ` in ${span}`}</h2>
+          <button
+            type="button"
+            class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
+            onClick={() => { addOpenedWith.current = toast; setAddStep('player'); }}
+          >
+            Add play to {periodLabel(period)}
+          </button>
+          <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
+            <Log store={store} period={period} fromPeriod={c.spanFrom} order="oldest" showToast={false} embedded />
+          </div>
+        </section>
 
         <label class="flex flex-col gap-1">
           <span class="text-sm text-slate-300">Note</span>
