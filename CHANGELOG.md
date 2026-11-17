@@ -10,7 +10,7 @@ All notable changes to Bench Book are listed here, in the
 - + Play, at the foot of each half, records a play without tapping a card. After the play, "Whose number?" asks who: a typed number credits that player and adds them to that team if they are new (a late arrival, or a mis-entered roster); No number records the play for the team only; Stop asking this game skips the question for that team from then on. Each team's Bench sheet now holds only the bench tech.
 - Timeouts are per team, as buttons under each team's Bench card: `Full: 2`, `30s: 1`, and `OT: 1` in overtime, each showing what is left. One tap takes one. The bar's Timeout button is gone; the bar is Undo, Log, End Q, and ⋯.
 - A timeout button at zero is grayed but still asks first ("Away has no full timeouts left. Are you sure?"), and Take one anyway records it.
-- Both bonuses: each half's header shows that team's fouls, and the bonus badge names the team that shoots ("Home shoots"), over its half.
+- Both bonuses: each half's header shows that team's fouls, and the bonus badge in the strip at the top names the team that shoots ("Home shoots"), over its half.
 - Every play names its team: in the line above the bar, the Log and each play sheet's title (`#4 (Home) +2`, `Away +2`, `Home bench tech`). The score reads "Score Home 2, Away 3" to screen readers.
 - The Log's fix sheet has a Team choice, to move a play to the other team.
 - The quarter check shows their score when any of their points were recorded: "Their score: book 22 · app 20 — 2 off" in amber, as a warning only (the quarter's status still follows your score). The team fouls and "Player fouls, whole game" show both teams once the other team has any record.

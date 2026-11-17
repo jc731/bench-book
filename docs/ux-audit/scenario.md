@@ -1,6 +1,10 @@
 # First-timer audit scenario
 
-The controller gives the persona only the `## Events
+The controller gives the persona only the `## Events` section. The `## Expected end state`
+section is for the controller alone, to compare against the exported files after the run.
+Every name here is invented.
+
+## Events
 
 1. You're at the scorer's table before tip-off, and this is the app you'll keep the game
    in, beside your paper book. Tonight is a home game: your team, Test Home, plays Test

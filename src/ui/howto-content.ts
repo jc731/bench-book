@@ -85,7 +85,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'screen',
     title: 'Reading the screen',
     body: [
-      "Each half's header shows that team's fouls this quarter, amber from 4. In the bonus, the strip at the top says which team shoots, over its half. Foul dots turn amber at 4 and red at OUT, and an out player's card is grayed: tapping it asks first.",
+      "Each half's header shows that team's fouls this quarter, amber from 4. In the bonus, a badge in the strip at the top names the team that shoots, for example Home shoots, over its half. Foul dots turn amber at 4 and red at OUT, and an out player's card is grayed: tapping it asks first.",
       `Running score, under ⋯, shows your team only. ${MARK_LEGEND}`,
     ],
     image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: Home, marked US, on the left with team fouls 5 and #12 at four amber foul dots; Away shoots; under each half, + Play, the Bench card and the timeout buttons.' },
