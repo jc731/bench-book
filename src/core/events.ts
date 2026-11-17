@@ -132,7 +132,7 @@ export function moveFrom(g: Game, fromId: string, period: number, now: Date): Ga
   const from = g.events.find((e) => e.id === fromId);
   if (!from) throw new Error(`No event with id ${fromId}`);
   const inBlock = (e: GameEvent) => e.id === fromId || (e.order > from.order && e.period === from.period);
-  const others = g.events.filter((e) => !inBlock(e));
+  const others = [...g.events.filter((e) => !inBlock(e)), ...(g.subs ?? [])];
   const skipsPlays = others.some((e) => e.order > from.order && e.period > from.period && e.period < period);
   const behindLater = others.some((e) => e.order < from.order && e.period > period);
   const block = g.events.filter(inBlock).sort((a, b) => a.order - b.order);

@@ -346,6 +346,25 @@ describe('recording a sub', () => {
     expect(recordSub(g, 'us', [], [], t1)).toBe(g);
   });
 
+  test('moveFrom lands a block after two trailing subs of the target quarter, not among them', () => {
+    const p5: Player[] = ['1', '2', '3'].map((n) => ({ id: `p${n}`, number: n, name: `Player ${n}`, pos: '' }));
+    let g = newGame(info, p5, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0);
+    g = { ...g, currentPeriod: 3 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0);
+    g = { ...g, currentPeriod: 2 };
+    g = recordSub(g, 'us', ['p2'], ['p1'], t1);
+    g = recordSub(g, 'us', ['p3'], ['p2'], t1);
+    g = { ...g, currentPeriod: 3 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p3' }, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p3' }, t0);
+    const block = g.events.slice(2);
+    g = moveFrom(g, block[0].id, 2, t1);
+    const subMax = Math.max(...g.subs!.map((s) => s.order));
+    for (const b of block) expect(g.events.find((e) => e.id === b.id)!.order).toBeGreaterThan(subMax);
+    expect(g.events.find((e) => e.id === block[1].id)!.order).toBeLessThan(g.events[1].order);
+  });
+
   test('a sub on an empty game gets order 0', () => {
     const g = recordSub(newGame(info, two, t0), 'us', ['p2'], ['p1'], t1);
     expect(g.subs![0].order).toBe(0);

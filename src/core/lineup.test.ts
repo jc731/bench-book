@@ -313,6 +313,7 @@ describe('recorded subs', () => {
   test('a play appended after recordSub comes after the sub: the sub-in player is not a bench promotion', () => {
     let g = recordSub(game(), 'us', ['h22'], ['h4'], now);
     g = appendEvent(g, { type: 'FG2', playerId: 'h22', period: 1 }, now);
+    expect(g.events.at(-1)!.order).toBeGreaterThan(g.subs![0].order);
     const l = lineup(g, 'us');
     expect(l.floor).toEqual(['h5', 'h7', 'h10', 'h12', 'h22']);
     expect(l.bench).toEqual(['h4', 'h31']);
