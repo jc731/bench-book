@@ -62,7 +62,7 @@ export interface Game {
   events: GameEvent[];
   currentPeriod: number;
   periods: PeriodRecord[];
-  trackOpponentTaps: boolean; // default false
+  trackOpponentTaps: boolean; // legacy: kept for old saves, no longer drives anything
   createdAt: string;
   updatedAt: string;
   endedAt?: string;

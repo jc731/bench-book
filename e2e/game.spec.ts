@@ -1027,3 +1027,43 @@ test('fix sheet: a no-number play reads as the team and can move with No number'
   await app.back();
   await expect(page.getByLabel('Score Home 2, Away 0')).toBeVisible();
 });
+
+// ---- The quarter check: their score warns, both teams' fouls ------------------------------------
+
+test('check: their score off warns but the quarter still saves as matched', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  await card(page, '10', 'Player 1').click();
+  await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  await cards(page, 'Away', '50').click();
+  await page.getByRole('dialog').getByRole('button', { name: '+3', exact: true }).click();
+  await app.endPeriod('Q1');
+  await app.banner('Q1').click();
+  await expect(page.getByLabel(/Their game score after Q1/)).toHaveAttribute('placeholder', '3 from the app');
+  await app.fillCheck('Q1', 2, 5);
+  const line = page.getByTestId('compare-opp');
+  await expect(line).toHaveText('Their score: book 5 · app 3 — 2 off');
+  await expect(line).toHaveClass(/text-amber/);
+  await app.expectMatches();
+  await app.saveCheck();
+  await app.openLog();
+  await expect(app.chip('Q1', 'matched')).toBeVisible();
+  await app.back();
+  await app.openEnd();
+  await expect(page.getByTestId('final-us')).toBeVisible();
+  await expect(app.issues()).toHaveCount(0);
+});
+
+test('check: when the other team has plays, both teams get their quarter and whole-game fouls', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  await tap(page, card(page, '10', 'Player 1'), 'Foul');
+  await tap(page, cards(page, 'Away', '50'), 'Foul');
+  await tap(page, cards(page, 'Away', '50'), 'Foul');
+  await app.endPeriod('Q1');
+  await app.banner('Q1').click();
+  await expect(page.getByText(/^Team fouls in Q1 \(Home\):/)).toHaveText('Team fouls in Q1 (Home): 1');
+  await expect(page.getByText(/^Team fouls in Q1 \(Away\):/)).toHaveText('Team fouls in Q1 (Away): 2');
+  await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem')).toHaveText(['#10 Player 11', '#11 Player 20']);
+  await expect(page.getByRole('list', { name: 'Away player fouls, whole game' }).getByRole('listitem')).toHaveText(['#50 2', '#51 0']);
+});

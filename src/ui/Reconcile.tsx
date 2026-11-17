@@ -1,17 +1,17 @@
 import { useRef, useState } from 'preact/hooks';
-import { derive } from '../core/derive';
+import { derive, hasOppRecord, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
-import { appendEvent, sideName } from '../core/events';
+import { appendEvent, rosterOf, sideName } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
-import type { Player } from '../core/types';
+import type { Player, Side } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { addedLabel } from './log-logic';
 import { feedbackLine, who, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
-  MISMATCH_HINT, appHasText, compareText, isMismatch, oppCompareText, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, theirScoreLine, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -81,10 +81,13 @@ export function Reconcile({ store }: { store: GameStore }) {
   const oppProblem = totalProblem(game, period, bookOppTotal, 'bookOppTotal');
   const blocked = invalid || usProblem !== null || oppProblem !== null;
   const live = usProblem ? null : compareText(bookUsTotal, c);
-  const oppLive = oppProblem ? null : live || bookOppTotal !== null ? oppCompareText(bookOppTotal, c, game.trackOpponentTaps) : null;
+  const recorded = oppPointsRecorded(game);
+  const theirs = oppProblem || !recorded ? null : theirScoreLine({ ...c, bookOppTotal });
   const mismatch = !usProblem && isMismatch(bookUsTotal, c);
   const span = spanLabel(c.spanFrom, period);
-  const byId = new Map(game.roster.map((p) => [p.id, p]));
+  const both = hasOppRecord(game);
+  // Home first, then Away; with no record of the other team, only ours, as before.
+  const foulSides: Side[] = !both ? ['us'] : sideName(game, 'us') === 'Home' ? ['us', 'them'] : ['them', 'us'];
 
   // Only Save saves; the comparison above it is live. A save that would change nothing is skipped,
   // so repeating it adds no undo step.
@@ -144,7 +147,7 @@ export function Reconcile({ store }: { store: GameStore }) {
           <input
             class={field}
             inputMode="numeric"
-            placeholder={oppPlaceholder(c, game.trackOpponentTaps)}
+            placeholder={oppPlaceholder(c, recorded)}
             value={oppText}
             onInput={(e) => setOppText(e.currentTarget.value)}
           />
@@ -162,7 +165,7 @@ export function Reconcile({ store }: { store: GameStore }) {
             {mismatch && <p class="mt-1 text-sm font-semibold" data-testid="compare-hint">{MISMATCH_HINT}</p>}
           </div>
         )}
-        {oppLive && <p class="text-slate-300" data-testid="compare-opp">{oppLive}</p>}
+        {theirs && <p class={theirs.warn ? 'font-semibold text-amber-300' : 'text-slate-300'} data-testid="compare-opp">{theirs.text}</p>}
 
         {mismatch && (
           <section aria-label="Plays to fix">
@@ -187,20 +190,35 @@ export function Reconcile({ store }: { store: GameStore }) {
 
         <section aria-label="Fouls">
           <h2 class="font-bold">Fouls (compare with the book by eye)</h2>
-          <p class="text-slate-300">Team fouls in {periodLabel(period)}: <span class="font-bold text-white">{d.teamFoulsByPeriod[period] ?? 0}</span></p>
+          {foulSides.map((side) => (
+            <p key={side} class="text-slate-300">
+              Team fouls in {periodLabel(period)}{both && ` (${sideName(game, side)})`}: <span class="font-bold text-white">{(side === 'us' ? d.us : d.opp).teamFoulsByPeriod[period] ?? 0}</span>
+            </p>
+          ))}
           {/* Game totals, as the book keeps each player's fouls: labeled, so they are not read as this quarter's (UX audit v0.6.0, F2). */}
           <h3 class="mt-2 text-sm text-slate-300">Player fouls, whole game</h3>
-          <ul class="mt-1 grid grid-cols-2 gap-x-3" aria-label="Player fouls, whole game">
-            {d.players.map((l) => {
-              const p = byId.get(l.playerId);
+          <div aria-label="Player fouls, whole game">
+            {foulSides.map((side) => {
+              const lines = (side === 'us' ? d.us : d.opp).players;
+              const byId = new Map(rosterOf(game, side).map((p) => [p.id, p]));
               return (
-                <li key={l.playerId} class="flex justify-between border-b border-slate-800 py-1">
-                  <span class="truncate">#{p?.number} {p?.name}</span>
-                  <span class="font-bold">{l.fouls}</span>
-                </li>
+                <div key={side}>
+                  {both && <h4 class="mt-1 text-sm font-semibold text-slate-300">{sideName(game, side)}</h4>}
+                  <ul class="mt-1 grid grid-cols-2 gap-x-3" aria-label={both ? `${sideName(game, side)} player fouls, whole game` : 'Player fouls, whole game'}>
+                    {lines.map((l) => {
+                      const p = byId.get(l.playerId);
+                      return (
+                        <li key={l.playerId} class="flex justify-between border-b border-slate-800 py-1">
+                          <span class="truncate">#{p?.number} {p?.name}</span>
+                          <span class="font-bold">{l.fouls}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </section>
       </div>
 

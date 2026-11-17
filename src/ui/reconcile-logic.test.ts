@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { appendEvent, newGame } from '../core/events';
-import { endGame, markExported } from '../core/reconcile';
+import { checkPeriod, endGame, markExported, saveReconcile } from '../core/reconcile';
 import type { Game } from '../core/types';
 import {
-  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, oppCompareText, oppPlaceholder, parseScore,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, oppPlaceholder, parseScore,
   reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 
@@ -99,25 +99,24 @@ describe('exportStateText', () => {
   });
 });
 
-describe('opponent check', () => {
-  it('never compares, and never says it matches, a blank opponent box', () => {
-    const c = (taps: number) => ({ period: 1, oppSpanFrom: 1, anchorOppBook: 0, oppTapped: taps });
-    expect(oppCompareText(null, c(6), true)).toBe('Opponent not compared (box blank)');
-    expect(oppCompareText(null, c(0), true)).not.toMatch(/match|✓/i);
-    expect(oppCompareText(null, c(0), false)).toBeNull();
+describe('their score line', () => {
+  const c = (book: number | null, taps: number, anchor = 0) =>
+    ({ period: 2, oppSpanFrom: 1, anchorOppBook: anchor, oppTapped: taps, bookOppTotal: book });
+  it('warns, with how far off, when the book and the app disagree', () => {
+    expect(theirScoreLine(c(22, 20))).toEqual({ text: 'Their score: book 22 \u00b7 app 20 \u2014 2 off', warn: true });
+    expect(theirScoreLine(c(18, 20))).toEqual({ text: 'Their score: book 18 \u00b7 app 20 \u2014 2 off', warn: true });
   });
-  it('compares a typed game total with the taps since the last typed total', () => {
-    const q1 = (taps: number) => ({ period: 1, oppSpanFrom: 1, anchorOppBook: 0, oppTapped: taps });
-    expect(oppCompareText(6, q1(6), true)).toBe('Opponent: book 6 · taps 6 ✓');
-    expect(oppCompareText(6, q1(4), true)).toBe('Opponent: book 6 · taps 4 — taps are 2 short in Q1');
-    expect(oppCompareText(3, q1(4), true)).toBe('Opponent: book 3 · taps 4 — taps are 1 over in Q1');
-    expect(oppCompareText(6, q1(0), false)).toBe('Opponent 6 from the book (no taps to compare)');
-    // Q1 typed 9 (taps had 7); Q2 tapped 5: the taps' game total is 14.
-    const q2 = { period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 5 };
-    expect(oppCompareText(14, q2, true)).toBe('Opponent: book 14 · taps 14 ✓');
+  it('ticks when they agree', () => {
+    expect(theirScoreLine(c(20, 20))).toEqual({ text: 'Their score: book 20 \u00b7 app 20 \u2713', warn: false });
   });
-  it('shows the taps\' game total only as a placeholder', () => {
-    expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, true)).toBe('12 from taps');
+  it('counts their points on top of the last typed total', () => {
+    expect(theirScoreLine(c(14, 5, 9))).toEqual({ text: 'Their score: book 14 \u00b7 app 14 \u2713', warn: false });
+  });
+  it('says nothing for a blank box, never a match', () => {
+    expect(theirScoreLine(c(null, 6))).toBeNull();
+  });
+  it('shows the app total only as a placeholder, and only once their points are recorded', () => {
+    expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, true)).toBe('12 from the app');
     expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, false)).toBe('');
   });
 });
@@ -155,19 +154,19 @@ describe('issueAction', () => {
 });
 
 describe('check screen text', () => {
-  const twoQuarters = (track: boolean): Game => {
-    let g = { ...base(), trackOpponentTaps: track, currentPeriod: 2 };
+  const twoQuarters = (withThem: boolean): Game => {
+    let g = { ...base(), currentPeriod: 2 };
     g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0);
-    g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 3, period: 1 }, t0);
+    if (withThem) g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 3, period: 1 }, t0);
     g = appendEvent(g, { type: 'FG3', playerId: 'p1', period: 2 }, t0);
-    g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 2, period: 2 }, t0);
+    if (withThem) g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 2, period: 2 }, t0);
     return g;
   };
   it('leads with the game score after the quarter, then the quarter on its own', () => {
     expect(appHasText(twoQuarters(true), 2)).toBe('App after Q2: Us 5 · Them 5 (Q2: 3–2)');
     expect(appHasText(twoQuarters(true), 1)).toBe('App after Q1: Us 2 · Them 3 (Q1: 2–3)');
   });
-  it('leaves Them out when opponent taps are off', () => {
+  it('leaves Them out until any of their points are recorded', () => {
     expect(appHasText(twoQuarters(false), 2)).toBe('App after Q2: Us 5 (Q2: 3)');
   });
   it('words the mismatch hint', () => {
@@ -178,5 +177,17 @@ describe('check screen text', () => {
     expect(sawMismatch(7, 7)).toBe(false);
     expect(sawMismatch(null, 7)).toBe(false);
     expect(sawMismatch(9, null)).toBe(false);
+  });
+});
+
+describe('their score never moves the quarter status', () => {
+  it('stays matched when ours matches and theirs is off', () => {
+    let g = { ...base(), currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0);
+    g = appendEvent(g, { type: 'OPP_PTS', oppPoints: 3, period: 1 }, t0);
+    g = saveReconcile(g, 1, 2, 9, '', t0, false);
+    const c = checkPeriod(g, 1);
+    expect(theirScoreLine(c)?.warn).toBe(true);
+    expect(c.status).toBe('matched');
   });
 });

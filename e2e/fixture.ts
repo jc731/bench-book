@@ -299,7 +299,7 @@ export function ui(page: Page, ours: Side = 'Home') {
     },
     /** The opponent box starts blank, with the tap total only as a hint. */
     expectOppHint: (label: string, taps: number) =>
-      expect(page.getByLabel(new RegExp(`Their game score after ${label}`))).toHaveAttribute('placeholder', `${taps} from taps`),
+      expect(page.getByLabel(new RegExp(`Their game score after ${label}`))).toHaveAttribute('placeholder', `${taps} from the app`),
 
     /** The strip (score home–away, period, the bonus badge) and our half's header and timeout buttons. */
     async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {

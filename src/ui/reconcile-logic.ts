@@ -1,4 +1,4 @@
-import { derive } from '../core/derive';
+import { derive, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { hoursUntilPurge } from '../core/storage';
 import { isExported, type PeriodCheck, type PeriodStatus } from '../core/reconcile';
@@ -35,14 +35,14 @@ export const MISMATCH_HINT = 'Add the missing play, fix one below, or write a no
 
 /**
  * The check screen's top line: the app's game score after the period, then the period's own points,
- * `App after Q2: Us 18 · Them 12 (Q2: 8–6)`. Them is the opponent taps, so it is left out when taps are off.
+ * `App after Q2: Us 18 · Them 12 (Q2: 8–6)`. Them is left out until any of their points are recorded.
  */
 export function appHasText(g: Game, period: number): string {
   const d = derive(g);
   const label = periodLabel(period);
   const us = d.usByPeriod[period] ?? 0;
   const usGame = cumulativeThrough(g, period);
-  if (!g.trackOpponentTaps) return `App after ${label}: Us ${usGame} (${label}: ${us})`;
+  if (!oppPointsRecorded(g)) return `App after ${label}: Us ${usGame} (${label}: ${us})`;
   let oppGame = 0;
   for (const [p, pts] of Object.entries(d.oppByPeriod)) if (Number(p) <= period) oppGame += pts;
   return `App after ${label}: Us ${usGame} · Them ${oppGame} (${label}: ${us}–${d.oppByPeriod[period] ?? 0})`;
@@ -80,22 +80,21 @@ export function parseScore(text: string): ParsedScore {
 type OppBasis = Pick<PeriodCheck, 'period' | 'oppSpanFrom' | 'anchorOppBook' | 'oppTapped'>;
 
 /**
- * The opponent half of the check, on game totals: the taps' total is the last typed opponent total
- * plus the taps since. A blank box is not a book number, so it is never compared and never reads as a
- * match. Null when there is nothing to say (taps off and the box blank).
+ * Their half of the check, on game totals: the app's total is the last typed total of theirs plus
+ * their points since. A blank box is not a book number, so it says nothing. It warns, never blocks:
+ * the quarter's status follows our score alone.
  */
-export function oppCompareText(bookOppTotal: number | null, c: OppBasis, tracking: boolean): string | null {
-  if (bookOppTotal === null) return tracking ? 'Opponent not compared (box blank)' : null;
-  if (!tracking) return `Opponent ${bookOppTotal} from the book (no taps to compare)`;
-  const taps = c.anchorOppBook + c.oppTapped;
-  if (bookOppTotal === taps) return `Opponent: book ${bookOppTotal} · taps ${taps} ✓`;
-  const diff = bookOppTotal - taps;
-  return `Opponent: book ${bookOppTotal} · taps ${taps} — taps are ${Math.abs(diff)} ${way(diff)} in ${spanLabel(c.oppSpanFrom, c.period)}`;
+export function theirScoreLine(c: OppBasis & Pick<PeriodCheck, 'bookOppTotal'>): { text: string; warn: boolean } | null {
+  if (c.bookOppTotal === null) return null;
+  const app = c.anchorOppBook + c.oppTapped;
+  const off = Math.abs(c.bookOppTotal - app);
+  if (off === 0) return { text: `Their score: book ${c.bookOppTotal} · app ${app} ✓`, warn: false };
+  return { text: `Their score: book ${c.bookOppTotal} · app ${app} — ${off} off`, warn: true };
 }
 
-/** Placeholder for the opponent box: the taps' game total as a hint, never as a value. */
-export function oppPlaceholder(c: OppBasis, tracking: boolean): string {
-  return tracking ? `${c.anchorOppBook + c.oppTapped} from taps` : '';
+/** Placeholder for their box: the app's game total of their points as a hint, never as a value. */
+export function oppPlaceholder(c: OppBasis, recorded: boolean): string {
+  return recorded ? `${c.anchorOppBook + c.oppTapped} from the app` : '';
 }
 
 export const EXPORT_NAME: Record<ExportKind, string> = { book: 'Book CSV', plays: 'Plays CSV' };

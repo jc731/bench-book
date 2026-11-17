@@ -71,9 +71,6 @@ export function Setup({ store }: { store: GameStore }) {
         new Date(),
         cleanOppRoster(oppRoster),
       ),
-      // No longer drives the live screen (both halves always show). The quarter check still reads it to
-      // compare their score until Task 10 replaces that with the their-score warning.
-      trackOpponentTaps: true,
     });
   };
 
