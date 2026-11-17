@@ -163,6 +163,11 @@ export function hasOppRecord(g: Game): boolean {
   return g.oppRoster.length > 0 || g.events.some((e) => e.type === 'OPP_PTS' || e.side === 'them');
 }
 
+/** True when at least one play is on their side; legacy opponent points and a typed roster alone do not count. */
+export function oppPlaysRecorded(g: Game): boolean {
+  return g.events.some((e) => e.side === 'them');
+}
+
 /** True when their points are on record: legacy opponent points or one of their scoring plays. */
 export function oppPointsRecorded(g: Game): boolean {
   return g.events.some((e) =>

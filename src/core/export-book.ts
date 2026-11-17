@@ -1,5 +1,5 @@
 import { toCsv, type Cell } from './csv';
-import { derive, hasOppRecord, oppPointsRecorded, type TeamDerived } from './derive';
+import { derive, oppPlaysRecorded, oppPointsRecorded, type TeamDerived } from './derive';
 import { sideName } from './events';
 import { periodLabel, spanLabel } from './periods';
 import { checkPeriod } from './reconcile';
@@ -48,7 +48,7 @@ export function bookCsv(g: Game): string {
   rows.push([]);
 
   pushTeamBlock(rows, played, labels, g.roster, d.us);
-  if (hasOppRecord(g)) {
+  if (oppPlaysRecorded(g)) {
     rows.push([`${i.opponent} (${sideName(g, 'them')})`]);
     pushTeamBlock(rows, played, labels, g.oppRoster, d.opp);
   }

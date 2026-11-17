@@ -200,9 +200,16 @@ describe('the their-score gate and the fouls order', () => {
   });
   it('lists only ours without an opponent record, then Home first', () => {
     expect(foulSidesOf(base())).toEqual(['us']);
-    const home = appendEvent({ ...base(), info: { ...base().info, homeAway: 'home' } }, { type: 'OPP_PTS', oppPoints: 2, period: 1 }, t0);
-    const away = appendEvent({ ...base(), info: { ...base().info, homeAway: 'away' } }, { type: 'OPP_PTS', oppPoints: 2, period: 1 }, t0);
+    const play = { type: 'FOUL', side: 'them', period: 1 } as const;
+    const home = appendEvent({ ...base(), info: { ...base().info, homeAway: 'home' } }, play, t0);
+    const away = appendEvent({ ...base(), info: { ...base().info, homeAway: 'away' } }, play, t0);
     expect(foulSidesOf(home)).toEqual(['us', 'them']);
     expect(foulSidesOf(away)).toEqual(['them', 'us']);
+  });
+  it('a taps-only legacy game lists ours; a typed roster with no plays lists both', () => {
+    const legacy = appendEvent(base(), { type: 'OPP_PTS', oppPoints: 2, period: 1 }, t0);
+    expect(foulSidesOf(legacy)).toEqual(['us']);
+    const roster = { ...base(), oppRoster: [{ id: 't1', number: '1', name: 'Rival One', pos: 'G' }] };
+    expect(foulSidesOf(roster).length).toBe(2);
   });
 });

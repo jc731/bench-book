@@ -1,4 +1,4 @@
-import { derive, hasOppRecord, oppPointsRecorded } from '../core/derive';
+import { derive, oppPlaysRecorded, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { hoursUntilPurge } from '../core/storage';
 import { isExported, type PeriodCheck, type PeriodStatus } from '../core/reconcile';
@@ -100,7 +100,7 @@ export function theirScoreLineIfRecorded(c: OppBasis, bookOppTotal: number | nul
 
 /** Whose fouls the check lists, Home first: only ours with no record of the other team. */
 export function foulSidesOf(g: Game): Side[] {
-  if (!hasOppRecord(g)) return ['us'];
+  if (!oppPlaysRecorded(g) && g.oppRoster.length === 0) return ['us'];
   return sideName(g, 'us') === 'Home' ? ['us', 'them'] : ['them', 'us'];
 }
 

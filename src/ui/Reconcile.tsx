@@ -1,5 +1,5 @@
 import { useRef, useState } from 'preact/hooks';
-import { derive, hasOppRecord, oppPointsRecorded } from '../core/derive';
+import { derive, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
 import { appendEvent, homeSide, rosterOf, sideName } from '../core/events';
@@ -92,9 +92,9 @@ export function Reconcile({ store }: { store: GameStore }) {
   const theirs = oppProblem ? null : theirScoreLineIfRecorded(c, bookOppTotal, recorded);
   const mismatch = !usProblem && isMismatch(bookUsTotal, c);
   const span = spanLabel(c.spanFrom, period);
-  const both = hasOppRecord(game);
-  // Home first, then Away; with no record of the other team, only ours, as before.
+  // Home first, then Away; with no plays or roster for the other team, only ours, as before.
   const foulSides = foulSidesOf(game);
+  const both = foulSides.length > 1;
 
   // Only Save saves; the comparison above it is live. A save that would change nothing is skipped,
   // so repeating it adds no undo step.

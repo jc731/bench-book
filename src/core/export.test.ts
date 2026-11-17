@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { bookCsv } from './export-book';
 import { exportFilename, playsCsv } from './export-plays';
 import { appendEvent, editEvent, insertEventBefore, newGame, orderedEvents } from './events';
-import { derive, hasOppRecord, oppPointsRecorded } from './derive';
+import { derive, hasOppRecord, oppPlaysRecorded, oppPointsRecorded } from './derive';
 import { saveReconcile } from './reconcile';
 import type { EventDraft, Game, GameInfo, Player } from './types';
 
@@ -275,6 +275,22 @@ describe('both teams in the exports', () => {
     expect(block.find((r) => r[0] === 'Team fouls' && r[1] === 'Q1')![2]).toBe('1');
     expect(block.some((r) => r[0] === 'Bench technicals')).toBe(true);
     expect(block.filter((r) => r[0] === 'Timeouts used').map((r) => r[2])).toEqual(['1 of 3', '0 of 2', '0 of 0']);
+  });
+
+  test('no their-block for taps-only legacy or roster-only games, but one play of theirs brings it', () => {
+    const hasBlock = (g: Game) => parse(bookCsv(g)).some((r) => r[0] === "St. Mary's (Away)" || r[0] === "St. Mary's (Home)");
+    const legacy = add(game(), 1, { type: 'OPP_PTS', oppPoints: 2 });
+    expect(hasBlock(legacy)).toBe(false);
+    // The score-by-period opponent row still shows the taps estimate.
+    expect(scoreRow(parse(bookCsv(legacy)), "St. Mary's").slice(1, 2)).toEqual(['2*']);
+    expect(hasBlock(them())).toBe(false);
+    expect(hasBlock(add(them(), 1, { type: 'FOUL', side: 'them' }))).toBe(true);
+  });
+
+  test('oppPlaysRecorded is true only for a play on their side', () => {
+    expect(oppPlaysRecorded(game())).toBe(false);
+    expect(oppPlaysRecorded(add(game(), 1, { type: 'OPP_PTS', oppPoints: 2 }))).toBe(false);
+    expect(oppPlaysRecorded(add(game(), 1, { type: 'FOUL', side: 'them' }))).toBe(true);
   });
 
   test('no block when nothing is recorded for them', () => {
