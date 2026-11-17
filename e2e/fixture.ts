@@ -255,6 +255,15 @@ export function ui(page: Page, ours: Side = 'Home') {
       await expect(dialog()).toHaveCount(0);
       await this.expectToast(`Added #${numberOf(name)} (Home) ${pts} to ${label}`);
     },
+    /** From the check's "Plays to fix": adds the other team's play (by number, or `No number`) at the end of that quarter. */
+    async addTheirPlay(label: string, who: string, play: '+2' | '+3' | 'Foul') {
+      await this.fixRegion().getByRole('button', exact(`Add play to ${label}`)).click();
+      await dialog().getByRole('group', exact('Team')).getByRole('button', exact(other(ours))).click();
+      await dialog().getByRole('button', who === 'No number' ? exact(who) : { name: new RegExp(`^#${who}( |$)`) }).click();
+      await dialog().getByRole('button', exact(play)).click();
+      await expect(dialog()).toHaveCount(0);
+      await this.expectToast(`Added ${who === 'No number' ? other(ours) : `#${who} (${other(ours)})`} ${play} to ${label}`);
+    },
     /** Taps a row, picks another quarter and ticks "Also move" for the `after` plays that follow it. */
     async moveFrom(rowScope: Locator, fromLabel: string, rowText: string, toLabel: string, after: number) {
       await this.logRow(rowScope, rowText).click();

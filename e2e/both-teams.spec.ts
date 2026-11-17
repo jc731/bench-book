@@ -323,3 +323,50 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     expect([last[c('us_score')], last[c('opp_score')]]).toEqual(['22', '18']);
   });
 });
+
+test('check: Add play covers the other team, by number or with no number', async ({ page }) => {
+  const app = ui(page);
+  const dialog = page.getByRole('dialog');
+  await page.goto('/');
+  await app.fillSetup(OPPONENT, TEAM);
+  await app.fillOppRoster([{ number: '14', name: 'Rival Five' }, { number: '10', name: 'Rival Three' }]);
+  await app.startGame();
+  await app.score('Player One', '+2');
+  await their(page, '10', ['+3']);
+  await app.endPeriod('Q1');
+  // The book has their 8; the app has 3. Ours matches.
+  await app.checkQuarter('Q1', 2, 8);
+  await app.expectAppHas('Q1', 2, 3, 2, 3);
+  await expect(page.getByTestId('compare-opp')).toHaveText('Their score: book 8 · app 3 — 5 off');
+
+  // The sheet opens on our team, so a one-team flow is unchanged; the player list is theirs after choosing Away.
+  await app.fixRegion().getByRole('button', exact('Add play to Q1')).click();
+  await expect(dialog.getByRole('group', exact('Team')).getByRole('button', exact('Home'))).toHaveClass(/bg-white/);
+  await expect(dialog.getByRole('button', exact('#4 Player One'))).toBeVisible();
+  await expect(dialog.getByRole('button', exact('#14 Rival Five'))).toHaveCount(0);
+  await dialog.getByRole('group', exact('Team')).getByRole('button', exact('Away')).click();
+  await expect(dialog.getByRole('button', exact('#4 Player One'))).toHaveCount(0);
+  await expect(dialog.getByRole('button', exact('#14 Rival Five'))).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
+  await app.addTheirPlay('Q1', '14', '+2');
+  await app.expectAppHas('Q1', 2, 5, 2, 5);
+  await expect(page.getByTestId('compare-opp')).toHaveText('Their score: book 8 · app 5 — 3 off');
+  await app.addTheirPlay('Q1', 'No number', '+3');
+  await app.expectAppHas('Q1', 2, 8, 2, 8);
+  await expect(page.getByTestId('compare-opp')).toHaveText('Their score: book 8 · app 8 ✓');
+  await app.expectMatches();
+
+  // A missed foul with no number is their team's: Away's Q1 team fouls go up by one, Home's do not.
+  await expect(page.getByText(/^Team fouls in Q1 \(Away\):/)).toHaveText('Team fouls in Q1 (Away): 0');
+  await app.addTheirPlay('Q1', 'No number', 'Foul');
+  await expect(page.getByText(/^Team fouls in Q1 \(Away\):/)).toHaveText('Team fouls in Q1 (Away): 1');
+  await expect(page.getByText(/^Team fouls in Q1 \(Home\):/)).toHaveText('Team fouls in Q1 (Home): 0');
+
+  // The Log shows each in Q1, tagged Away.
+  const q1 = app.fixRegion();
+  await expect(app.logRow(q1, '#14 Rival Five (Away) · +2')).toHaveCount(1);
+  await expect(app.logRow(q1, 'Away · +3')).toHaveCount(1);
+  await expect(app.logRow(q1, 'Away · Foul')).toHaveCount(1);
+});

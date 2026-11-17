@@ -21,18 +21,31 @@ test('How-to screenshots', async ({ page }) => {
 
   await page.goto('/');
   await app.fillSetup(OPPONENT, TEAM);
+  await app.fillOppRoster([
+    { number: '7', name: 'Rival One' },
+    { number: '22', name: 'Rival Two' },
+    { number: '30', name: 'Rival Three' },
+  ]);
   await app.startGame();
+  // Their cards, by number: tap, then the play.
+  const their = async (no: string, plays: string[]) => {
+    await app.half('Away').getByRole('button', { name: new RegExp(`^#${no} `) }).click();
+    for (const p of plays) await dialog().getByRole('button', { name: p, exact: true }).click();
+    await expect(dialog()).toHaveCount(0);
+  };
 
   // Reading the screen: a player at 4 fouls (amber), a 5th team foul (bonus), a timeout used,
-  // points both ways.
+  // points and a couple of fouls for both teams, their players by number.
   await app.score('Player One', '+2');
-  await app.opp(2);
+  await their('7', ['+2']);
   await app.score('Player Three', '+3');
   for (let i = 0; i < 4; i++) await app.foul('Player Four');
   await app.foul('Player One');
   await app.ft('Player Two', true, false);
   await app.timeout('Full');
-  await app.opp(3);
+  await their('22', ['+3']);
+  await their('22', ['Foul']);
+  await their('30', ['Foul']);
   await app.score('Player Five', '+2');
   await app.expectWarning('Player Four');
   await expect(page.getByRole('banner').getByText('Away shoots', { exact: true })).toBeVisible();

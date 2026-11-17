@@ -61,7 +61,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     title: 'End of quarter',
     body: [
       "Tap End Q1 (End Q2 and so on; it's outlined in blue, and in red once it can end the game), then type the game score after that quarter, the running score in the book's Score by Qtr box: yours, and theirs if you keep it. The app checks the quarter's own points, so a gap you noted earlier isn't counted twice.",
-      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed one of yours with Add play; it stays there after the score matches, for a foul the book has and the app doesn\'t. Their score only warns, in amber. Later keeps what you typed.',
+      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed play with Add play (pick the team first, then the player or No number); it stays there after the score matches, for a foul the book has and the app doesn\'t. Their score only warns, in amber. Later keeps what you typed.',
     ],
     image: { src: '/howto/end-of-quarter.png', alt: "Check Q1 with the book's 8 and 5 typed in: Matches, their score agreeing, and Add play to Q1 above the quarter's plays." },
   },
@@ -85,10 +85,10 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'screen',
     title: 'Reading the screen',
     body: [
-      "Each half's header shows that team's fouls this quarter, amber from 4. In the bonus, a badge in the strip at the top names the team that shoots, for example Home shoots, over its half. Foul dots turn amber at 4 and red at OUT, and an out player's card is grayed: tapping it asks first.",
+      "Each half's header shows that team's fouls for the quarter, amber from 4 (in overtime the count includes Q4). In the bonus, a badge in the strip at the top names the team that shoots, for example Home shoots, over its half. Foul dots turn amber at 4 and red at OUT, and an out player's card is grayed: tapping it asks first.",
       `Running score, under ⋯, shows your team only. ${MARK_LEGEND}`,
     ],
-    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1: Home, marked US, on the left with team fouls 5 and #12 at four amber foul dots; Away shoots; under each half, + Play, the Bench card and the timeout buttons.' },
+    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1 with both rosters: Home, marked US, on the left with team fouls 5 and #12 at four amber foul dots; Away on the right with its own numbered cards, points and fouls; Away shoots; under each half, + Play, the Bench card and the timeout buttons.' },
   },
   {
     id: 'wrong',

@@ -39,8 +39,11 @@ describe('how-to content', () => {
     expect(text('Before tip-off')).toMatch(/Theirs is not saved/);
   });
   it('says Add play stays on the check and their score only warns', () => {
-    expect(text('End of quarter')).toMatch(/Add play; it stays there after the score matches/);
+    expect(text('End of quarter')).toMatch(/Add play \(pick the team first[^)]*\); it stays there after the score matches/);
     expect(text('End of quarter')).toMatch(/Their score only warns/);
+  });
+  it('says the team-fouls count includes Q4 in overtime', () => {
+    expect(text('Reading the screen')).toMatch(/in overtime the count includes Q4/);
   });
   it('drops the controls 0.8 removed', () => {
     const all = HOWTO_SECTIONS.map((s) => `${s.title} ${s.body.join(' ')} ${s.image?.alt ?? ''}`).join(' ');

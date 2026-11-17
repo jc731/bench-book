@@ -2,18 +2,21 @@ import { useRef, useState } from 'preact/hooks';
 import { derive, hasOppRecord, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
-import { appendEvent, rosterOf, sideName } from '../core/events';
+import { appendEvent, homeSide, rosterOf, sideName } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
-import type { Player } from '../core/types';
+import type { Player, Side } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { addedLabel } from './log-logic';
-import { feedbackLine, who, type PlayType, type Toast } from './live-logic';
+import { NO_NUMBER, feedbackLine, who, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
   MISMATCH_HINT, appHasText, compareText, isMismatch, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
+
+const sheetBtn = 'min-h-12 min-w-0 truncate rounded-xl bg-slate-600 px-3 text-left text-lg font-bold active:bg-slate-500';
+const sheetOn = 'bg-white text-slate-900';
 
 const field =
   'min-h-12 w-full rounded-lg border border-slate-600 bg-slate-800 px-3 text-xl text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none';
@@ -47,6 +50,8 @@ export function Reconcile({ store }: { store: GameStore }) {
   const [note, setNote] = useState('');
   const [addStep, setAddStep] = useState<'closed' | 'player' | 'play'>('closed');
   const [addPlayer, setAddPlayer] = useState<Player | null>(null);
+  // The team Add play records for; it opens on ours, so a one-team scorer taps no more than before.
+  const [addSide, setAddSide] = useState<Side>('us');
   const seeded = useRef<number | null>(null);
   // The feedback present when Add play opened: its sheet shows only what came after it.
   const addOpenedWith = useRef<Toast | null>(null);
@@ -109,11 +114,13 @@ export function Reconcile({ store }: { store: GameStore }) {
     return true;
   };
   const addPlay = (type: PlayType) => {
-    if (!addPlayer) return;
-    update((g, now) => appendEvent(g, { type, playerId: addPlayer.id, period }, now), addedLabel(type, who(addPlayer, sideName(game, 'us')), period));
+    update(
+      (g, now) => appendEvent(g, { type, ...(addPlayer ? { playerId: addPlayer.id } : {}), ...(addSide === 'them' ? { side: 'them' as const } : {}), period }, now),
+      addedLabel(type, who(addPlayer, sideName(game, addSide)), period),
+    );
     if (type !== 'FTM' && type !== 'FTX') closeAdd();
   };
-  const closeAdd = () => { setAddStep('closed'); setAddPlayer(null); };
+  const closeAdd = () => { setAddStep('closed'); setAddPlayer(null); setAddSide('us'); };
   const saveAndClose = () => {
     if (save()) setView(reconcileReturn);
   };
@@ -175,7 +182,7 @@ export function Reconcile({ store }: { store: GameStore }) {
           <button
             type="button"
             class="mb-2 min-h-11 w-full rounded-lg border border-slate-500 px-4 font-semibold"
-            onClick={() => { addOpenedWith.current = toast; setAddStep('player'); }}
+            onClick={() => { addOpenedWith.current = toast; setAddSide('us'); setAddStep('player'); }}
           >
             Add play to {periodLabel(period)}
           </button>
@@ -225,22 +232,43 @@ export function Reconcile({ store }: { store: GameStore }) {
 
       {addStep === 'player' && (
         <Sheet title={`Add play to ${periodLabel(period)}`} onClose={closeAdd}>
-          <div class="grid max-h-[60dvh] grid-cols-2 gap-2 overflow-y-auto">
-            {game.roster.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                class="min-h-12 min-w-0 truncate rounded-xl bg-slate-600 px-3 text-left text-lg font-bold active:bg-slate-500"
-                onClick={() => { setAddPlayer(p); setAddStep('play'); }}
-              >
-                #{p.number} {p.name}
+          <div class="flex max-h-[65dvh] flex-col gap-3 overflow-y-auto">
+            <div role="group" aria-label="Team">
+              <h3 class="mb-1 text-sm font-semibold text-slate-300">Team</h3>
+              <div class="grid grid-cols-2 gap-2">
+                {(['Home', 'Away'] as const).map((tag) => {
+                  const side: Side = (tag === 'Home') === (homeSide(game) === 'us') ? 'us' : 'them';
+                  return (
+                    <button key={tag} type="button" class={`${sheetBtn} ${addSide === side ? sheetOn : ''}`} onClick={() => setAddSide(side)}>
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              {rosterOf(game, addSide).map((p) => (
+                <button key={p.id} type="button" class={sheetBtn} onClick={() => { setAddPlayer(p); setAddStep('play'); }}>
+                  #{p.number} {p.name}
+                </button>
+              ))}
+              <button type="button" class={sheetBtn} onClick={() => { setAddPlayer(null); setAddStep('play'); }}>
+                {NO_NUMBER}
               </button>
-            ))}
+            </div>
           </div>
         </Sheet>
       )}
-      {addStep === 'play' && addPlayer && (
-        <EventSheet player={addPlayer} toast={toast === addOpenedWith.current ? null : toast} onPlay={addPlay} onUndo={undo} onRedo={redo} onClose={closeAdd} />
+      {addStep === 'play' && (
+        <EventSheet
+          player={addPlayer}
+          title={addPlayer ? undefined : sideName(game, addSide)}
+          toast={toast === addOpenedWith.current ? null : toast}
+          onPlay={addPlay}
+          onUndo={undo}
+          onRedo={redo}
+          onClose={closeAdd}
+        />
       )}
 
       {toast && toast !== openedWith.current && (
