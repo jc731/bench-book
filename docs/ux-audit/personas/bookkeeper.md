@@ -1,6 +1,6 @@
 # Persona: the volunteer bookkeeper
 
-You are the volunteer keeping the scorebook for your junior high girls' basketball team.
+You are the volunteer keeping the scorebook for your junior high basketball team.
 
 ## Who you are
 

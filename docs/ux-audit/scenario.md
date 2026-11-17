@@ -48,7 +48,7 @@ Every name here is invented.
 13. The horn sounds, end of the first quarter. Your book shows 10 for you and 6 for them
     this quarter.
 14. Second quarter. #22 makes a two.
-15. The ref calls a foul on their #21, her second.
+15. The ref calls a foul on their #21, the second for #21.
 16. #12 scores a layup. Someone at the table is asking you a question while it happens.
 17. Their #11 makes a two.
 18. Their coach calls a timeout, a full one.
@@ -57,13 +57,13 @@ Every name here is invented.
     away: you just credited the wrong player. Make it right.
 21. The ref calls a foul on #7.
 22. #12 is fouled and goes to the line for two: makes the first, misses the second.
-23. The ref calls a foul on their #21, her third.
+23. The ref calls a foul on their #21, the third for #21.
 24. #10 makes a two.
 25. Their #14 makes a three.
-26. Your coach leans over: the two-pointer you gave #10 earlier this quarter (her only
+26. Your coach leans over: the two-pointer you gave #10 earlier this quarter (#10's only
     basket of the second quarter) was actually #7's.
 27. The ref signals a timeout for your coach, a full one.
-28. The ref calls a foul on #22, her second.
+28. The ref calls a foul on #22, the second for #22.
 29. Their #2 makes a two.
 30. The horn sounds, end of the half. Your book shows 10 for you and 7 for them this
     quarter, 20 to 13 at the half.
@@ -71,16 +71,16 @@ Every name here is invented.
     this quarter as made. It went in after all; you had it as a miss.
 32. Your book also shows a foul on #33 this quarter that never made it into the app. It
     belongs in the second quarter.
-33. That foul means #33 was in the game in the second quarter, but you never saw her
-    check in at the table. Your coach remembers: she went in for #10.
+33. That foul means #33 was in the game in the second quarter, but you never saw #33
+    check in at the table. Your coach remembers: #33 went in for #10.
 34. Third quarter. Your coach changes the group to start the half: #5 and #10 check in at
     the table for #12 and #22.
 35. A player for Test Opp who isn't on the list their coach gave you checks in at the
-    table for their #24: #45. She makes a three.
+    table for their #24: #45. #45 makes a three.
 36. #33 makes a three.
-37. The ref calls a foul on their #21. The scorer's table says that's her fourth.
+37. The ref calls a foul on their #21. The scorer's table says that's the fourth for #21.
 38. #10 makes a two.
-39. The ref calls a foul on their #21 again, her fifth. She's out of the game.
+39. The ref calls a foul on their #21 again, the fifth for #21. #21 is out of the game.
 40. Their #24 checks back in at the table, for #21.
 41. #5 goes to the line for two and makes both.
 42. Their #45 makes a two.
@@ -92,12 +92,12 @@ Every name here is invented.
 47. The ref calls a foul on #3.
 48. Their #24 goes to the line for two and misses both.
 49. The ref signals a timeout for your coach, a thirty-second one.
-50. #33 is fouled shooting and goes to the line for two. She makes both.
+50. #33 is fouled shooting and goes to the line for two and makes both.
 51. Their #45 makes a two.
 52. The horn sounds, end of the fourth quarter, and the game is over: no overtime. Your
     book shows 4 for you and 5 for them this quarter, 31 to 23 final.
 53. After the handshake line, your coach asks you for the two files from this game, the
-    ones she always wants afterward. Get them saved.
+    ones the coach always wants afterward. Get them saved.
 
 ## Expected end state
 
@@ -109,7 +109,7 @@ basket on #3, event 26's basket on #7, event 31's free throw made, and event 32'
 opponent score on a check, are hesitated/blocked findings, not wrong entries. Only an entry
 that disagrees with an event counts as a wrong entry, including a play on the wrong team.
 Their #45 may have no name. If #45's plays were recorded for Test Opp with no number, their
-score is right but #45's line is missing: a wrong entry for each of her three baskets. If
+score is right but #45's line is missing: a wrong entry for each of #45's three baskets. If
 event 32's foul landed in Q3 rather than Q2, that is a wrong entry.
 
 **Expected lineup** (for the controller; the lineup changes no score or count and is in neither
@@ -120,16 +120,16 @@ entry.
 - Test Home starts #3, #5, #7, #10, #12 (bench #22, #33): the first five on the list, as entered.
   Event 5: #22 in for #7 (a routine sub). Event 19: #7 in for #5 (a routine sub, during the
   timeout). Event 32's foul, added to Q2 at the check, puts #33 on the floor by itself (six on);
-  event 33 says who she replaced: #10 (the app marks #10 "likely", since her only basket that
+  event 33 says who #33 replaced: #10 (the app marks #10 "likely", since the only basket #10 had that
   quarter became #7's at event 26). Event 34: #5 and #10 in for #12 and #22 (a line change at
   the half).
-- Test Opp has no bench until #45 joins (event 35, on the floor by her own basket, six on):
+- Test Opp has no bench until #45 joins (event 35, on the floor by #45's own basket, six on):
   #24 out. Event 39 fouls #21 out (four on); event 40: #24 back in.
 - On the floor at the end: **Test Home #3, #5, #7, #10, #33** (bench #12, #22). **Test Opp #2,
   #11, #14, #24, #45** (#21 out).
-- Entered as the events read, every player is already on the floor when she plays: #22 at
+- Entered as the events read, every player is already on the floor when they play: #22 at
   event 6, #7 at event 21, #10 at event 24 (before the fix), #5 at event 41. If the persona
-  skipped a sub, that player goes on by herself when she plays: six on, which blocks nothing.
+  skipped a sub, that player goes on by themselves when they play: six on, which blocks nothing.
 
 **Score per quarter**
 
