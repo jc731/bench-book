@@ -952,6 +952,29 @@ test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" wit
   await expect(app.subButton('Home')).toHaveText('Sub');
 });
 
+test('"Who went out?" says how many are on and how many to pick, and updates with each tap', async ({ page }) => {
+  await twoTeamGame(page, { ours: 9, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  // Three bench players score: eight on.
+  for (const n of [10, 15, 16, 17]) await tap(page, homeCard(page, n), '+2');
+  await app.subButton('Home').click();
+  await expect(sheet).toHaveAccessibleName('Who went out?');
+  const pick = sheet.getByTestId('sub-pick');
+  await expect(pick).toHaveText('8 on · pick 3');
+  await subRow(page, 11).click();
+  await expect(pick).toHaveText('7 on · pick 2');
+  // A tap taken back counts back up.
+  await subRow(page, 11).click();
+  await expect(pick).toHaveText('8 on · pick 3');
+  await subRow(page, 11).click();
+  await subRow(page, 12).click();
+  await expect(pick).toHaveText('6 on · pick 1');
+  await subRow(page, 13).click();
+  await expect(sheet).toHaveCount(0);
+  expect(await app.floorOf('Home')).toEqual(['10', '14', '15', '16', '17']);
+});
+
 test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way, Done; toast "Home floor updated"', async ({ page }) => {
   await twoTeamGame(page, { ours: 9, theirs: 7 });
   const app = ui(page);
@@ -961,6 +984,8 @@ test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way
   await expect(app.subButton('Home')).toHaveText('Sub');
   await app.subButton('Home').click();
   await expect(sheet).toHaveAccessibleName("Who's on the floor?");
+  // Its own count and Done stand in for a pick line.
+  await expect(sheet.getByTestId('sub-pick')).toHaveCount(0);
   const group = (name: string) => sheet.getByRole('group', { name, exact: true }).getByRole('button', { name: /^#/ });
   await expect(group('On the floor')).toHaveCount(5);
   await expect(group('On the bench')).toHaveCount(4);
@@ -996,6 +1021,7 @@ test('foul-out: Sub · 4 on → "Who came in?" → #15 closes it', async ({ page
   await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
   await app.subButton('Home').click();
   await expect(sheet).toHaveAccessibleName('Who came in?');
+  await expect(sheet.getByTestId('sub-pick')).toHaveText('4 on · pick 1');
   // The bench: the out player grayed with their reason, and not selectable.
   expect(await sheet.getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))).toEqual([
     '#10 Player 1, 5 fouls', '#15 Player 6', '#16 Player 7',

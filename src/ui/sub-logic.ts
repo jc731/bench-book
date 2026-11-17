@@ -42,6 +42,16 @@ export function closesNow(mode: SubMode, floor: string[]): boolean {
   return mode !== 'set' && floor.length === 5;
 }
 
+/**
+ * The line under "Who went out?" and "Who came in?": how many are on and how many taps bring the floor to
+ * five, `8 on · pick 3`, so the scorer knows the sheet closes on the last pick. Null for "Who's on the
+ * floor?", which has its own count and Done.
+ */
+export function pickText(mode: SubMode, onFloor: number): string | null {
+  if (mode === 'set') return null;
+  return `${onFloor} on · pick ${Math.abs(onFloor - 5)}`;
+}
+
 /** The net change from the floor when the sheet opened: who went in (in the order tapped) and who came out. */
 export function netSub(before: string[], after: string[]): { ins: string[]; outs: string[] } {
   return { ins: after.filter((id) => !before.includes(id)), outs: before.filter((id) => !after.includes(id)) };

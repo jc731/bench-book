@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closesNow, netSub, openSub, subRowText, toggleFloor } from './sub-logic';
+import { closesNow, netSub, openSub, pickText, subRowText, toggleFloor } from './sub-logic';
 
 const five = ['a', 'b', 'c', 'd', 'e'];
 const view = (floor: string[], o: { outIds?: string[]; playedYet?: boolean } = {}) => ({
@@ -65,5 +65,22 @@ describe('subRowText', () => {
     expect(subRowText(l, 'f', '22')).toBe('#22 checks in');
     expect(subRowText(l, 'a', '10')).toBe('#10 comes out');
     expect(subRowText(l, 'z', '8')).toBeNull();
+  });
+});
+
+describe('pickText: "Who went out?" and "Who came in?" say how many to pick', () => {
+  it('counts the floor and how many taps bring it to five', () => {
+    expect(pickText('out', 8)).toBe('8 on · pick 3');
+    expect(pickText('out', 6)).toBe('6 on · pick 1');
+    expect(pickText('in', 3)).toBe('3 on · pick 2');
+    expect(pickText('in', 4)).toBe('4 on · pick 1');
+  });
+  it('updates with each tap, including one taken back', () => {
+    expect(pickText('out', 7)).toBe('7 on · pick 2');
+    expect(pickText('out', 8)).toBe('8 on · pick 3');
+  });
+  it('"Who\'s on the floor?" has its own count and Done, so no pick line', () => {
+    expect(pickText('set', 5)).toBeNull();
+    expect(pickText('set', 3)).toBeNull();
   });
 });

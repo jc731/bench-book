@@ -5,7 +5,7 @@ import { lineup } from '../core/lineup';
 import type { Game, Player, Side } from '../core/types';
 import { Sheet } from './EventSheet';
 import { outReason } from './live-logic';
-import { SUB_TITLE, closesNow, netSub, openSub, toggleFloor, type SubStart } from './sub-logic';
+import { SUB_TITLE, closesNow, netSub, openSub, pickText, toggleFloor, type SubStart } from './sub-logic';
 
 interface Props {
   game: Game;
@@ -86,10 +86,19 @@ export function SubSheet({ game, side, start, onRecord, onClose }: Props) {
   const atOpen = opened.floor;
   const benchAtOpen = roster.map((p) => p.id).filter((id) => !atOpen.includes(id));
   const count = floor.length;
+  const pick = pickText(mode, count);
 
   return (
     <Sheet title={SUB_TITLE[mode]} onClose={onClose}>
-      <p class="-mt-1 mb-2 text-sm text-slate-300">{sideName(game, side)}</p>
+      <p class="-mt-1 mb-2 text-sm text-slate-300">
+        {sideName(game, side)}
+        {pick && (
+          <>
+            {' · '}
+            <span class="font-semibold text-white" data-testid="sub-pick" aria-live="polite">{pick}</span>
+          </>
+        )}
+      </p>
       {/* The list scrolls inside the sheet with a long roster; the buttons below stay put. */}
       <div class="max-h-[55vh] overflow-y-auto">
         {mode === 'out' && list(atOpen)}
