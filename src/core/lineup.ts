@@ -26,13 +26,15 @@ export interface Lineup {
   suggestion: string | null;
   /** The roster has more than five players, so there is a bench to track. */
   tracked: boolean;
-  /** This team has any play. */
+  /** This team has any play (a timeout or bench tech is not one). */
   playedYet: boolean;
   /** A play changed the floor's count and this team has made no play since (the amber Sub button). */
   changedUnseen: boolean;
 }
 
 const PROMOTING = new Set<GameEvent['type']>(['FG2', 'FG3', 'FTM', 'FTX', 'FOUL']);
+/** The play types: only these are "that team's play" for `playedYet` and the amber. A timeout or bench tech is not. */
+const PLAYS = new Set<GameEvent['type']>([...PROMOTING, 'TECH']);
 
 /** A play that puts a bench player on the floor: +2, +3, FT made or missed, or a foul, by a player not out. */
 export function isPromotingPlay(e: GameEvent, wasOut: boolean): boolean {
@@ -111,6 +113,7 @@ export function lineup(g: Game, side: Side): Lineup {
       return;
     }
     const e = step.e;
+    if (!PLAYS.has(e.type)) return;
     playedYet = true;
     const before = floor.length;
     const pid = e.playerId && onRoster.has(e.playerId) ? e.playerId : undefined;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { derive } from './derive';
-import { addPlayer, appendEvent, editEvent, newGame, orderedEvents, recordSub } from './events';
+import { addPlayer, appendEvent, editEvent, moveFrom, newGame, orderedEvents, recordSub } from './events';
 import { isPromotingPlay, lineup, suggestFrom } from './lineup';
 import type { EventDraft, Game, GameEvent, GameInfo, Player, Side, Sub } from './types';
 
@@ -72,7 +72,17 @@ describe('promotion', () => {
     expect(lineup(g, 'us').changedUnseen).toBe(true);
     const g2 = add(game(), { type: 'FG2', playerId: 'h22' }, { type: 'TIMEOUT', timeoutKind: 'full', side: 'them' });
     expect(lineup(g2, 'us').changedUnseen).toBe(true);
-    expect(lineup(g2, 'them').playedYet).toBe(true);
+  });
+
+  test("a timeout or bench tech is not that team's play: Starters stays and amber stays", () => {
+    const to = add(game(), { type: 'TIMEOUT', timeoutKind: 'full' });
+    expect(lineup(to, 'us').playedYet).toBe(false);
+    expect(lineup(add(game(), { type: 'BENCH_TECH' }), 'us').playedYet).toBe(false);
+    const promoted = add(game(), { type: 'FG2', playerId: 'h22' });
+    expect(lineup(add(promoted, { type: 'TIMEOUT', timeoutKind: 'full' }), 'us').changedUnseen).toBe(true);
+    expect(lineup(add(promoted, { type: 'BENCH_TECH' }), 'us').changedUnseen).toBe(true);
+    // A real play still counts for both.
+    expect(lineup(add(promoted, { type: 'FTX', playerId: 'h4' }), 'us').changedUnseen).toBe(false);
   });
 
   test('every promoting type promotes: FG3, FTM, FTX, FOUL', () => {
@@ -343,5 +353,20 @@ describe('layoutFloor: how many of the layout were on the floor at the last regr
     const l = lineup(g, 'us');
     expect(l.floor).toHaveLength(5);
     expect(l.layoutFloor).toBe(6);
+  });
+});
+
+describe('moving a block of plays', () => {
+  test('the floor after moving a block with a sub in it equals the floor before', () => {
+    let g: Game = { ...game(), currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'h4', period: 1 }, now);
+    g = appendEvent(g, { type: 'FG2', playerId: 'h5' }, now); // stays in Q2
+    g = appendEvent(g, { type: 'FG2', playerId: 'h22' }, now); // h22 comes on
+    g = recordSub(g, 'us', [], ['h22'], now); // and goes off
+    g = appendEvent(g, { type: 'FG2', playerId: 'h22' }, now); // and comes back
+    const before = lineup(g, 'us').floor;
+    expect(before).toEqual([...STARTERS, 'h22']);
+    const moved = moveFrom(g, orderedEvents(g)[2].id, 1, now);
+    expect(lineup(moved, 'us').floor).toEqual(before);
   });
 });
