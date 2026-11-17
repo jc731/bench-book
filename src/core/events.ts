@@ -1,4 +1,4 @@
-import type { EventDraft, Game, GameEvent, GameInfo, Player, Side } from './types';
+import type { EventDraft, Game, GameEvent, GameInfo, Player, Side, Sub } from './types';
 
 export function orderedEvents(g: Game): GameEvent[] {
   return [...g.events].sort((a, b) => a.order - b.order);
@@ -59,7 +59,7 @@ function makeEvent(d: EventDraft, order: number, period: number, now: Date): Gam
  * period is `period` or earlier, and before the event that follows it. With nothing after, they
  * count up from the last order; with nothing at or before `period`, they go before the first event.
  */
-export function slotOrders(others: GameEvent[], period: number, count: number): number[] {
+export function slotOrders(others: { order: number; period: number }[], period: number, count: number): number[] {
   const sorted = [...others].sort((a, b) => a.order - b.order);
   const steps = Array.from({ length: count }, (_, i) => i + 1);
   if (sorted.length === 0) return steps.map((i) => i - 1);
@@ -75,9 +75,17 @@ export function slotOrders(others: GameEvent[], period: number, count: number): 
 /** Adds a play at the end of its period, so a play added to an earlier quarter sorts with that quarter. */
 export function appendEvent(g: Game, d: EventDraft, now: Date): Game {
   const period = d.period ?? g.currentPeriod;
-  const [order] = slotOrders(g.events, period, 1);
+  const [order] = slotOrders([...g.events, ...(g.subs ?? [])], period, 1);
   const e = makeEvent(d, order, period, now);
   return withEvents(g, [...g.events, e], now);
+}
+
+/** Records a substitution on one side, ordered among the plays after the last item of the current period. */
+export function recordSub(g: Game, side: Side, ins: string[], outs: string[], now: Date): Game {
+  if (ins.length === 0 && outs.length === 0) return g;
+  const [order] = slotOrders([...g.events, ...(g.subs ?? [])], g.currentPeriod, 1);
+  const s: Sub = { id: crypto.randomUUID(), side, ins, outs, order, period: g.currentPeriod, enteredAt: now.toISOString() };
+  return { ...g, subs: [...(g.subs ?? []), s], updatedAt: now.toISOString() };
 }
 
 export function insertEventBefore(g: Game, beforeId: string, d: EventDraft, now: Date): Game {
@@ -85,7 +93,9 @@ export function insertEventBefore(g: Game, beforeId: string, d: EventDraft, now:
   const idx = sorted.findIndex((e) => e.id === beforeId);
   if (idx < 0) throw new Error(`No event with id ${beforeId}`);
   const target = sorted[idx];
-  const order = idx === 0 ? target.order - 1 : (sorted[idx - 1].order + target.order) / 2;
+  // The nearest order below the target, among plays AND subs, so the new play never ties a sub.
+  const below = [...sorted, ...(g.subs ?? [])].map((x) => x.order).filter((o) => o < target.order);
+  const order = below.length === 0 ? target.order - 1 : (Math.max(...below) + target.order) / 2;
   const e = makeEvent(d, order, target.period, now);
   return withEvents(g, [...g.events, e], now);
 }
@@ -99,7 +109,7 @@ export function editEvent(
   const target = g.events.find((e) => e.id === id);
   // A changed period re-slots the play at the end of its new period.
   const moved = target && patch.period !== undefined && patch.period !== target.period;
-  const order = moved ? slotOrders(g.events.filter((e) => e.id !== id), patch.period!, 1)[0] : undefined;
+  const order = moved ? slotOrders([...g.events.filter((e) => e.id !== id), ...(g.subs ?? [])], patch.period!, 1)[0] : undefined;
   return withEvents(
     g,
     g.events.map((e) =>

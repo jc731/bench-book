@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { derive } from './derive';
-import { addPlayer, appendEvent, editEvent, newGame, orderedEvents } from './events';
+import { addPlayer, appendEvent, editEvent, newGame, orderedEvents, recordSub } from './events';
 import { isPromotingPlay, lineup, suggestFrom } from './lineup';
 import type { EventDraft, Game, GameEvent, GameInfo, Player, Side, Sub } from './types';
 
@@ -306,5 +306,16 @@ describe('suggestion', () => {
     expect(suggestFrom(['b', 'c', 'd'], [], new Map([['b', 3], ['c', 1], ['d', 2]]), layout)).toBe('c');
     expect(suggestFrom(['d', 'c'], [], new Map(), layout)).toBe('c');
     expect(suggestFrom([], [], new Map(), layout)).toBeNull();
+  });
+});
+
+describe('recorded subs', () => {
+  test('a play appended after recordSub comes after the sub: the sub-in player is not a bench promotion', () => {
+    let g = recordSub(game(), 'us', ['h22'], ['h4'], now);
+    g = appendEvent(g, { type: 'FG2', playerId: 'h22', period: 1 }, now);
+    const l = lineup(g, 'us');
+    expect(l.floor).toEqual(['h5', 'h7', 'h10', 'h12', 'h22']);
+    expect(l.bench).toEqual(['h4', 'h31']);
+    expect(l.floor.filter((id) => id === 'h22')).toHaveLength(1);
   });
 });

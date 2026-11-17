@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { periodLabel, isOvertime, otCount } from './periods';
 import {
-  addPlayer, appendEvent, deleteEvent, editEvent, insertEventBefore, moveFrom, newGame, orderedEvents, sideName, sideOf,
+  addPlayer, appendEvent, deleteEvent, editEvent, insertEventBefore, moveFrom, newGame, recordSub, orderedEvents, sideName, sideOf,
 } from './events';
 import type { Game, GameInfo, Player } from './types';
 
@@ -291,5 +291,63 @@ describe('sides and opponent roster', () => {
     const a = { ...g, info: { ...g.info, homeAway: 'away' as const } };
     expect(sideName(a, 'us')).toBe('Away');
     expect(sideName(a, 'them')).toBe('Home');
+  });
+});
+
+describe('recording a sub', () => {
+  const two: Player[] = [
+    { id: 'p1', number: '1', name: 'Player One', pos: '' },
+    { id: 'p2', number: '2', name: 'Player Two', pos: '' },
+  ];
+
+  test('a sub is ordered after the last play and carries side, ins, outs, period', () => {
+    const g = recordSub(threeEvents(), 'us', ['p2'], ['p1'], t1);
+    expect(g.subs).toHaveLength(1);
+    const s = g.subs![0];
+    expect(s).toMatchObject({ side: 'us', ins: ['p2'], outs: ['p1'], period: 1, order: 3 });
+    expect(s.enteredAt).toBe(t1.toISOString());
+    expect(g.updatedAt).toBe(t1.toISOString());
+  });
+
+  test('a play appended after a sub is ordered after the sub', () => {
+    let g = recordSub(threeEvents(), 'us', ['p2'], ['p1'], t1);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p2' }, t1);
+    expect(g.events[3].order).toBeGreaterThan(g.subs![0].order);
+  });
+
+  test('a sub recorded in Q2 sorts after a Q1 play appended later', () => {
+    let g = threeEvents();
+    g = { ...g, currentPeriod: 2 };
+    g = recordSub(g, 'us', ['p2'], ['p1'], t1);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t1);
+    const q1 = g.events[3];
+    expect(q1.order).toBeLessThan(g.subs![0].order);
+    expect(q1.order).toBeGreaterThan(g.events[2].order);
+  });
+
+  test('moving an earlier play to another quarter leaves the sub alone and never ties it', () => {
+    let g = { ...threeEvents(), currentPeriod: 2 };
+    g = recordSub(g, 'us', ['p2'], ['p1'], t1);
+    const sub = g.subs![0];
+    g = editEvent(g, g.events[0].id, { period: 2 }, t1);
+    expect(g.subs![0]).toEqual(sub);
+    expect(g.events.every((e) => e.order !== sub.order)).toBe(true);
+  });
+
+  test('insertEventBefore never produces a sub order', () => {
+    let g = recordSub(threeEvents(), 'us', ['p2'], ['p1'], t1);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p2' }, t1);
+    g = insertEventBefore(g, g.events[3].id, { type: 'FG3', playerId: 'p2' }, t1);
+    expect(g.events.every((e) => e.order !== g.subs![0].order)).toBe(true);
+  });
+
+  test('empty ins and outs return the same game object', () => {
+    const g = newGame(info, two, t0);
+    expect(recordSub(g, 'us', [], [], t1)).toBe(g);
+  });
+
+  test('a sub on an empty game gets order 0', () => {
+    const g = recordSub(newGame(info, two, t0), 'us', ['p2'], ['p1'], t1);
+    expect(g.subs![0].order).toBe(0);
   });
 });
