@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
   TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, foulOutLabel, lineupSuffix, playToast, subLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
-  stripPeriodText, undoAriaLabel,
+  stripPeriodText, subButtonAmber, subButtonText, undoAriaLabel,
 } from './live-logic';
+import type { Lineup } from '../core/lineup';
 import { outReason } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
@@ -256,5 +257,30 @@ describe('lineup toasts', () => {
     expect(subLabel(base, 'us', ['h22'], ['h10'])).toBe('#22 (Home) in for #10');
     expect(subLabel(base, 'us', ['h22', 'h7'], ['h10'])).toBe('Home floor updated');
     expect(subLabel(base, 'us', [], ['h10'])).toBe('Home floor updated');
+  });
+});
+
+describe('the Sub button', () => {
+  const base: Lineup = {
+    floor: ['a', 'b', 'c', 'd', 'e'], bench: ['f'], layout: ['a', 'b', 'c', 'd', 'e', 'f'], outIds: [], justIn: null,
+    suggestion: 'a', tracked: true, playedYet: true, changedUnseen: false,
+  };
+  const six = ['a', 'b', 'c', 'd', 'e', 'f'];
+  it('is absent when the roster has five or fewer', () => {
+    expect(subButtonText({ ...base, tracked: false, bench: [] })).toBeNull();
+    expect(subButtonText({ ...base, tracked: false, floor: ['a', 'b', 'c', 'd'], changedUnseen: true })).toBeNull();
+    expect(subButtonAmber({ ...base, tracked: false, floor: ['a', 'b', 'c', 'd'], changedUnseen: true })).toBe(false);
+  });
+  it('reads Starters before the team has played, else Sub, or the count when the floor is not five', () => {
+    expect(subButtonText({ ...base, playedYet: false })).toBe('Starters');
+    expect(subButtonText(base)).toBe('Sub');
+    expect(subButtonText({ ...base, floor: six })).toBe('Sub · 6 on');
+    expect(subButtonText({ ...base, floor: ['a', 'b', 'c', 'd'] })).toBe('Sub · 4 on');
+  });
+  it('is amber only while the changed count is unseen', () => {
+    expect(subButtonAmber({ ...base, floor: six, changedUnseen: true })).toBe(true);
+    expect(subButtonAmber({ ...base, floor: six, changedUnseen: false })).toBe(false);
+    // Back to five (a foul-out after a promotion): the count changed, but there is nothing to fix.
+    expect(subButtonAmber({ ...base, changedUnseen: true })).toBe(false);
   });
 });

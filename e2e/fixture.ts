@@ -85,6 +85,23 @@ export function ui(page: Page, ours: Side = 'Home') {
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
     tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
     half,
+    /** A half's Sub button, beside + Play; it reads `Starters`, `Sub` or `Sub · N on`. Absent with five players or fewer. */
+    subButton: (side: Side) => half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }),
+    /**
+     * The numbers on a half's solid player cards, in display order: the floor. A bench card is ghosted (no fill of
+     * its own, so the half shows through) and an out card is not on the floor, so neither is read.
+     */
+    floorOf: (side: Side) =>
+      half(side).getByRole('button', { name: /^#/ }).evaluateAll((els) =>
+        els
+          .filter((el) => !/, out$/.test(el.getAttribute('aria-label') ?? ''))
+          .filter((el) => {
+            const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+            ctx.fillStyle = getComputedStyle(el).backgroundColor;
+            ctx.fillRect(0, 0, 1, 1);
+            return ctx.getImageData(0, 0, 1, 1).data[3] === 255;
+          })
+          .map((el) => /^#([^\s,]+)/.exec(el.getAttribute('aria-label') ?? '')![1])),
     /** Points for the other team with no number, through their + Play and Whose number? > No number: 1 is an FT made (then Done), 2 a +2, 3 a +3. */
     async opp(n: 1 | 2 | 3) {
       await half(other(ours)).getByRole('button', exact('+ Play')).click();

@@ -658,7 +658,77 @@ test('both halves: Home left and light, Away right and dark, US tag on our side'
   }
 });
 
-test('10 players and the Bench card fit each half with no scroll', async ({ page }) => {
+/** Every card number in a half, in display order. */
+const cardOrder = (page: Page, side: Side) =>
+  ui(page).half(side).getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => /^#([^\s,]+)/.exec(el.getAttribute('aria-label')!)![1]));
+const nums = (from: number, n: number) => Array.from({ length: n }, (_, i) => String(from + i));
+/** The Sub button's caution state: amber border and text (amber-600/800 on the light half, 400/300 on the dark). */
+const amber = (side: Side) => (side === 'Home' ? /border-amber-600.*text-amber-800|text-amber-800.*border-amber-600/ : /border-amber-400.*text-amber-300|text-amber-300.*border-amber-400/);
+
+test('the floor: first five solid, the rest ghosted with "bench"', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  for (const [side, first] of [['Home', 10], ['Away', 50]] as const) {
+    expect(await app.floorOf(side)).toEqual(nums(first, 5));
+    // Only the two bench cards carry the tag.
+    await expect(app.half(side).getByText('bench', { exact: true })).toHaveCount(2);
+    for (const n of nums(first + 5, 2)) {
+      const c = app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
+      await expect(c.getByText('bench', { exact: true })).toBeVisible();
+      // The tag fits beside the five dots, inside the card's padding.
+      expect(await c.evaluate((el) => {
+        const tag = [...el.querySelectorAll('span')].find((x) => x.textContent === 'bench')!.getBoundingClientRect();
+        const box = el.getBoundingClientRect();
+        const { borderRightWidth, paddingRight } = getComputedStyle(el);
+        return box.right - parseFloat(borderRightWidth) - parseFloat(paddingRight) - tag.right;
+      })).toBeGreaterThanOrEqual(0);
+    }
+    // Before the team's first play its Sub button reads Starters, in gray.
+    await expect(app.subButton(side)).toHaveText('Starters');
+    await expect(app.subButton(side)).not.toHaveClass(/amber/);
+  }
+  // A starter's play: the label becomes Sub, for that team only.
+  await tap(page, app.half('Home').getByRole('button', { name: /^#10 / }), '+2');
+  await expect(app.subButton('Home')).toHaveText('Sub');
+  await expect(app.subButton('Away')).toHaveText('Starters');
+  expect(await app.floorOf('Home')).toEqual(nums(10, 5));
+  await page.evaluate(() => localStorage.clear());
+  // Five players or fewer: all on the floor, no tag and no Sub button.
+  await twoTeamGame(page, { ours: 5, theirs: 2 });
+  expect(await app.floorOf('Home')).toEqual(nums(10, 5));
+  for (const side of ['Home', 'Away'] as const) {
+    await expect(app.half(side).getByText('bench', { exact: true })).toHaveCount(0);
+    await expect(app.subButton(side)).toHaveCount(0);
+  }
+});
+
+test('a bench player\'s +2 turns her card solid in place, and the Sub button reads "Sub · 6 on" in amber, then gray after that team\'s next play', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  for (const [side, first] of [['Home', 10], ['Away', 50]] as const) {
+    const order = await cardOrder(page, side);
+    const sixth = app.half(side).getByRole('button', { name: new RegExp(`^#${first + 5}(,| )`) });
+    const box = (await sixth.boundingBox())!;
+    await tap(page, sixth, '+2');
+    expect(await app.floorOf(side)).toEqual(nums(first, 6));
+    await expect(sixth.getByText('bench', { exact: true })).toHaveCount(0);
+    // In place: same order, same box.
+    expect(await cardOrder(page, side)).toEqual(order);
+    expect(await sixth.boundingBox()).toEqual(box);
+    await expect(app.subButton(side)).toHaveText('Sub · 6 on');
+    await expect(app.subButton(side)).toHaveClass(amber(side));
+  }
+  // The other team's play leaves Home amber; Home's own next play turns it gray, still counting.
+  await tap(page, app.half('Away').getByRole('button', { name: /^#50(,| )/ }), '+2');
+  await expect(app.subButton('Home')).toHaveClass(amber('Home'));
+  await expect(app.subButton('Away')).not.toHaveClass(/amber/);
+  await expect(app.subButton('Away')).toHaveText('Sub · 6 on');
+  await tap(page, app.half('Home').getByRole('button', { name: /^#10 / }), 'Foul');
+  await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
+  await expect(app.subButton('Home')).not.toHaveClass(/amber/);
+});
+
+test('10 + 10 players fit each half with no scroll on iPhone 13', async ({ page }) => {
   await twoTeamGame(page, { ours: 10, theirs: 10 });
   const app = ui(page);
   await app.expectCardsFit();
@@ -667,17 +737,98 @@ test('10 players and the Bench card fit each half with no scroll', async ({ page
     const bench = (await h.getByRole('button', { name: 'Bench / coach tech', exact: true }).boundingBox())!;
     const card = (await h.getByRole('button', { name: /^#\d+/ }).first().boundingBox())!;
     expect(bench.height).toBeLessThan(0.6 * card.height);
+    // The Sub button and + Play share a row, both at least 44px.
+    const sub = (await app.subButton(side).boundingBox())!;
+    const play = (await h.getByRole('button', { name: '+ Play', exact: true }).boundingBox())!;
+    expect(sub.height).toBeGreaterThanOrEqual(44);
+    expect(play.height).toBeGreaterThanOrEqual(44);
+    expect(sub.y).toBe(play.y);
   }
+  // Still no scroll once bench players have played and turned solid.
+  await tap(page, app.half('Home').getByRole('button', { name: /^#19 / }), '+2');
+  await tap(page, app.half('Away').getByRole('button', { name: /^#59(,| )/ }), 'Foul');
+  await app.expectCardsFit();
   expect(await noOverflow(page)).toBe(true);
 });
 
-test('11+ players scroll inside their half', async ({ page }) => {
+test('12 players: the floor stays in view while the bench scrolls', async ({ page }) => {
   await twoTeamGame(page, { ours: 12, theirs: 3 });
   const app = ui(page);
-  expect(await scrolls(app.half('Home'))).toBe(true);
+  const home = app.half('Home');
+  const region = home.getByTestId('bench-region');
+  // The half itself does not scroll, nor the page: only the bench region does.
+  expect(await scrolls(home)).toBe(false);
+  expect(await scrolls(region)).toBe(true);
   expect(await scrolls(app.half('Away'))).toBe(false);
-  // The page itself does not scroll: only our half does.
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+  const order = await cardOrder(page, 'Home');
+  expect(order).toEqual(nums(10, 12));
+  const fixed = ['+ Play', 'Starters', 'Bench / coach tech', 'Full: 3', '30s: 2'];
+  const boxes = async () => Promise.all(fixed.map(async (n) => (await home.getByRole('button', { name: n, exact: true }).boundingBox())!));
+  const before = await boxes();
+  // Scrolled to the bottom: the floor cards and every control are where they were.
+  const floorBoxes = async () => Promise.all(nums(10, 5).map(async (n) => (await home.getByRole('button', { name: new RegExp(`^#${n} `) }).boundingBox())!));
+  const floorBefore = await floorBoxes();
+  await region.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  expect(await region.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  expect(await floorBoxes()).toEqual(floorBefore);
+  // Each floor card is in view: inside the half and above the bench region.
+  const regionBox = (await region.boundingBox())!;
+  for (const b of floorBefore) expect(b.y + b.height).toBeLessThanOrEqual(regionBox.y);
+  expect(await boxes()).toEqual(before);
+  // A promotion from the bottom of the bench, then a starter's foul-out: no card moves in the order.
+  await tap(page, home.getByRole('button', { name: /^#21 / }), '+2');
+  expect(await app.floorOf('Home')).toEqual([...nums(10, 5), '21']);
+  expect(await cardOrder(page, 'Home')).toEqual(order);
+  for (let i = 0; i < 5; i++) await tap(page, home.getByRole('button', { name: /^#10 / }), 'Foul');
+  await expect(home.getByRole('button', { name: /^#10 .*, out$/ })).toBeVisible();
+  expect(await app.floorOf('Home')).toEqual([...nums(11, 4), '21']);
+  expect(await cardOrder(page, 'Home')).toEqual(order);
+  expect(await scrolls(home)).toBe(false);
+});
+
+test("a bench card's contrast: the bench tag and the ghost border are readable on both tones", async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  for (const [side, n] of [['Home', '16'], ['Away', '56']] as const) {
+    const c = ui(page).half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
+    expect(await colorContrast(c, 'borderTopColor'), `${side} ghost border`).toBeGreaterThanOrEqual(3);
+    expect(await contrast(c.getByText('bench', { exact: true })), `${side} bench tag`).toBeGreaterThanOrEqual(4.5);
+    // Text at full strength: the number reads as on a solid card.
+    expect(await contrast(c.getByText(n, { exact: true })), `${side} number`).toBeGreaterThanOrEqual(4.5);
+    // The amber Sub button is readable too.
+    await tap(page, ui(page).half(side).getByRole('button', { name: new RegExp(`^#${Number(n) - 1}(,| )`) }), '+2');
+    const sub = ui(page).subButton(side);
+    await expect(sub).toHaveClass(amber(side));
+    expect(await colorContrast(sub, 'borderTopColor'), `${side} amber Sub border`).toBeGreaterThanOrEqual(3);
+    expect(await contrast(sub), `${side} amber Sub text`).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
+test('a benched player in foul trouble: her ghost card keeps a readable amber border and dots on both tones', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  for (const n of ['10', '50']) {
+    const side: Side = n === '10' ? 'Home' : 'Away';
+    for (let i = 0; i < 4; i++) await tap(page, app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) }), 'Foul');
+  }
+  // Task 5 records subs from the sheet; until then one is written into the saved game: the 6th in for the 1st, each team.
+  await page.evaluate(() => {
+    const g = JSON.parse(localStorage.getItem('benchbook:game')!);
+    const order = Math.max(...g.events.map((e: { order: number }) => e.order)) + 1;
+    const sub = (side: string, roster: { id: string }[], k: number) =>
+      ({ id: `s-${side}`, side, ins: [roster[5].id], outs: [roster[0].id], order: order + k, period: 1, enteredAt: new Date().toISOString() });
+    g.subs = [sub('us', g.roster, 0), sub('them', g.oppRoster, 1)];
+    localStorage.setItem('benchbook:game', JSON.stringify(g));
+  });
+  await page.reload();
+  for (const [side, n] of [['Home', '10'], ['Away', '50']] as const) {
+    const c = app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
+    await expect(c.getByText('bench', { exact: true })).toBeVisible();
+    expect(await app.floorOf(side)).not.toContain(n);
+    await expect(c).toHaveClass(/border-amber-/);
+    expect(await colorContrast(c, 'borderTopColor'), `${side} ghost warn border`).toBeGreaterThanOrEqual(3);
+    expect(await colorContrast(c.locator('span.rounded-full').first(), 'backgroundColor', 'parent'), `${side} ghost warn dots`).toBeGreaterThanOrEqual(3);
+  }
 });
 
 test('the strip: score home–away, team fouls per half, the bonus badge over the team that shoots', async ({ page }) => {

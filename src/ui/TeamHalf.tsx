@@ -1,7 +1,8 @@
 import type { TeamDerived } from '../core/derive';
+import type { Lineup } from '../core/lineup';
 import { isOvertime } from '../core/periods';
 import type { Player, TimeoutKind } from '../core/types';
-import { BENCH_CARD_TEXT, countText, teamFoulsWarn, timeoutButtonText, timeoutsLeft, type TeamTag } from './live-logic';
+import { BENCH_CARD_TEXT, countText, subButtonAmber, subButtonText, teamFoulsWarn, timeoutButtonText, timeoutsLeft, type TeamTag } from './live-logic';
 
 interface Props {
   side: TeamTag;
@@ -11,17 +12,23 @@ interface Props {
   isUs: boolean;
   roster: Player[];
   team: TeamDerived;
+  /** Who is on the floor, and the card order (frozen between subs). */
+  lineup: Lineup;
   period: number;
   onPick: (p: Player) => void;
   /** The dashed + Play card: a play for this team with no player picked. */
   onTeamPlay: () => void;
   onBench: () => void;
+  /** The Sub button, beside + Play. */
+  onSub: () => void;
   onTimeout: (kind: TimeoutKind) => void;
 }
 
 // One job per color (README § Colors) on both tones. An element whose border shows a state (a card,
 // Bench) gets exactly one border-color class: two on one element resolve by stylesheet order, not class order. The warn, out and bench-tech colors differ by tone because
 // amber-400 and red-500 sit under 3:1 on a white card; the light shades are amber-600 and red-600.
+// A bench card is ghosted (decision 12): no fill of its own, so it sits on the half's slate-200, where
+// amber-600 is under 3:1; its light warn shade is amber-700.
 const TONE = {
   light: {
     half: 'bg-slate-200 text-slate-900',
@@ -40,6 +47,13 @@ const TONE = {
     tag: 'border-slate-700 text-slate-700',
     foulsWarn: 'text-amber-800',
     timeout: 'border-slate-400 bg-white active:bg-slate-100',
+    ghost: 'bg-transparent active:bg-slate-300',
+    ghostOk: 'border-slate-500',
+    ghostWarn: 'border-amber-700',
+    ghostDotWarn: 'bg-amber-700',
+    benchTag: 'text-slate-600',
+    subOk: 'border-slate-500',
+    subWarn: 'border-amber-600 text-amber-800',
   },
   dark: {
     half: 'bg-slate-900 text-white',
@@ -58,21 +72,89 @@ const TONE = {
     tag: 'border-white text-white',
     foulsWarn: 'text-amber-300',
     timeout: 'border-slate-500 bg-slate-700 active:bg-slate-600',
+    ghost: 'bg-transparent active:bg-slate-800',
+    ghostOk: 'border-slate-500',
+    ghostWarn: 'border-amber-400',
+    ghostDotWarn: 'bg-amber-400',
+    benchTag: 'text-slate-400',
+    subOk: 'border-slate-500',
+    subWarn: 'border-amber-400 text-amber-300',
   },
 } as const;
 
+/** With this many players or more, the floor block stays put and only the bench scrolls (decision 11a). */
+const SPLIT_AT = 11;
+
 /**
  * One team's half of the live screen: a header (team, US tag, team fouls), its player cards in two
- * columns, then a dashed + Play card, the half-height Bench card and the team's timeout buttons. Ten
- * players fit an iPhone 13 with no scroll; more scroll inside the half, never the page.
+ * columns in the lineup's order (floor solid, bench ghosted, out as out), then + Play beside the Sub
+ * button, the half-height Bench card and the team's timeout buttons. Ten players fit an iPhone 13 with
+ * no scroll; with 11 or more the first five cards stay in view and the rest scroll in their own region.
  */
-export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTeamPlay, onBench, onTimeout }: Props) {
+export function TeamHalf({ side, tone, isUs, roster, team, lineup, period, onPick, onTeamPlay, onBench, onSub, onTimeout }: Props) {
   const t = TONE[tone];
   const fouls = team.teamFoulsForBonus(period);
   const kinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
-  const border = { ok: t.ok, warn: t.warn, out: t.out } as const;
+  const subText = subButtonText(lineup);
+  const subAmber = subButtonAmber(lineup);
+  const index = new Map(roster.map((p, i) => [p.id, i]));
+  // Display order is the lineup's layout: it changes only when a sub is recorded, so cards never jump mid-play.
+  const ordered = lineup.layout.filter((id) => index.has(id)).map((id) => index.get(id)!);
+  const split = lineup.tracked && roster.length >= SPLIT_AT;
+
+  const cardFor = (i: number) => {
+    const p = roster[i];
+    const line = team.players[i];
+    const state = line?.foulState ?? 'ok';
+    const pf = line?.fouls ?? 0;
+    const points = line?.points ?? 0;
+    const ghost = state !== 'out' && !lineup.floor.includes(p.id);
+    // An out player's number, name and points are grayed so a tap on the card reads as a mistake
+    // before it is one. The red border, red dots and OUT stay at full strength: graying the whole
+    // card took OUT to 2.2:1.
+    const dim = state === 'out' ? 'opacity-50' : '';
+    // A ghost has a 1px border and 1px more padding, so it is the same size as a solid card: a promoted
+    // player's card turns solid without moving anything. One border-color class per card.
+    const box = ghost
+      ? `border px-[5px] py-[5px] ${t.ghost} ${state === 'warn' ? t.ghostWarn : t.ghostOk}`
+      : `border-2 px-1 py-1 ${t.card} ${state === 'out' ? t.out : state === 'warn' ? t.warn : t.ok}`;
+    const dotWarn = ghost ? t.ghostDotWarn : t.dotWarn;
+    return (
+      <button
+        key={p.id}
+        type="button"
+        class={`min-h-15 min-w-0 rounded-lg text-left ${box}`}
+        onClick={() => onPick(p)}
+        aria-label={`${`#${p.number} ${p.name}`.trim()}, ${countText(points, 'point', 'points')}, ${countText(pf, 'foul', 'fouls')}${state === 'out' ? ', out' : ''}`}
+      >
+        <div class={`flex items-baseline justify-between gap-1 ${dim}`}>
+          <span class="text-2xl font-bold leading-none">{p.number}</span>
+          <span class="text-base font-semibold leading-none tabular-nums">{points}</span>
+        </div>
+        <div class={`truncate text-xs leading-4 ${t.name} ${dim}`}>{p.name || ' '}</div>
+        {/* The dots row is exactly a dot tall, so OUT and "bench" (10px, centered) never change a card's height. */}
+        <div class="flex h-2 items-center gap-px" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((n) => (
+            <span
+              key={n}
+              class={`h-2 w-2 shrink-0 rounded-full ${n >= pf ? t.dotEmpty : state === 'out' ? t.dotOut : state === 'warn' ? dotWarn : t.dotOk}`}
+            />
+          ))}
+          {state === 'out' && <span class={`ml-0.5 text-[10px] font-bold leading-none ${t.outText}`}>OUT</span>}
+          {ghost && <span class={`ml-0.5 text-[10px] font-bold leading-none tracking-tight ${t.benchTag}`}>bench</span>}
+        </div>
+      </button>
+    );
+  };
+
+  const grid = (ids: number[]) => <div class="grid grid-cols-2 gap-1.5">{ids.map(cardFor)}</div>;
+
   return (
-    <section role="region" aria-label={side} class={`flex min-h-0 flex-col overflow-y-auto ${t.half}`}>
+    <section
+      role="region"
+      aria-label={side}
+      class={`flex min-h-0 flex-col ${split ? 'overflow-hidden' : 'overflow-y-auto'} ${t.half}`}
+    >
       <div class={`sticky top-0 z-[1] flex h-7 shrink-0 items-center justify-between gap-1 px-2 ${t.half}`}>
         <span class="flex items-center gap-1 text-sm font-bold">
           {side}
@@ -80,53 +162,40 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
         </span>
         <span class={`whitespace-nowrap text-xs font-semibold ${teamFoulsWarn(fouls) ? t.foulsWarn : ''}`}>Team fouls {fouls}</span>
       </div>
-      <div class="flex flex-1 flex-col gap-1.5 px-1.5 pb-1.5">
-        <div class="grid grid-cols-2 gap-1.5">
-          {roster.map((p, i) => {
-            const line = team.players[i];
-            const state = line?.foulState ?? 'ok';
-            const pf = line?.fouls ?? 0;
-            const points = line?.points ?? 0;
-            // An out player's number, name and points are grayed so a tap on the card reads as a mistake
-            // before it is one. The red border, red dots and OUT stay at full strength: graying the whole
-            // card took OUT to 2.2:1.
-            const dim = state === 'out' ? 'opacity-50' : '';
-            return (
-              <button
-                key={p.id}
-                type="button"
-                class={`min-h-16 min-w-0 rounded-lg border-2 px-1.5 py-1 text-left ${t.card} ${border[state]}`}
-                onClick={() => onPick(p)}
-                aria-label={`${`#${p.number} ${p.name}`.trim()}, ${countText(points, 'point', 'points')}, ${countText(pf, 'foul', 'fouls')}${state === 'out' ? ', out' : ''}`}
-              >
-                <div class={`flex items-baseline justify-between gap-1 ${dim}`}>
-                  <span class="text-2xl font-bold leading-none">{p.number}</span>
-                  <span class="text-base font-semibold leading-none tabular-nums">{points}</span>
-                </div>
-                <div class={`truncate text-xs leading-4 ${t.name} ${dim}`}>{p.name || ' '}</div>
-                <div class="flex items-center gap-0.5" aria-hidden="true">
-                  {[0, 1, 2, 3, 4].map((n) => (
-                    <span
-                      key={n}
-                      class={`h-2 w-2 rounded-full ${n >= pf ? t.dotEmpty : state === 'out' ? t.dotOut : state === 'warn' ? t.dotWarn : t.dotOk}`}
-                    />
-                  ))}
-                  {state === 'out' && <span class={`ml-0.5 text-[10px] font-bold leading-none ${t.outText}`}>OUT</span>}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <div class={`flex flex-1 flex-col gap-1.5 px-1.5 pb-1.5 ${split ? 'min-h-0' : ''}`}>
+        {split ? (
+          <>
+            {/* The first five of the layout (the starters, or the floor at the last sub) stay in view. */}
+            <div class="shrink-0">{grid(ordered.slice(0, 5))}</div>
+            {/* A promoted player stays where she is in here until the next sub regroups the half. */}
+            <div class="min-h-0 flex-1 overflow-y-auto" data-testid="bench-region">
+              {grid(ordered.slice(5))}
+            </div>
+          </>
+        ) : (
+          grid(ordered)
+        )}
         {/* The controls sit at the foot of the half, in the same place whatever the roster size. */}
-        <div class="mt-auto flex flex-col gap-1.5">
-          {/* A play for the team with no player picked; Whose number? follows the play unless Stop asking is set. */}
-          <button
-            type="button"
-            class={`min-h-8 rounded-lg border-2 border-dashed border-slate-500 px-2 text-sm font-bold ${t.dashed}`}
-            onClick={onTeamPlay}
-          >
-            + Play
-          </button>
+        <div class="mt-auto flex shrink-0 flex-col gap-1.5">
+          <div class="flex gap-1.5">
+            {/* A play for the team with no player picked; Whose number? follows the play unless Stop asking is set. */}
+            <button
+              type="button"
+              class={`min-h-11 flex-1 rounded-lg border-2 border-dashed border-slate-500 px-1 text-sm font-bold ${t.dashed}`}
+              onClick={onTeamPlay}
+            >
+              + Play
+            </button>
+            {subText !== null && (
+              <button
+                type="button"
+                class={`min-h-11 flex-1 whitespace-nowrap rounded-lg border-2 px-1 text-sm font-bold ${t.card} ${subAmber ? t.subWarn : t.subOk}`}
+                onClick={onSub}
+              >
+                {subText}
+              </button>
+            )}
+          </div>
           {/* Named for what it records, so it is not read as "edit the bench/roster". Half a card's height. */}
           <button
             type="button"

@@ -27,6 +27,21 @@ export const BENCH_CARD_TEXT = 'Bench / coach tech';
 
 const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30s', ot: 'OT' };
 
+/**
+ * The team's Sub button label (decision 8): `Starters` before its first play, `Sub · N on` when the floor
+ * isn't 5, else `Sub`. Null when there is no bench to track (five players or fewer): no button.
+ */
+export function subButtonText(l: Lineup): string | null {
+  if (!l.tracked) return null;
+  if (!l.playedYet) return 'Starters';
+  return l.floor.length === 5 ? 'Sub' : `Sub · ${l.floor.length} on`;
+}
+
+/** Amber from the play that took the floor off 5 until that team's next play; gray after, still counting. */
+export function subButtonAmber(l: Lineup): boolean {
+  return l.tracked && l.changedUnseen && l.floor.length !== 5;
+}
+
 /** Who a play belongs to: `#4 (Home)`, `#14 (Away)`, or just `Away` with no player. */
 export function who(p: Player | null, tag: TeamTag): string {
   return p ? `#${p.number} (${tag})` : tag;

@@ -2,6 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { addPlayer, appendEvent, homeSide, rosterOf, sideName } from '../core/events';
 import { periodLabel } from '../core/periods';
+import { lineup } from '../core/lineup';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
 import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
@@ -172,10 +173,13 @@ export function Live({ store }: { store: GameStore }) {
             isUs={side === 'us'}
             roster={rosterOf(game, side)}
             team={teamOf(side)}
+            lineup={lineup(game, side)}
             period={period}
             onPick={(p) => pick(side, p)}
             onTeamPlay={() => pick(side, null)}
             onBench={() => openBench(side)}
+            // Task 5 opens the sub sheet here.
+            onSub={() => {}}
             onTimeout={(k) => timeout(side, k)}
           />
         ))}
