@@ -147,6 +147,15 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
     read wrong to a screen reader; 40 px timeout buttons; larger phone text pushes timeouts
     below the fold.
 
+- **Recorded, not planned: making the floor stand out from the bench.** Floor cards are solid and
+  bench cards ghosted, and at a glance the difference is weak (measured 2026-11-17): five floor
+  cards in two columns end mid-row beside a bench card, and the bench outlines contrast more than
+  the floor's (about 3.8:1 against 2.1–2.4:1). Nobody has misread floor vs bench (0.9.0 audit: no
+  finding), so nothing is built. Options already explored: brighter gray floor borders (cheap); full-width floor
+  rows with the bench as three-across chips (fits 10 a side; drops bench names; a promoted bench
+  player stays a chip, so "wide = floor" is wrong exactly when the lineup is). Any one-tap point
+  button must work on bench cards too (forgotten subs), so that belongs to the taps-per-play work.
+  Trigger: a scorer enters a play for the wrong player because they misread who was on the floor.
 - **Explore: fewer taps per play.** Today a player's play is 2 taps (card, then play). Goal to
   test: an average of 1.25–1.5 taps per play across a real game (the owner's arbitrary target,
   open to critique). Steps:
