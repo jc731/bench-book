@@ -225,7 +225,7 @@ test('a long foul-out entry wraps whole beside the check chip and every card sti
   for (let i = 0; i < 5; i++) await tap(page, first, 'Foul');
 
   const entry = page.getByTestId('feedback-text');
-  await expect(entry).toHaveText(`#10 ${long} (Home) foul — 5th, out — bonus`);
+  await expect(entry).toHaveText(`#10 ${long} (Home) out, 5 fouls — bonus. Tell the official.`);
   expect(await entry.evaluate((e) => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
   // It wrapped (taller than one text line), and both halves still fit above it.
   expect((await entry.boundingBox())!.height).toBeGreaterThan(24);
@@ -947,7 +947,7 @@ test("their foul-out: 5 fouls on their #50 — OUT on the card and the out warni
   await twoTeamGame(page);
   const c = ui(page).half('Away').getByRole('button', { name: /^#50,/ });
   for (let i = 0; i < 5; i++) await tap(page, c, 'Foul');
-  await expect(page.getByTestId('feedback-text')).toHaveText('#50 (Away) foul — 5th, out — bonus');
+  await expect(page.getByTestId('feedback-text')).toHaveText('#50 (Away) out, 5 fouls — bonus. Tell the official.');
   await expect(c).toHaveAccessibleName('#50, 0 points, 5 fouls, out');
   await c.click();
   await expect(page.getByRole('dialog').getByTestId('out-warning')).toContainText('Out: 5 fouls.');

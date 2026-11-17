@@ -1,7 +1,9 @@
 import { periodLabel } from '../core/periods';
 import type { PeriodCheck } from '../core/reconcile';
 import type { TimeoutState } from '../core/derive';
-import type { EventType, Player, TimeoutKind } from '../core/types';
+import type { EventType, Game, Player, Side, TimeoutKind } from '../core/types';
+import type { Lineup } from '../core/lineup';
+import { rosterOf, sideName } from '../core/events';
 
 export type TeamTag = 'Home' | 'Away';
 
@@ -129,11 +131,12 @@ export interface FoulContext {
 }
 
 /**
- * The toast for a foul entry. The one that puts a player out names them: `#22 Player One (Home) foul — 5th, out`
- * (or `tech foul — 2nd tech, out`), and the one that puts the opponent in the bonus adds ` — bonus`.
+ * The toast for a foul entry. The one that puts a player out names them: `#22 Player One (Home) out, 5 fouls. Tell the official.`
+ * (or `out, 2 techs`), and the one that puts the opponent in the bonus adds ` — bonus`.
  */
 export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext): string {
   let label: string;
+  const bonus = ctx.teamFouls + 1 === BONUS_AT;
   if (type === 'BENCH_TECH') {
     label = benchTechLabel(ctx.tag);
   } else if (!ctx.player) {
@@ -142,11 +145,31 @@ export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext
   } else {
     const { p, fouls, techs } = ctx.player;
     const named = namedWho(p, ctx.tag);
-    const kind = type === 'TECH' ? 'tech foul' : 'foul';
-    const out = fouls + 1 === 5 ? '5th, out' : type === 'TECH' && techs + 1 === 2 ? '2nd tech, out' : null;
-    label = out ? `${named} ${kind} — ${out}` : playLabel(type, who(p, ctx.tag));
+    const out = fouls + 1 === 5 ? '5 fouls' : type === 'TECH' && techs + 1 === 2 ? '2 techs' : null;
+    if (out) return foulOutLabel(named, out, bonus);
+    label = playLabel(type, who(p, ctx.tag));
   }
-  return ctx.teamFouls + 1 === BONUS_AT ? `${label} — bonus` : label;
+  return bonus ? `${label} — bonus` : label;
+}
+
+/** The toast for the entry that puts a player out: `#12 Name (Home) out, 5 fouls — bonus. Tell the official.` */
+export function foulOutLabel(namedWhoText: string, reason: string, bonus = false): string {
+  return `${namedWhoText} out, ${reason}${bonus ? ' — bonus' : ''}. Tell the official.`;
+}
+
+/** Appended to a play's toast when it moved a bench player onto the floor (only when a bench is tracked). */
+export function lineupSuffix(before: Lineup, after: Lineup, playerId: string | undefined): string {
+  if (!playerId || !after.tracked) return '';
+  return !before.floor.includes(playerId) && after.floor.includes(playerId) ? ' · now on the floor' : '';
+}
+
+/** The sub toast: `#22 (Home) in for #10` one for one, else `Home floor updated`. */
+export function subLabel(g: Game, side: Side, ins: string[], outs: string[]): string {
+  const tag = sideName(g, side);
+  const roster = rosterOf(g, side);
+  const inP = roster.find((p) => p.id === ins[0]);
+  const outP = roster.find((p) => p.id === outs[0]);
+  return ins.length === 1 && outs.length === 1 && inP && outP ? `${who(inP, tag)} in for #${outP.number}` : `${tag} floor updated`;
 }
 
 export interface EndChoices {

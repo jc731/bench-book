@@ -213,7 +213,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.score('Player One', '+2'); // wrong player: it was #0 Player Three
     await app.opp(3);
     await app.foul('Player Four');
-    await app.expectToast('#12 Player Four (Home) foul — 5th, out');
+    await app.expectToast('#12 Player Four (Home) out, 5 fouls. Tell the official.');
     await app.expectEntryWhole();
     await app.expectCardsFit();
     await app.expectPlayer('Player Four', 0, 5, true);

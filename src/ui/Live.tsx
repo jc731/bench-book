@@ -1,13 +1,14 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { addPlayer, appendEvent, homeSide, rosterOf, sideName } from '../core/events';
+import { lineup } from '../core/lineup';
 import { periodLabel } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
-import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
+import type { EventDraft, Game, Player, Side, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, who, reconcileBanner,
+  BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, lineupSuffix, playLabel, who, reconcileBanner,
   outReason, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
@@ -72,12 +73,18 @@ export function Live({ store }: { store: GameStore }) {
     return foulLabel(type, { player, teamFouls: teamOf(side).teamFoulsForBonus(period), tag });
   };
   /** Records one play; a new player joins the roster and Stop asking is set in the same entry, so one Undo takes it all back. */
-  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) =>
-    update((g, now) => {
+  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) => {
+    const build = (g: Game, now: Date) => {
       let h = opts.newPlayer && p ? addPlayer(g, side, p, now) : g;
       if (opts.stopAsking) h = { ...h, noNumbers: { ...h.noNumbers, [side]: true } };
       return appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
-    }, labelFor(side, p, type));
+    };
+    // The toast depends on the floor before and after, so the next game is derived once here for the label.
+    const label = labelFor(side, p, type);
+    const out = label.includes('Tell the official');
+    const suffix = out ? '' : lineupSuffix(lineup(game, side), lineup(build(game, new Date()), side), p?.id);
+    update(build, label + suffix);
+  };
   const play = (type: PlayType) => {
     if (!picked) return;
     const { side, p } = picked;
