@@ -350,6 +350,14 @@ test('check: Add play covers the other team, by number or with no number', async
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
 
+  // The play sheet for a chosen player is titled with the team too, as on the Live screen.
+  await app.fixRegion().getByRole('button', exact('Add play to Q1')).click();
+  await dialog.getByRole('group', exact('Team')).getByRole('button', exact('Away')).click();
+  await dialog.getByRole('button', { name: /^#14( |$)/ }).click();
+  await expect(dialog).toHaveAccessibleName('#14 Rival Five (Away)');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
   await app.addTheirPlay('Q1', '14', '+2');
   await app.expectAppHas('Q1', 2, 5, 2, 5);
   await expect(page.getByTestId('compare-opp')).toHaveText('Their score: book 8 · app 5 — 3 off');
@@ -369,4 +377,24 @@ test('check: Add play covers the other team, by number or with no number', async
   await expect(app.logRow(q1, '#14 Rival Five (Away) · +2')).toHaveCount(1);
   await expect(app.logRow(q1, 'Away · +3')).toHaveCount(1);
   await expect(app.logRow(q1, 'Away · Foul')).toHaveCount(1);
+});
+
+test('a no-number free throw keeps the pair sheet open, but any other play there still asks Whose number?', async ({ page }) => {
+  const app = ui(page);
+  const dialog = page.getByRole('dialog');
+  await page.goto('/');
+  await app.fillSetup(OPPONENT, TEAM);
+  await app.fillOppRoster([{ number: '14', name: 'Rival Five' }]);
+  await app.startGame();
+  await theirs(page).getByRole('button', exact('+ Play')).click();
+  await dialog.getByRole('button', exact('FT made')).click();
+  await dialog.getByRole('button', exact('No number')).click();
+  // The team's sheet is back for the second shot: an FT records at once, with no question.
+  await expect(dialog).toHaveAccessibleName('Away');
+  // A +2 on that sheet is a new play, so it asks.
+  await dialog.getByRole('button', exact('+2')).click();
+  await expect(dialog).toHaveAccessibleName('Whose number?');
+  await dialog.getByRole('button', exact('No number')).click();
+  await expect(dialog).toHaveCount(0);
+  await app.expectToast('Away +2');
 });

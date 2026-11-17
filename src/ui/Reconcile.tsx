@@ -8,7 +8,7 @@ import type { Player, Side } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { addedLabel } from './log-logic';
-import { NO_NUMBER, feedbackLine, who, type PlayType, type Toast } from './live-logic';
+import { NO_NUMBER, feedbackLine, namedWho, who, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
   MISMATCH_HINT, appHasText, compareText, isMismatch, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
@@ -262,7 +262,7 @@ export function Reconcile({ store }: { store: GameStore }) {
       {addStep === 'play' && (
         <EventSheet
           player={addPlayer}
-          title={addPlayer ? undefined : sideName(game, addSide)}
+          title={namedWho(addPlayer, sideName(game, addSide))}
           toast={toast === addOpenedWith.current ? null : toast}
           onPlay={addPlay}
           onUndo={undo}

@@ -82,7 +82,7 @@ export function Live({ store }: { store: GameStore }) {
     if (!picked) return;
     const { side, p } = picked;
     // A team's + Play asks whose number, unless the scorer chose Stop asking for that team.
-    if (!p && !game.noNumbers?.[side] && !picked.pair) {
+    if (!p && !game.noNumbers?.[side] && !(picked.pair && isFt(type))) {
       setAsking(type);
       return;
     }
