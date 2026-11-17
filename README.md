@@ -125,6 +125,11 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   60 px cards so 10 players a half still fit an iPhone 13, and with 11 or more the floor stays in
   view while only the bench scrolls. Design:
   `docs/superpowers/specs/2026-11-17-active-lineup-design.md`.
+- **0.9.x: a line-change view** for several subs at once, including several missed ones: move or
+  swap multiple players between floor and bench in one place (drag and drop, or a tap-to-swap).
+  Design note: the 0.9 critics rejected drag for single subs (hard to discover, and it fights the
+  bench's scrolling), and "Who's on the floor?" already toggles several players at once, so the
+  design should start from what a real game shows that sheet missing.
 
 **After 1.0 (1.x):**
 
