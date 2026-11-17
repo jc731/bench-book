@@ -1,10 +1,11 @@
-import { appendEvent, newGame } from '../core/events';
+import { applyLabeled, type GameState } from './game-state';
+import { appendEvent, newGame, recordSub } from '../core/events';
 import { lineup } from '../core/lineup';
 import type { EventDraft, Game } from '../core/types';
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, foulOutLabel, lineupSuffix, subLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
+  TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, foulOutLabel, lineupSuffix, playToast, subLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
   stripPeriodText, undoAriaLabel,
 } from './live-logic';
 import { outReason } from './live-logic';
@@ -223,10 +224,33 @@ describe('lineup toasts', () => {
     expect(lineupSuffix(b2, a2, 'h22')).toBe('');
     expect(a1.floor).toContain('h22');
   });
-  it('never shows the suffix when the roster has five or fewer', () => {
-    const small = newGame(info, roster.slice(0, 5), t0);
-    const [b, a] = beforeAfter(small, { type: 'FG2', playerId: 'h4' });
-    expect(lineupSuffix(b, a, 'h4')).toBe('');
+  it('never shows the suffix when the roster is untracked, even if the player moves bench to floor', () => {
+    const l = (floor: string[], tracked: boolean) => ({ ...lineup(base, 'us'), floor, tracked });
+    expect(lineupSuffix(l(['h4'], true), l(['h4', 'h22'], true), 'h22')).toBe(' · now on the floor');
+    expect(lineupSuffix(l(['h4'], false), l(['h4', 'h22'], false), 'h22')).toBe('');
+  });
+  it('a bench player\'s 5th foul is the foul-out sentence with no floor suffix', () => {
+    let g = base;
+    for (let i = 0; i < 4; i++) g = appendEvent(g, { period: 1, type: 'FOUL', playerId: 'h22' }, t0);
+    g = recordSub(g, 'us', ['h4'], ['h22'], t0); // back to the bench with 4 fouls
+    expect(lineup(g, 'us').floor).not.toContain('h22');
+    const h = appendEvent(g, { period: 1, type: 'FOUL', playerId: 'h22' }, t0);
+    expect(lineup(h, 'us').floor).not.toContain('h22'); // lineup does not promote a player the play puts out
+    const p = roster[5];
+    expect(playToast(g, h, 'us', p, 'FOUL')).toBe('#22 Player 22 (Home) out, 5 fouls — bonus. Tell the official.');
+  });
+  it('words a play from the game it is applied to: two taps with no render between give one suffix', () => {
+    const play = (g: Game) => {
+      const next = appendEvent(g, { period: 1, type: 'FG2', playerId: 'h22' }, t0);
+      return { game: next, label: playToast(g, next, 'us', roster[5], 'FG2') };
+    };
+    let s: GameState = { game: base, stack: [] };
+    const first = applyLabeled(s, play, '', t0);
+    s = first.state;
+    const second = applyLabeled(s, play, '', t0);
+    expect(first.label).toBe('#22 (Home) +2 · now on the floor');
+    expect(second.label).toBe('#22 (Home) +2');
+    expect(second.state.stack.at(-1)?.label).toBe('#22 (Home) +2');
   });
   it('words a sub', () => {
     expect(subLabel(base, 'us', ['h22'], ['h10'])).toBe('#22 (Home) in for #10');

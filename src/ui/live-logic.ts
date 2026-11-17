@@ -4,6 +4,8 @@ import type { TimeoutState } from '../core/derive';
 import type { EventType, Game, Player, Side, TimeoutKind } from '../core/types';
 import type { Lineup } from '../core/lineup';
 import { rosterOf, sideName } from '../core/events';
+import { derive } from '../core/derive';
+import { lineup } from '../core/lineup';
 
 export type TeamTag = 'Home' | 'Away';
 
@@ -135,6 +137,11 @@ export interface FoulContext {
  * (or `out, 2 techs`), and the one that puts the opponent in the bonus adds ` — bonus`.
  */
 export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext): string {
+  return foulToast(type, ctx).label;
+}
+
+/** The foul toast, and whether it is the one that puts the player out (that one takes no lineup suffix). */
+export function foulToast(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext): { label: string; out: boolean } {
   let label: string;
   const bonus = ctx.teamFouls + 1 === BONUS_AT;
   if (type === 'BENCH_TECH') {
@@ -146,10 +153,10 @@ export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext
     const { p, fouls, techs } = ctx.player;
     const named = namedWho(p, ctx.tag);
     const out = fouls + 1 === 5 ? '5 fouls' : type === 'TECH' && techs + 1 === 2 ? '2 techs' : null;
-    if (out) return foulOutLabel(named, out, bonus);
+    if (out) return { label: foulOutLabel(named, out, bonus), out: true };
     label = playLabel(type, who(p, ctx.tag));
   }
-  return bonus ? `${label} — bonus` : label;
+  return { label: bonus ? `${label} — bonus` : label, out: false };
 }
 
 /** The toast for the entry that puts a player out: `#12 Name (Home) out, 5 fouls — bonus. Tell the official.` */
@@ -255,3 +262,25 @@ export const OUT_ANYWAY = 'Enter a play anyway';
 export const WHOSE_NUMBER = 'Whose number?';
 export const NO_NUMBER = 'No number';
 export const STOP_ASKING = 'Stop asking this game';
+
+/**
+ * The toast for one play, worded from the game the play was applied to (`before`) and the result (`after`),
+ * so the label and the applied game always share one input. A foul reads through foulToast (out and
+ * bonus); anything else reads `#14 (Away) +2`, plus ` · now on the floor` when it moved a bench player on.
+ */
+export function playToast(before: Game, after: Game, side: Side, p: Player | null, type: PlayType): string {
+  const tag = sideName(before, side);
+  let text: string;
+  if (type === 'FOUL' || type === 'TECH') {
+    const d = derive(before);
+    const team = side === 'us' ? d.us : d.opp;
+    const line = p ? team.players.find((l) => l.playerId === p.id) : undefined;
+    const player = p ? { p, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 } : null;
+    const t = foulToast(type, { player, teamFouls: team.teamFoulsForBonus(before.currentPeriod), tag });
+    if (t.out) return t.label;
+    text = t.label;
+  } else {
+    text = playLabel(type, who(p, tag));
+  }
+  return text + lineupSuffix(lineup(before, side), lineup(after, side), p?.id);
+}

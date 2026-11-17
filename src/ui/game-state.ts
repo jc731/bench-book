@@ -22,16 +22,32 @@ function staleExports(g: Game): Game {
  */
 export function applyUpdate(
   state: GameState,
-  fn: (g: Game, now: Date) => Game,
+  fn: Updater,
   label: string,
   now: Date,
   undoable = true,
 ): GameState {
-  if (!state.game) return state;
-  const next = fn(state.game, now);
-  if (next === state.game) return state; // nothing changed: no undo step
-  if (!undoable) return { ...state, game: next };
-  return { game: staleExports(next), stack: pushUndo(state.stack, { snapshot: state.game, label }), redo: [] };
+  return applyLabeled(state, fn, label, now, undoable).state;
+}
+
+/** An updater returns the next game, or the next game with its own label, worded from the game it was given. */
+export type Updater = (g: Game, now: Date) => Game | { game: Game; label: string };
+
+/** applyUpdate, also returning the label used (the updater's own when it gave one). */
+export function applyLabeled(
+  state: GameState,
+  fn: Updater,
+  label: string,
+  now: Date,
+  undoable = true,
+): { state: GameState; label: string } {
+  if (!state.game) return { state, label };
+  const r = fn(state.game, now);
+  const next = 'game' in r ? r.game : r;
+  const used = 'game' in r ? r.label : label;
+  if (next === state.game) return { state, label: used }; // nothing changed: no undo step
+  if (!undoable) return { state: { ...state, game: next }, label: used };
+  return { state: { game: staleExports(next), stack: pushUndo(state.stack, { snapshot: state.game, label: used }), redo: [] }, label: used };
 }
 
 /** A snapshot restored by Undo or Redo: its export marks dropped, the current check drafts kept. */

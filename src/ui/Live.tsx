@@ -1,14 +1,13 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { addPlayer, appendEvent, homeSide, rosterOf, sideName } from '../core/events';
-import { lineup } from '../core/lineup';
 import { periodLabel } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
-import type { EventDraft, Game, Player, Side, TimeoutKind } from '../core/types';
+import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, lineupSuffix, playLabel, who, reconcileBanner,
+  BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, who, reconcileBanner,
   outReason, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
@@ -64,27 +63,14 @@ export function Live({ store }: { store: GameStore }) {
   // Absent means ours, so only their events carry a side.
   const sided = (side: Side): Pick<EventDraft, 'side'> => (side === 'them' ? { side: 'them' } : {});
   const lineOf = (pk: Picked) => (pk.p ? teamOf(pk.side).players.find((l) => l.playerId === pk.p!.id) : undefined);
-  /** The toast for a play: a foul goes through foulLabel (out and bonus), the rest read `#14 (Away) +2` / `Away +2`. */
-  const labelFor = (side: Side, p: Player | null, type: PlayType) => {
-    const tag = sideName(game, side);
-    if (type !== 'FOUL' && type !== 'TECH') return playLabel(type, who(p, tag));
-    const line = p ? lineOf({ side, p }) : undefined;
-    const player = p ? { p, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 } : null;
-    return foulLabel(type, { player, teamFouls: teamOf(side).teamFoulsForBonus(period), tag });
-  };
-  /** Records one play; a new player joins the roster and Stop asking is set in the same entry, so one Undo takes it all back. */
-  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) => {
-    const build = (g: Game, now: Date) => {
+  /** Records one play; a new player joins the roster and Stop asking is set in the same entry, so one Undo takes it all back. The toast is worded from the game the play is applied to. */
+  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) =>
+    update((g, now) => {
       let h = opts.newPlayer && p ? addPlayer(g, side, p, now) : g;
       if (opts.stopAsking) h = { ...h, noNumbers: { ...h.noNumbers, [side]: true } };
-      return appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
-    };
-    // The toast depends on the floor before and after, so the next game is derived once here for the label.
-    const label = labelFor(side, p, type);
-    const out = label.includes('Tell the official');
-    const suffix = out ? '' : lineupSuffix(lineup(game, side), lineup(build(game, new Date()), side), p?.id);
-    update(build, label + suffix);
-  };
+      const next = appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
+      return { game: next, label: playToast(g, next, side, p, type) };
+    }, '');
   const play = (type: PlayType) => {
     if (!picked) return;
     const { side, p } = picked;

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
-import { applyRedo, applyUndo, applyUpdate, type GameState } from './game-state';
+import { applyLabeled, applyRedo, applyUndo, applyUpdate, type GameState, type Updater } from './game-state';
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
 
@@ -64,13 +64,13 @@ export function useGameStore() {
 
   /** `undoable: false` is for facts, not edits (a file was saved): no undo step and no Undo on the feedback line. */
   const update = useCallback(
-    (fn: (g: Game, now: Date) => Game, label: string, opts: { undoable?: boolean } = {}) => {
+    (fn: Updater, label: string, opts: { undoable?: boolean } = {}) => {
       if (!state.current.game) return;
       const undoable = opts.undoable ?? true;
-      const next = applyUpdate(state.current, fn, label, new Date(), undoable);
-      if (next === state.current) return; // no change, so no feedback either
-      commit(next);
-      setToast({ text: label, canUndo: undoable });
+      const r = applyLabeled(state.current, fn, label, new Date(), undoable);
+      if (r.state === state.current) return; // no change, so no feedback either
+      commit(r.state);
+      setToast({ text: r.label, canUndo: undoable });
     },
     [commit],
   );
