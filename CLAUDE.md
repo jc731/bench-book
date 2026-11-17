@@ -20,13 +20,15 @@ The product is built in phases, called **Phase 1/2/3**. Version numbers follow t
 Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met at a real game on
 0.4, so it no longer marked anything. The list is fixed: anything not on it goes to 1.x.
 
-- [ ] Opponent team stats on the live screen: their fouls (and our bonus), their timeouts, their
-      points by player number.
-- [ ] Active lineup with substitutions: the live screen shows only the players on the floor, and a
-      fouled-out player prompts a sub.
-- [ ] Both teams in the Book CSV, and the quarter check compares both scores.
-- [ ] The How-to covers both-team scoring, and `/ux-audit` finishes a scripted both-team game with
-      nothing blocking.
+- [x] Opponent team stats on the live screen: their fouls (and our bonus), their timeouts, their
+      points by player number. (0.8)
+- [ ] Active lineup with substitutions (0.9): the five on the floor sit at the top of their half,
+      the bench below; a sub moves players between floor and bench, and nothing is ever hidden, so
+      subbing is optional. A fouled-out player prompts a sub. Reworded 2026-11-16 (owner): the
+      old wording, "shows only the players on the floor", is dropped.
+- [x] Both teams in the Book CSV, and the quarter check compares both scores. (0.8)
+- [ ] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
+      both-team game with nothing blocking (not yet run; the scenario was rewritten in 0.8).
 - [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,
       with no lost data and no hand-fixed CSV.
 - Out of scope for 1.0: missed shots, rebounds, assists, configurable rule sets, the cross-scorer

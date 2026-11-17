@@ -104,10 +104,12 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 - ~~Opponent team stats on the live screen: their fouls (and so our bonus), their timeouts,
   their points by player number.~~ Done in 0.8: both teams on one screen, by number, in both
   CSVs and in the quarter check.
-- Active lineup with substitutions: the live screen shows only who is on the floor, and a
-  fouled-out player prompts a sub. This is also the fix for large rosters: since 0.8 each team
-  has half the screen, and an iPhone 13 fits 10 players (64 px cards, 506 px half with + Play,
-  Bench and timeouts, no slack); 11 or more scroll inside their half (design audit v0.5.0, D1).
+- **0.9: active lineup with substitutions.** The five on the floor sit at the top of their half and
+  the bench below. A sub moves players between floor and bench, and nothing is hidden, so subbing
+  is optional and a missed sub costs nothing. A fouled-out player prompts a sub. It also helps
+  large rosters: an iPhone 13 fits 10 players a half (64 px cards, 506 px half with + Play, Bench
+  and timeouts); with 11 or more the floor five stay in view and only the bench scrolls (design
+  audit v0.5.0, D1). Notes: `docs/superpowers/specs/2026-11-16-active-lineup-notes.md`.
 
 **After 1.0 (1.x):**
 
