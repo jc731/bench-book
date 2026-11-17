@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'preact/hooks';
 import { clearGame, loadGame, saveGame } from '../core/storage';
 import type { Game } from '../core/types';
-import { demoActive, storageKeys } from './demo';
+import { storageKeys } from '../core/keys';
+import { demoActive } from './demo';
 import { applyLabeled, applyRedo, applyUndo, applyUpdate, type GameState, type Updater } from './game-state';
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';

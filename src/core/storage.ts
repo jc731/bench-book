@@ -1,4 +1,4 @@
-import { storageKeys, type StorageKeys } from '../ui/demo';
+import { storageKeys, type StorageKeys } from './keys';
 import type { Game, Player } from './types';
 
 /** The real keys; every load/save/clear takes the keys of the current mode (`storageKeys(demo)`) and defaults to these. */

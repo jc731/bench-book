@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { loadGame, loadRoster, saveGame, saveRoster } from '../core/storage';
 import { newGame } from '../core/events';
-import { DEMO_SETUP, isDemo, resetDemo, storageKeys } from './demo';
+import { isDemo, storageKeys } from '../core/keys';
+import { DEMO_SETUP, resetDemo } from './demo';
 
 function mem(): Storage {
   const m = new Map<string, string>();

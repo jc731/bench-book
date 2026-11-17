@@ -20,6 +20,8 @@ export function App() {
 
   return (
     <div class="flex h-dvh flex-col overflow-hidden bg-slate-900 text-white">
+      {/* In the flow, above everything: no screen's controls sit under it. Gray, so it adds no color job. */}
+      {demoActive() && <div class="shrink-0 bg-slate-800 text-center text-xs leading-5 text-slate-400">Demo</div>}
       {!saving && (
         <div class="bg-amber-400 px-4 py-3 text-center font-semibold text-slate-900" role="alert">
           Not saving on this device — keep the paper book current.
@@ -41,10 +43,6 @@ export function App() {
       {view === 'reconcile' && <Reconcile store={store} />}
       {view === 'end' && <EndGame store={store} />}
       {view === 'howto' && <HowTo store={store} />}
-      {/* Gray, no color job; pointer-events-none so it never blocks a control under it. */}
-      {demoActive() && (
-        <div class="pointer-events-none fixed bottom-1 right-1 z-50 rounded bg-slate-700/80 px-1.5 text-xs text-slate-300">Demo</div>
-      )}
       {view === 'running' && <RunningScore store={store} />}
     </div>
   );

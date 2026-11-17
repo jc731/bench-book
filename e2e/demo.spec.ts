@@ -100,3 +100,33 @@ test('a real game has no Reset demo and no Demo marker', async ({ page }) => {
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Reset demo' })).toHaveCount(0);
   await expect(page.getByText('Demo', { exact: true })).toHaveCount(0);
 });
+
+test('the Demo marker covers no visible button on Setup, Live, Log or the quarter check', async ({ page }) => {
+  await seedReal(page);
+  await page.goto('/?demo');
+  const overlaps = () =>
+    page.evaluate(() => {
+      const marker = [...document.querySelectorAll('div')].find((d) => d.children.length === 0 && d.textContent === 'Demo');
+      if (!marker) return ['no marker'];
+      const m = marker.getBoundingClientRect();
+      const hit: string[] = [];
+      for (const b of document.querySelectorAll('button, a, input, summary')) {
+        const r = b.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (r.left < m.right && r.right > m.left && r.top < m.bottom && r.bottom > m.top) hit.push(b.getAttribute('aria-label') ?? b.textContent ?? '');
+      }
+      return hit;
+    });
+  expect(await overlaps()).toEqual([]); // Setup
+  await ui(page).startGame();
+  await page.getByRole('button', { name: /^#3 Sam Rivera,/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  expect(await overlaps()).toEqual([]); // Live
+  await page.getByRole('button', { name: 'Log', exact: true }).click();
+  expect(await overlaps()).toEqual([]); // Log
+  await page.getByRole('button', { name: /^Back|Live/ }).first().click();
+  await page.getByRole('button', { name: 'End Q1', exact: true }).click();
+  await page.getByRole('button', { name: /^Check Q1/ }).click();
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+  expect(await overlaps()).toEqual([]); // the check
+});

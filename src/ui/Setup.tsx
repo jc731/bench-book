@@ -7,7 +7,8 @@ import { notExportedText } from './reconcile-logic';
 import { cleanOppRoster, defaultOpponent, opponentOrDefault, setupRosterErrors } from './roster';
 import { blankPlayer, RosterEditor } from './RosterEditor';
 import { Sheet } from './EventSheet';
-import { DEMO_SETUP, demoActive, storageKeys } from './demo';
+import { storageKeys } from '../core/keys';
+import { DEMO_SETUP, demoActive } from './demo';
 import { getStorage, type GameStore } from './store';
 import { applyUpdate, onUpdateWaiting, updateWaiting } from './sw-update';
 
