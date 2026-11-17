@@ -25,22 +25,35 @@ with the book page after the game.
    showing what is left; one at zero asks first. **Undo**, **Log**, **End Q** and **⋯** are on
    the bottom bar. One line above the bar shows what was just entered, naming the team, and stays
    until the next entry, with a chip at its right for a quarter still to check.
-3. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Log** and
+3. **Subs (optional).** Solid cards are the five on the floor; the bench is ghosted, with a gray
+   **bench** tag. Each team's first five start (the **Starters** button, beside + Play, changes
+   them before that team's first play). A bench player who makes a play goes on the floor by
+   herself, so nothing is lost by skipping a sub, and a foul-out takes the player off. For a sub,
+   tap the player checking in, then **#22 checks in** on her sheet, then who went out. The **Sub**
+   button (amber `Sub · 6 on` when the floor isn't five) asks **Who went out?** (with a "likely"
+   guess), **Who came in?** or, for a line change, **Who's on the floor?**. Subs change no score
+   or count and are in neither CSV.
+4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Log** and
    tap a row: it opens the fix, where you change the play, the team, the player or the quarter,
    or delete it.
-4. **Check each quarter.** **End Q1** advances at once. When there is time, tap the check chip,
+5. **Check each quarter.** **End Q1** advances at once. When there is time, tap the check chip,
    enter the game score after the quarter from the book's running score, and the app checks the
    quarter's own points against its plays. Their score, if you type it, only warns when it is
    off. **Add play** stays on the check after the score matches, for a foul the book has and the
    app doesn't. You can leave the check for later.
-5. **Final.** After Q4, choose Start overtime or End game (no overtime). The **Final** screen
+6. **Final.** After Q4, choose Start overtime or End game (no overtime). The **Final** screen
    lists any quarter not yet checked, ends a game early with a confirm, and **Reopen game** puts
    an ended game back in play.
-6. **Export.** From Final, download the Book CSV (pairs with the paper book page, with a block
+7. **Export.** From Final, download the Book CSV (pairs with the paper book page, with a block
    for each team you recorded) and the Plays CSV (every entry, in order, each marked Home or
    Away).
 
 **How to use**, under the ⋯ button, explains all of this in the app, with screenshots.
+
+**Demo mode.** Add `?demo` to the address to open Setup with both rosters filled with invented
+players, for trying the app or showing it off. Demo keeps its own saved game and rosters, so a
+real roster or game on that phone is never touched; a gray **Demo** strip shows at the top, and
+⋯ > **Reset demo** starts it over.
 
 Rules: IESA / NFHS. Game data is purged 72 hours after the last change; the saved roster is kept.
 
@@ -54,6 +67,7 @@ scripts or fonts. Roster names and game data live in the browser's local storage
 ```bash
 pnpm install
 pnpm dev        # dev server
+pnpm dev:demo   # dev server opened at /?demo: both rosters filled with invented players, in demo's own storage
 pnpm build      # static build to dist/
 pnpm preview    # serve the built site
 pnpm test       # unit tests (vitest)
@@ -71,12 +85,12 @@ when adding to the interface:
 
 | Color | Means | Examples |
 |---|---|---|
-| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving |
+| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving, the Sub button while the floor isn't five (`Sub · 6 on`) until that team's next play |
 | **Red** | Out, or ends something for good | an out player, End Q4 / OT (can end the game), Discard when the game is not exported |
 | **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
-| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards, a player's first three fouls, the bar |
+| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards, ghosted bench cards and their "bench" tag, the sub sheet's "likely" and "just in" tags, the Demo strip, a player's first three fouls, the bar |
 
 Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
 each kept at 3:1 or better for borders and dots and 4.5:1 for text:
@@ -104,18 +118,20 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 - ~~Opponent team stats on the live screen: their fouls (and so our bonus), their timeouts,
   their points by player number.~~ Done in 0.8: both teams on one screen, by number, in both
   CSVs and in the quarter check.
-- **0.9: active lineup with substitutions.** The five on the floor sit at the top of their half and
-  the bench below. A sub moves players between floor and bench, and nothing is hidden, so subbing
-  is optional and a missed sub costs nothing. A fouled-out player prompts a sub. It also helps
-  large rosters: an iPhone 13 fits 10 players a half (64 px cards, 506 px half with + Play, Bench
-  and timeouts); with 11 or more the floor five stay in view and only the bench scrolls (design
-  audit v0.5.0, D1). Notes: `docs/superpowers/specs/2026-11-16-active-lineup-notes.md`.
+- ~~**0.9: active lineup with substitutions.** The five on the floor sit at the top of their half
+  and the bench below. A sub moves players between floor and bench, and nothing is hidden, so
+  subbing is optional and a missed sub costs nothing. A fouled-out player prompts a sub.~~ Done
+  in 0.9: floor solid and bench ghosted, a Sub button per team, the sub sheet's three questions,
+  60 px cards so 10 players a half still fit an iPhone 13, and with 11 or more the floor stays in
+  view while only the bench scrolls. Design:
+  `docs/superpowers/specs/2026-11-17-active-lineup-design.md`.
 
 **After 1.0 (1.x):**
 
 - Cross-scorer check at halftime and end of game: compare what you recorded with the other
   team's scorer and talk through any difference.
 - Tablet-size release test.
+- Tick starters in Setup (a Setup option; today the Starters sheet does it).
 - Notifications: alerts for timeouts remaining, a player in foul trouble or fouled out, the team
   fouls reaching the bonus, and so on. Open question for the design: on-device alerts for the
   scorer, or push notifications to other people's phones (a coach, a parent), which would need
