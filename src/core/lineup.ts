@@ -22,7 +22,7 @@ export interface Lineup {
   outIds: string[];
   /** The last player promoted by a play since the last sub; null once they foul out. */
   justIn: string | null;
-  /** The floor player marked "likely" in "Who went out?" (decision 10). Only a label. */
+  /** The floor player hinted "longest without a play" in "Who went out?" (decision 10; "likely" before 0.9.1). Only a label. */
   suggestion: string | null;
   /** The roster has more than five players, so there is a bench to track. */
   tracked: boolean;
@@ -47,7 +47,7 @@ function eventSide(e: GameEvent): Side {
 }
 
 /**
- * The "likely" pick among `floor`: an out player first, else the one whose last play is oldest (never
+ * The suggested pick among `floor` ("longest without a play"): an out player first, else the one whose last play is oldest (never
  * played is oldest of all), ties to the earliest in `layout`.
  */
 export function suggestFrom(

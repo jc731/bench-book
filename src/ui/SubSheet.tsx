@@ -5,7 +5,7 @@ import { lineup } from '../core/lineup';
 import type { Game, Player, Side } from '../core/types';
 import { Sheet } from './EventSheet';
 import { outReason } from './live-logic';
-import { SUB_TITLE, closesNow, netSub, openSub, pickText, toggleFloor, type SubStart } from './sub-logic';
+import { SUB_TITLE, closesNow, netSub, openSub, pickText, rowTags, toggleFloor, type SubStart } from './sub-logic';
 
 interface Props {
   game: Game;
@@ -52,12 +52,8 @@ export function SubSheet({ game, side, start, onRecord, onClose }: Props) {
   const row = (p: Player) => {
     const on = floor.includes(p.id);
     const reason = reasonOf(p.id);
-    const tags = reason
-      ? [reason]
-      : mode === 'out'
-        ? [...(p.id === justIn ? ['just in'] : []), ...(p.id === l.suggestion ? ['likely'] : [])]
-        : [];
-    const label = `${`#${p.number} ${p.name}`.trim()}${tags.map((t) => `, ${t}`).join('')}`;
+    const tags = rowTags(p.id, reason, { mode, justIn, suggestion: l.suggestion });
+    const label = `${`#${p.number} ${p.name}`.trim()}${tags.map((t) => `, ${t.text}`).join('')}`;
     return (
       <button
         key={p.id}
@@ -74,9 +70,14 @@ export function SubSheet({ game, side, start, onRecord, onClose }: Props) {
           <span class="text-xl font-bold">#{p.number}</span> <span class="text-sm text-slate-300">{p.name}</span>
         </span>
         <span class="flex shrink-0 gap-1">
-          {tags.map((t) => (
-            <span key={t} class="rounded border border-slate-400 px-1.5 text-xs font-semibold text-slate-300">{t}</span>
-          ))}
+          {/* A fact is a boxed tag; the suggestion is a hint, plain text with no box or weight (slate-300 keeps 4.5:1 on the pressed row). */}
+          {tags.map((t) =>
+            t.kind === 'fact' ? (
+              <span key={t.text} class="rounded border border-slate-400 px-1.5 text-xs font-semibold text-slate-300">{t.text}</span>
+            ) : (
+              <span key={t.text} class="text-xs font-normal text-slate-300">{t.text}</span>
+            ),
+          )}
         </span>
       </button>
     );

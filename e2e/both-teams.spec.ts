@@ -27,7 +27,7 @@ import { OPPONENT, TEAM, ui } from './fixture';
  *   7 | Q1  | us   #12 Four     Foul                   |   4 |    5 | our TF 1
  *   8 | Q1  | us   #0  Three    +3                     |   7 |    5 |
  *   9 | Q1  | them Full timeout                        |   7 |    5 | their Full 1 of 3
- *  S1 | Q1  | us   Sub · 6 on: tap the likely #00      |     |      | "#44 (Home) in for #00"
+ *  S1 | Q1  | us   Sub · 6 on: tap the hinted #00      |     |      | "#44 (Home) in for #00"
  *     |     | End Q1. Check Q1: book 7 / 5             |     |      | MATCHED
  *  S2 | Q2  | us   #00 checks in for #44 (3 taps)     |     |      | deliberate sub
  *  10 | Q2  | them #24          Foul                   |   7 |    5 | #24 has 3
@@ -137,13 +137,13 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.expectToast('Away timeout (Full)');
     await expect(theirs(page).getByRole('button', exact('Full: 2'))).toBeVisible();
     // During the timeout, the forgotten sub: still 6 on, gray since our next play. #00 has made no play, so they are
-    // the likely one; one tap closes the sheet at five.
+    // the one longest without a play; one tap closes the sheet at five.
     await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
     await expect(app.subButton('Home')).not.toHaveClass(/amber/);
     await app.subButton('Home').click();
     await expect(dialog).toHaveAccessibleName('Who went out?');
     await expect(dialog.getByRole('button', { name: /^#44 / })).toHaveAccessibleName('#44 Player Seven, just in');
-    await expect(dialog.getByRole('button', { name: /^#00 / })).toHaveAccessibleName('#00 Player Two, likely');
+    await expect(dialog.getByRole('button', { name: /^#00 / })).toHaveAccessibleName('#00 Player Two, longest without a play');
     await dialog.getByRole('button', { name: /^#00 / }).click();
     await expect(dialog).toHaveCount(0);
     await app.expectToastUndo('#44 (Home) in for #00');

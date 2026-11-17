@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closesNow, netSub, openSub, pickText, subRowText, toggleFloor } from './sub-logic';
+import { SUGGESTION_TAG, closesNow, netSub, openSub, pickText, rowTags, subRowText, toggleFloor } from './sub-logic';
 
 const five = ['a', 'b', 'c', 'd', 'e'];
 const view = (floor: string[], o: { outIds?: string[]; playedYet?: boolean } = {}) => ({
@@ -82,5 +82,26 @@ describe('pickText: "Who went out?" and "Who came in?" say how many to pick', ()
   it('"Who\'s on the floor?" has its own count and Done, so no pick line', () => {
     expect(pickText('set', 5)).toBeNull();
     expect(pickText('set', 3)).toBeNull();
+  });
+});
+
+describe('rowTags: "just in" is a fact, the suggestion only a hint', () => {
+  const ctx = { mode: 'out' as const, justIn: 'f', suggestion: 'b' };
+  it('the suggestion says why, not "likely"', () => {
+    expect(SUGGESTION_TAG).toBe('longest without a play');
+    expect(rowTags('b', null, ctx)).toEqual([{ text: 'longest without a play', kind: 'hint' }]);
+    expect(rowTags('b', null, ctx).some((t) => /likely/.test(t.text))).toBe(false);
+  });
+  it('"just in" stays a tag, and a row can carry both', () => {
+    expect(rowTags('f', null, ctx)).toEqual([{ text: 'just in', kind: 'fact' }]);
+    expect(rowTags('f', null, { ...ctx, suggestion: 'f' })).toEqual([
+      { text: 'just in', kind: 'fact' }, { text: 'longest without a play', kind: 'hint' },
+    ]);
+    expect(rowTags('a', null, ctx)).toEqual([]);
+  });
+  it('an out player shows only the reason; other questions show no tags', () => {
+    expect(rowTags('b', '5 fouls', ctx)).toEqual([{ text: '5 fouls', kind: 'fact' }]);
+    expect(rowTags('b', null, { ...ctx, mode: 'in' })).toEqual([]);
+    expect(rowTags('f', null, { ...ctx, mode: 'set' })).toEqual([]);
   });
 });

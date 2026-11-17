@@ -52,6 +52,29 @@ export function pickText(mode: SubMode, onFloor: number): string | null {
   return `${onFloor} on · pick ${Math.abs(onFloor - 5)}`;
 }
 
+/**
+ * The suggestion's words in "Who went out?". It was "likely", and it guessed wrong in both reviewer runs
+ * (0.9.0) while reading like an instruction; it now says why the player is suggested and nothing more.
+ */
+export const SUGGESTION_TAG = 'longest without a play';
+
+/** A row's tags: a `fact` (just in, an out reason) is a boxed tag; the suggestion is a `hint`, quieter. */
+export type RowTag = { text: string; kind: 'fact' | 'hint' };
+
+/** The tags on a sub sheet row: an out player's reason alone; in "Who went out?", just in and the suggestion. */
+export function rowTags(
+  id: string,
+  outReason: string | null,
+  c: { mode: SubMode; justIn: string | null | undefined; suggestion: string | null },
+): RowTag[] {
+  if (outReason) return [{ text: outReason, kind: 'fact' }];
+  if (c.mode !== 'out') return [];
+  return [
+    ...(id === c.justIn ? [{ text: 'just in', kind: 'fact' as const }] : []),
+    ...(id === c.suggestion ? [{ text: SUGGESTION_TAG, kind: 'hint' as const }] : []),
+  ];
+}
+
 /** The net change from the floor when the sheet opened: who went in (in the order tapped) and who came out. */
 export function netSub(before: string[], after: string[]): { ins: string[]; outs: string[] } {
   return { ins: after.filter((id) => !before.includes(id)), outs: before.filter((id) => !after.includes(id)) };

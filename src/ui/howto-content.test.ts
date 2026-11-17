@@ -41,7 +41,9 @@ describe('how-to content', () => {
     expect(t).toMatch(/Subbing is optional: a bench player who makes a play goes on the floor/);
     expect(t).toMatch(/tap #22, then #22 checks in/);
     for (const q of ['Who went out?', 'Who came in?', "Who's on the floor?"]) expect(t).toContain(q);
-    expect(t).toMatch(/likely marks a guess/);
+    expect(t).toMatch(/longest without a play/);
+    expect(t).toMatch(/only a hint/);
+    expect(t).not.toMatch(/likely/);
     expect(t).toMatch(/Subs change no score or count/);
   });
   it('makes both rosters optional and keeps only ours', () => {

@@ -71,7 +71,7 @@ test('How-to screenshots', async ({ page }) => {
   await app.score('Player Seven', '+2');
   await app.subButton('Home').click();
   await expect(dialog()).toHaveAccessibleName('Who went out?');
-  await expect(dialog().getByText('likely', { exact: true })).toBeVisible();
+  await expect(dialog().getByText('longest without a play', { exact: true })).toBeVisible();
   await expect(dialog().getByText('just in', { exact: true })).toBeVisible();
   await shot('subs');
 });

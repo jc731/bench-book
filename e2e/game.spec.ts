@@ -925,7 +925,7 @@ test('deliberate sub: #15 checks in for #10 in 3 taps; the toast names both and 
   await expect(app.subButton('Home')).toHaveText('Sub');
 });
 
-test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" with #15 "just in" and a "likely" tag; one tap on the likely player closes it at 5', async ({ page }) => {
+test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" with #15 "just in" and a quiet "longest without a play" hint; one tap on that player closes it at 5', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   const sheet = page.getByRole('dialog');
@@ -936,13 +936,22 @@ test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" wit
   await expect(sheet).toHaveAccessibleName('Who went out?');
   // The floor, all six, and nobody from the bench.
   expect(await sheet.getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))).toEqual([
-    '#10 Player 1', '#11 Player 2, likely', '#12 Player 3', '#13 Player 4', '#14 Player 5', '#15 Player 6, just in',
+    '#10 Player 1', '#11 Player 2, longest without a play', '#12 Player 3', '#13 Player 4', '#14 Player 5', '#15 Player 6, just in',
   ]);
-  // The tags are information: gray.
-  for (const tag of ['likely', 'just in']) {
-    await expect(sheet.getByText(tag, { exact: true })).toHaveCount(1);
-    await expect(sheet.getByText(tag, { exact: true })).toHaveClass(/text-slate-/);
+  await expect(sheet.getByText('likely')).toHaveCount(0);
+  // Both are information: gray. "just in" is a fact, a boxed tag; the suggestion is only a hint, plain
+  // lighter text with no box, still readable (4.5:1) on the pressed row.
+  const justIn = sheet.getByText('just in', { exact: true });
+  const hint = sheet.getByText('longest without a play', { exact: true });
+  for (const tag of [justIn, hint]) {
+    await expect(tag).toHaveCount(1);
+    await expect(tag).toHaveClass(/text-slate-/);
   }
+  await expect(justIn).toHaveClass(/border/);
+  await expect(justIn).toHaveClass(/font-semibold/);
+  await expect(hint).not.toHaveClass(/border/);
+  await expect(hint).not.toHaveClass(/font-semibold/);
+  expect(await contrast(hint)).toBeGreaterThanOrEqual(4.5);
   await expect(sheet).not.toContainText('Done');
   await subRow(page, 11).click();
   await expect(sheet).toHaveCount(0);
