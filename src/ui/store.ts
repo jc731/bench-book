@@ -40,7 +40,8 @@ export function getStorage(): { storage: Storage; persistent: boolean } {
 
 export function useGameStore() {
   const [{ storage, persistent }] = useState(getStorage);
-  const keys = storageKeys(demoActive());
+  // Read once: demo mode comes from the page URL, and a new keys object each render would rebuild `commit`.
+  const [keys] = useState(() => storageKeys(demoActive()));
   const state = useRef<GameState>({ game: loadGame(storage, new Date(), keys), stack: [] });
   const [game, setGame] = useState<Game | null>(state.current.game);
   const [saving, setSaving] = useState(persistent);
