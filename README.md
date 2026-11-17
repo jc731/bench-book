@@ -131,6 +131,21 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   Design note: the 0.9 critics rejected drag for single subs (hard to discover, and it fights the
   bench's scrolling), and "Who's on the floor?" already toggles several players at once, so the
   design should start from what a real game shows that sheet missing.
+- **0.9.x: from the 0.9.0 audit and persona reviews** (2026-11-17; check against tonight's game):
+  - Cards regroup after every sub (three reviewers): the incoming player could take the outgoing
+    player's slot instead.
+  - "Who's on the floor?": a tapped player stays under the old heading (audit F3, first-timer).
+  - A sub that belongs to an earlier quarter has no home: adding a missed foul from the check puts
+    the player on the floor now (audit F1). The check's Add play could ask who went out.
+  - A new opposing player can only be added after picking a play (audit F2).
+  - With 11+ players, nothing hints that the bench scrolls; cut-off cards look like a glitch.
+  - "Stop asking this game" sits beside No number and can only be undone right away.
+  - Explain the bonus and amber team fouls in the How-to; say the first five start on Setup;
+    "Full: 3" doesn't say left or used; two Save buttons on the check with a play open.
+  - Plays CSV for spreadsheets: #0 and #00 merge in Excel; no date/opponent columns; explain `*`.
+  - Accessibility: brighter solid-card borders on the dark half; "pressed" rows in Who went out?
+    read wrong to a screen reader; 40 px timeout buttons; larger phone text pushes timeouts
+    below the fold.
 
 - **Explore: fewer taps per play.** Today a player's play is 2 taps (card, then play). Goal to
   test: an average of 1.25–1.5 taps per play across a real game (the owner's arbitrary target,
