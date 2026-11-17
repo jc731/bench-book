@@ -52,11 +52,12 @@ describe('starters', () => {
 
 describe('promotion', () => {
   test('a bench FG2 puts her on the floor without moving her card; amber until the next play', () => {
-    const g = add(game(), { type: 'FG2', playerId: 'h22' });
+    // #31, the last bench card: a regrouped layout would put her ahead of #22.
+    const g = add(game(), { type: 'FG2', playerId: 'h31' });
     const l = lineup(g, 'us');
-    expect(l.floor).toEqual([...STARTERS, 'h22']);
-    expect(l.bench).toEqual(['h31']);
-    expect(l.justIn).toBe('h22');
+    expect(l.floor).toEqual([...STARTERS, 'h31']);
+    expect(l.bench).toEqual(['h22']);
+    expect(l.justIn).toBe('h31');
     expect(l.layout).toEqual(home.map((p) => p.id));
     expect(l.playedYet).toBe(true);
     expect(l.changedUnseen).toBe(true);
@@ -134,6 +135,28 @@ describe('foul-out', () => {
     expect(l.outIds).toEqual(['h10']);
     expect(l.bench).toEqual(['h10', 'h22', 'h31']);
     expect(l.changedUnseen).toBe(true);
+    // Her card turns out in place: no regroup until a sub.
+    expect(l.layout).toEqual(home.map((p) => p.id));
+  });
+
+  test('a promoting foul that is also her fifth clears justIn', () => {
+    // #31 picks up four fouls (the first brings her on), is subbed off, then a fifth from the bench.
+    let g = game();
+    for (let i = 0; i < 4; i++) g = add(g, { type: 'FOUL', playerId: 'h31' });
+    g = sub(g, [], ['h31']);
+    g = add(g, { type: 'FOUL', playerId: 'h31' });
+    const l = lineup(g, 'us');
+    expect(l.outIds).toEqual(['h31']);
+    expect(l.floor).toEqual(STARTERS);
+    expect(l.justIn).toBeNull();
+  });
+
+  test('justIn clears when the promoted player later fouls out', () => {
+    let g = add(game(), { type: 'FG2', playerId: 'h22' });
+    for (let i = 0; i < 4; i++) g = add(g, { type: 'FOUL', playerId: 'h22' });
+    expect(lineup(g, 'us').justIn).toBe('h22');
+    g = add(g, { type: 'FOUL', playerId: 'h22' });
+    expect(lineup(g, 'us').justIn).toBeNull();
   });
 
   test('a TECH counts as a foul toward five; two techs is out', () => {
@@ -165,6 +188,12 @@ describe('subs', () => {
     expect(l.bench).toEqual(['h10', 'h31']);
     expect(l.layout).toEqual(['h4', 'h5', 'h7', 'h12', 'h22', 'h10', 'h31']);
     expect(l.changedUnseen).toBe(false);
+  });
+
+  test('a sub clears an amber set by a promotion', () => {
+    const g = add(game(), { type: 'FG2', playerId: 'h22' });
+    expect(lineup(g, 'us').changedUnseen).toBe(true);
+    expect(lineup(sub(g, [], ['h4']), 'us').changedUnseen).toBe(false);
   });
 
   test('a sub clears justIn and freezes the layout until the next sub', () => {

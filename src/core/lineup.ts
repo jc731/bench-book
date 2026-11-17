@@ -14,7 +14,7 @@ export interface Lineup {
   layout: string[];
   /** Players out on fouls (5 fouls, techs counting, or 2 techs), in roster order. */
   outIds: string[];
-  /** The last player promoted by a play since the last sub. */
+  /** The last player promoted by a play since the last sub; null once she fouls out. */
   justIn: string | null;
   /** The floor player marked "likely" in "Who went out?" (decision 10). Only a label. */
   suggestion: string | null;
@@ -120,6 +120,7 @@ export function lineup(g: Game, side: Side): Lineup {
         if (f >= 5 || t >= 2) {
           out.add(pid);
           floor = floor.filter((id) => id !== pid);
+          if (justIn === pid) justIn = null;
         }
       }
     }
