@@ -71,12 +71,12 @@ describe('their-side rows and labels', () => {
   });
   it('moves a play to the other team, clearing a stale player', () => {
     const e = g.events[0];
-    expect(editPatch(e, { ...draftOf(e), side: undefined, playerId: 'a' })).toEqual({ side: undefined, playerId: 'a' });
+    expect(editPatch(e, { ...draftOf(e), side: undefined, playerId: 'a' })).toStrictEqual({ side: undefined, playerId: 'a' });
     expect('side' in editPatch(e, { ...draftOf(e), side: undefined, playerId: 'a' })).toBe(true);
     const stale = editPatch(e, { ...draftOf(e), side: undefined });
     expect('playerId' in stale && stale.playerId === undefined).toBe(true);
     expect(editPatch(g.events[5], { ...draftOf(g.events[5]), side: 'them', playerId: undefined })).toEqual({ side: 'them' });
-    expect(editPatch(g.events[2], { ...draftOf(g.events[2]), side: undefined })).toEqual({ side: undefined });
+    expect(editPatch(g.events[2], { ...draftOf(g.events[2]), side: undefined })).toStrictEqual({ side: undefined });
   });
   it('labels a team move and needs a player pick after one', () => {
     const e = g.events[0];
