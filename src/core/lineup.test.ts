@@ -320,3 +320,28 @@ describe('recorded subs', () => {
     expect(l.floor.filter((id) => id === 'h22')).toHaveLength(1);
   });
 });
+
+describe('layoutFloor: how many of the layout were on the floor at the last regroup', () => {
+  test('five before any sub, or the whole roster when it has fewer', () => {
+    expect(lineup(game(), 'us').layoutFloor).toBe(5);
+    expect(lineup(game(home.slice(0, 3)), 'us').layoutFloor).toBe(3);
+  });
+  test('a promotion does not change it: the layout is frozen until a sub', () => {
+    expect(lineup(add(game(), { type: 'FG2', playerId: 'h22' }), 'us').layoutFloor).toBe(5);
+  });
+  test('the floor size at the last sub, whether 6 or 4', () => {
+    const six = sub(game(), ['h22'], []);
+    expect(lineup(six, 'us').layoutFloor).toBe(6);
+    expect(lineup(six, 'us').layout.slice(0, 6)).toEqual([...STARTERS, 'h22']);
+    const four = sub(game(), [], ['h4']);
+    expect(lineup(four, 'us').layoutFloor).toBe(4);
+    expect(lineup(four, 'us').layout.slice(0, 4)).toEqual(['h5', 'h7', 'h10', 'h12']);
+  });
+  test('a foul-out after the sub leaves it as the sub set it', () => {
+    let g = sub(game(), ['h22'], []);
+    for (let i = 0; i < 5; i++) g = add(g, { type: 'FOUL', playerId: 'h4' });
+    const l = lineup(g, 'us');
+    expect(l.floor).toHaveLength(5);
+    expect(l.layoutFloor).toBe(6);
+  });
+});

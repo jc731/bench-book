@@ -125,7 +125,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, lineup, period, onPic
         type="button"
         class={`min-h-15 min-w-0 rounded-lg text-left ${box}`}
         onClick={() => onPick(p)}
-        aria-label={`${`#${p.number} ${p.name}`.trim()}, ${countText(points, 'point', 'points')}, ${countText(pf, 'foul', 'fouls')}${state === 'out' ? ', out' : ''}`}
+        aria-label={`${`#${p.number} ${p.name}`.trim()}, ${countText(points, 'point', 'points')}, ${countText(pf, 'foul', 'fouls')}${state === 'out' ? ', out' : ghost ? ', bench' : ''}`}
       >
         <div class={`flex items-baseline justify-between gap-1 ${dim}`}>
           <span class="text-2xl font-bold leading-none">{p.number}</span>
@@ -165,11 +165,11 @@ export function TeamHalf({ side, tone, isUs, roster, team, lineup, period, onPic
       <div class={`flex flex-1 flex-col gap-1.5 px-1.5 pb-1.5 ${split ? 'min-h-0' : ''}`}>
         {split ? (
           <>
-            {/* The first five of the layout (the starters, or the floor at the last sub) stay in view. */}
-            <div class="shrink-0">{grid(ordered.slice(0, 5))}</div>
+            {/* The floor as the layout was frozen (the starters, or the floor at the last sub, 5 or not) stays in view. */}
+            <div class="shrink-0">{grid(ordered.slice(0, lineup.layoutFloor))}</div>
             {/* A promoted player stays where she is in here until the next sub regroups the half. */}
             <div class="min-h-0 flex-1 overflow-y-auto" data-testid="bench-region">
-              {grid(ordered.slice(5))}
+              {grid(ordered.slice(lineup.layoutFloor))}
             </div>
           </>
         ) : (

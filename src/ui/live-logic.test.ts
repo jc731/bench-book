@@ -262,7 +262,7 @@ describe('lineup toasts', () => {
 
 describe('the Sub button', () => {
   const base: Lineup = {
-    floor: ['a', 'b', 'c', 'd', 'e'], bench: ['f'], layout: ['a', 'b', 'c', 'd', 'e', 'f'], outIds: [], justIn: null,
+    floor: ['a', 'b', 'c', 'd', 'e'], bench: ['f'], layout: ['a', 'b', 'c', 'd', 'e', 'f'], layoutFloor: 5, outIds: [], justIn: null,
     suggestion: 'a', tracked: true, playedYet: true, changedUnseen: false,
   };
   const six = ['a', 'b', 'c', 'd', 'e', 'f'];

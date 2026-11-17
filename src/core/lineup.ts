@@ -12,6 +12,12 @@ export interface Lineup {
   bench: string[];
   /** Every roster id in display order, frozen at the last sub (decision 11). */
   layout: string[];
+  /**
+   * How many of `layout`'s leading ids were on the floor when it was frozen: the starters (five, or the
+   * whole roster if smaller) before any sub, else the floor's size at the last sub, which need not be 5.
+   * Promotions and foul-outs since don't change it. The live screen keeps these cards in view.
+   */
+  layoutFloor: number;
   /** Players out on fouls (5 fouls, techs counting, or 2 techs), in roster order. */
   outIds: string[];
   /** The last player promoted by a play since the last sub; null once she fouls out. */
@@ -80,6 +86,7 @@ export function lineup(g: Game, side: Side): Lineup {
 
   let floor = rosterIds.slice(0, 5);
   let layout: string[] | null = null; // null until the first sub: roster order
+  let layoutFloorIds: string[] = [...floor]; // the floor when the layout was frozen
   const fouls = new Map<string, number>();
   const techs = new Map<string, number>();
   const out = new Set<string>();
@@ -98,6 +105,7 @@ export function lineup(g: Game, side: Side): Lineup {
         if (onRoster.has(id) && !out.has(id) && !floor.includes(id)) floor.push(id);
       }
       layout = [...floor, ...benchNow()];
+      layoutFloorIds = [...floor];
       justIn = null;
       changedUnseen = false;
       return;
@@ -136,6 +144,7 @@ export function lineup(g: Game, side: Side): Lineup {
     floor,
     bench: benchNow(),
     layout: fullLayout,
+    layoutFloor: layoutFloorIds.filter((id) => onRoster.has(id)).length,
     outIds,
     justIn,
     suggestion: suggestFrom(floor, outIds, lastPlay, fullLayout),

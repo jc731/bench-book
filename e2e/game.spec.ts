@@ -658,6 +658,32 @@ test('both halves: Home left and light, Away right and dark, US tag on our side'
   }
 });
 
+/**
+ * Writes subs into the saved game and reloads (Task 5 records them from the sheet). Each takes roster
+ * indexes in and out, for our team (`us`) or theirs (`them`), after every play so far.
+ */
+async function seedSubs(page: Page, subs: { side: 'us' | 'them'; ins: number[]; outs: number[] }[]) {
+  await page.evaluate((list) => {
+    const g = JSON.parse(localStorage.getItem('benchbook:game')!);
+    const order = Math.max(-1, ...g.events.map((e: { order: number }) => e.order)) + 1;
+    g.subs = list.map((s, k) => {
+      const roster: { id: string }[] = s.side === 'us' ? g.roster : g.oppRoster;
+      return { id: `s${k}`, side: s.side, ins: s.ins.map((i) => roster[i].id), outs: s.outs.map((i) => roster[i].id), order: order + k, period: 1, enteredAt: new Date().toISOString() };
+    });
+    localStorage.setItem('benchbook:game', JSON.stringify(g));
+  }, subs);
+  await page.reload();
+}
+
+/** The alpha (0-255) of an element's own background fill. */
+const fillAlpha = (l: Locator) =>
+  l.evaluate((el) => {
+    const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+    ctx.fillStyle = getComputedStyle(el).backgroundColor;
+    ctx.fillRect(0, 0, 1, 1);
+    return ctx.getImageData(0, 0, 1, 1).data[3];
+  });
+
 /** Every card number in a half, in display order. */
 const cardOrder = (page: Page, side: Side) =>
   ui(page).half(side).getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => /^#([^\s,]+)/.exec(el.getAttribute('aria-label')!)![1]));
@@ -683,6 +709,11 @@ test('the floor: first five solid, the rest ghosted with "bench"', async ({ page
         return box.right - parseFloat(borderRightWidth) - parseFloat(paddingRight) - tag.right;
       })).toBeGreaterThanOrEqual(0);
     }
+    // A bench card says so to screen readers too, and is ghosted: no fill of its own. A floor card is solid.
+    const benchCard = app.half(side).getByRole('button', { name: new RegExp(`^#${first + 5}(,| )`) });
+    await expect(benchCard).toHaveAccessibleName(new RegExp(`^#${first + 5}.*, 0 points, 0 fouls, bench$`));
+    expect(await fillAlpha(benchCard)).toBe(0);
+    expect(await fillAlpha(app.half(side).getByRole('button', { name: new RegExp(`^#${first}(,| )`) }))).toBe(255);
     // Before the team's first play its Sub button reads Starters, in gray.
     await expect(app.subButton(side)).toHaveText('Starters');
     await expect(app.subButton(side)).not.toHaveClass(/amber/);
@@ -787,6 +818,23 @@ test('12 players: the floor stays in view while the bench scrolls', async ({ pag
   expect(await scrolls(home)).toBe(false);
 });
 
+test('12 players: the fixed block holds the floor as the last sub left it, 6 on or 4 on', async ({ page }) => {
+  for (const [ins, outs, floor] of [[[5], [], nums(10, 6)], [[], [0], nums(11, 4)]] as const) {
+    await twoTeamGame(page, { ours: 12, theirs: 3 });
+    const app = ui(page);
+    await seedSubs(page, [{ side: 'us', ins: [...ins], outs: [...outs] }]);
+    const home = app.half('Home');
+    const region = home.getByTestId('bench-region');
+    const inRegion = await region.getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => /^#([^\s,]+)/.exec(el.getAttribute('aria-label')!)![1]));
+    const all = await cardOrder(page, 'Home');
+    // The cards outside the scroll region are exactly the floor, in the order the sub regrouped them.
+    expect(all.slice(0, all.length - inRegion.length), `${floor.length} on`).toEqual([...floor]);
+    expect(await app.floorOf('Home')).toEqual([...floor]);
+    expect(inRegion.every((n) => !floor.includes(n))).toBe(true);
+    await page.evaluate(() => localStorage.clear());
+  }
+});
+
 test("a bench card's contrast: the bench tag and the ghost border are readable on both tones", async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   for (const [side, n] of [['Home', '16'], ['Away', '56']] as const) {
@@ -811,16 +859,8 @@ test('a benched player in foul trouble: her ghost card keeps a readable amber bo
     const side: Side = n === '10' ? 'Home' : 'Away';
     for (let i = 0; i < 4; i++) await tap(page, app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) }), 'Foul');
   }
-  // Task 5 records subs from the sheet; until then one is written into the saved game: the 6th in for the 1st, each team.
-  await page.evaluate(() => {
-    const g = JSON.parse(localStorage.getItem('benchbook:game')!);
-    const order = Math.max(...g.events.map((e: { order: number }) => e.order)) + 1;
-    const sub = (side: string, roster: { id: string }[], k: number) =>
-      ({ id: `s-${side}`, side, ins: [roster[5].id], outs: [roster[0].id], order: order + k, period: 1, enteredAt: new Date().toISOString() });
-    g.subs = [sub('us', g.roster, 0), sub('them', g.oppRoster, 1)];
-    localStorage.setItem('benchbook:game', JSON.stringify(g));
-  });
-  await page.reload();
+  // The 6th in for the 1st, each team.
+  await seedSubs(page, [{ side: 'us', ins: [5], outs: [0] }, { side: 'them', ins: [5], outs: [0] }]);
   for (const [side, n] of [['Home', '10'], ['Away', '50']] as const) {
     const c = app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
     await expect(c.getByText('bench', { exact: true })).toBeVisible();
