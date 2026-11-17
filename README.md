@@ -116,6 +116,12 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 - Cross-scorer check at halftime and end of game: compare what you recorded with the other
   team's scorer and talk through any difference.
 - Tablet-size release test.
+- Notifications: alerts for timeouts remaining, a player in foul trouble or fouled out, the team
+  fouls reaching the bonus, and so on. Open question for the design: on-device alerts for the
+  scorer, or push notifications to other people's phones (a coach, a parent), which would need
+  a server the app doesn't have today.
+- Share: post the score, or the stats after the game, to social media, so a team can send results
+  out from the app (the phone's share sheet, with a text or image summary).
 
 **Much later:**
 
