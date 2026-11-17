@@ -985,3 +985,45 @@ test('a timeout at zero is guarded: grayed, a warning, Cancel records nothing, T
   await app.timeout('Full', 'Home');
   await expect(app.half('Home').getByRole('button', { name: 'Full: 2', exact: true })).toBeVisible();
 });
+
+test('fix sheet: a play entered on the wrong team moves to the other team', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  await tap(page, app.half('Away').getByRole('button', { name: /^#50,/ }), '+2');
+  await expect(page.getByLabel('Score Home 0, Away 2')).toBeVisible();
+  await app.openLog();
+  const row = app.logRow(page.locator('body'), '#50 (Away) · +2');
+  await row.click();
+  const sheet = page.getByRole('dialog');
+  // Team sits above Player; Away is the current team.
+  await expect(sheet.getByRole('group', { name: 'Team' }).getByRole('button', { name: 'Away', exact: true })).toHaveClass(/bg-white/);
+  await sheet.getByRole('group', { name: 'Team' }).getByRole('button', { name: 'Home', exact: true }).click();
+  // The old player is gone with the old team: Save waits for a pick, and No number is offered.
+  await expect(sheet.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+  await expect(sheet.getByRole('group', { name: 'Player' }).getByRole('button', { name: 'No number', exact: true })).toBeVisible();
+  await sheet.getByRole('group', { name: 'Player' }).getByRole('button', { name: /^#10 Player 1/ }).click();
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(app.logRow(page.locator('body'), '#10 Player 1 (Home) · +2')).toBeVisible();
+  await expect(page.getByTestId('feedback-text')).toHaveText('Edited #50 (Away) +2 → #10 (Home) +2');
+  await app.back();
+  await expect(page.getByLabel('Score Home 2, Away 0')).toBeVisible();
+  // One Undo reverts the whole team move.
+  await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.getByLabel('Score Home 0, Away 2')).toBeVisible();
+});
+
+test('fix sheet: a no-number play reads as the team and can move with No number', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  await app.opp(2);
+  await app.openLog();
+  await app.logRow(page.locator('body'), 'Away · +2').click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet.getByRole('group', { name: 'Player' }).getByRole('button', { name: 'No number', exact: true })).toHaveClass(/bg-white/);
+  await sheet.getByRole('group', { name: 'Team' }).getByRole('button', { name: 'Home', exact: true }).click();
+  await sheet.getByRole('group', { name: 'Player' }).getByRole('button', { name: 'No number', exact: true }).click();
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(app.logRow(page.locator('body'), 'Home · +2')).toBeVisible();
+  await app.back();
+  await expect(page.getByLabel('Score Home 2, Away 0')).toBeVisible();
+});

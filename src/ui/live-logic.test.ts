@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  TAKE_ANYWAY, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
+  TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
   stripPeriodText, undoAriaLabel,
 } from './live-logic';
 import { outReason } from './live-logic';
@@ -86,6 +86,18 @@ describe('status and toast wording', () => {
     expect(foulLabel('TECH', { player: { p, fouls: 2, techs: 1 }, teamFouls: 1, tag: 'Home' })).toBe('#22 Player One (Home) tech foul — 2nd tech, out');
     expect(foulLabel('TECH', { player: { p, fouls: 4, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 Player One (Home) tech foul — 5th, out');
     expect(foulLabel('FOUL', { player: { p, fouls: 5, techs: 0 }, teamFouls: 1, tag: 'Home' })).toBe('#22 (Home) Foul');
+  });
+  it('names the team on the Away side: out and bonus paths', () => {
+    expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 1, tag: 'Away' })).toBe('#22 Player One (Away) foul — 5th, out');
+    expect(foulLabel('TECH', { player: { p, fouls: 2, techs: 1 }, teamFouls: 1, tag: 'Away' })).toBe('#22 Player One (Away) tech foul — 2nd tech, out');
+    expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 4, tag: 'Away' })).toBe('#22 Player One (Away) foul — 5th, out — bonus');
+    expect(foulLabel('FOUL', { player: { p, fouls: 1, techs: 0 }, teamFouls: 4, tag: 'Away' })).toBe('#22 (Away) Foul — bonus');
+    expect(benchTechLabel('Away')).toBe('Away bench tech');
+  });
+  it('composes #n name (tag) in one place', () => {
+    expect(namedWho(p, 'Away')).toBe('#22 Player One (Away)');
+    expect(namedWho({ ...p, name: '' }, 'Home')).toBe('#22 (Home)');
+    expect(namedWho(null, 'Away')).toBe('Away');
   });
   it('adds "— bonus" on the 5th team foul only', () => {
     expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 4, tag: 'Home' })).toBe('Home bench tech — bonus');

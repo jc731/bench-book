@@ -1,7 +1,7 @@
 import { periodLabel } from '../core/periods';
 import { editEvent, moveFrom, orderedEvents, rosterOf, sideName, sideOf } from '../core/events';
 import type { EventType, Game, GameEvent, TimeoutKind } from '../core/types';
-import { benchTechLabel, oppLabel, playButtonText, playLabel, timeoutLabel, who, type PlayType } from './live-logic';
+import { benchTechLabel, oppLabel, playButtonText, namedWho, playLabel, timeoutLabel, who, type PlayType } from './live-logic';
 
 export const PLAY_TYPES: PlayType[] = ['FG2', 'FG3', 'FTM', 'FTX', 'FOUL', 'TECH'];
 const TIMEOUT_KINDS: TimeoutKind[] = ['full', 'thirty', 'ot'];
@@ -16,6 +16,7 @@ export function eventLabel(g: Game, e: GameEvent): string {
   if (e.type === 'BENCH_TECH') return benchTechLabel(tag);
   if (e.type === 'TIMEOUT') return timeoutLabel(e.timeoutKind ?? 'full', tag);
   if (e.type === 'OPP_PTS') return oppLabel(e.oppPoints ?? 2);
+  if (e.playerId === undefined) return playLabel(e.type as PlayType, who(null, tag));
   const p = rosterOf(g, sideOf(e)).find((x) => x.id === e.playerId);
   return playLabel(e.type as PlayType, who(p ?? { id: '', number: '?', name: '', pos: '' }, tag));
 }
@@ -23,9 +24,11 @@ export function eventLabel(g: Game, e: GameEvent): string {
 /** Log row text: `#4 Player One (Home) · +2`; the name is dropped when blank. */
 export function eventRowText(g: Game, e: GameEvent): string {
   if (!isPlayType(e.type)) return eventLabel(g, e);
+  const tag = sideName(g, sideOf(e));
   const p = rosterOf(g, sideOf(e)).find((x) => x.id === e.playerId);
-  const name = p ? `#${p.number} ${p.name}`.trim() : '#?';
-  return `${name} (${sideName(g, sideOf(e))}) · ${playButtonText(e.type)}`;
+  // No number at all reads as the team (`Away · +2`); a number the roster lacks keeps its `#?`.
+  const name = e.playerId === undefined ? tag : namedWho(p ?? { id: '', number: '?', name: '', pos: '' }, tag);
+  return `${name} · ${playButtonText(e.type)}`;
 }
 
 export interface PeriodGroup {
@@ -64,16 +67,25 @@ export function timeoutKindsFor(e: GameEvent): TimeoutKind[] {
 export interface EditDraft {
   type: EventType;
   playerId?: string;
+  /** Absent means ours, as on the event. */
+  side?: 'them';
   period: number;
   timeoutKind?: TimeoutKind;
   oppPoints?: 1 | 2 | 3;
+  /** UI only: the team was just switched and no player (or No number) is chosen yet. Not saved. */
+  unpicked?: boolean;
+}
+
+/** Save is held back after a team switch until a player or No number is chosen. */
+export function canSave(d: EditDraft): boolean {
+  return !d.unpicked;
 }
 
 export function draftOf(e: GameEvent): EditDraft {
-  return { type: e.type, playerId: e.playerId, period: e.period, timeoutKind: e.timeoutKind, oppPoints: e.oppPoints };
+  return { type: e.type, playerId: e.playerId, side: e.side, period: e.period, timeoutKind: e.timeoutKind, oppPoints: e.oppPoints };
 }
 
-export type EditPatch = Partial<Pick<GameEvent, 'type' | 'playerId' | 'period' | 'timeoutKind' | 'oppPoints'>>;
+export type EditPatch = Partial<Pick<GameEvent, 'type' | 'playerId' | 'side' | 'period' | 'timeoutKind' | 'oppPoints'>>;
 
 /**
  * The fields that differ from the event, plus an explicit `undefined` for any field the final
@@ -83,9 +95,16 @@ export function editPatch(e: GameEvent, d: EditDraft): EditPatch {
   const patch: EditPatch = {};
   if (d.type !== e.type) patch.type = d.type;
   if (d.period !== e.period) patch.period = d.period;
+  // Every type but a legacy Opp +N belongs to a team; moving one flips `side`.
+  const sided = d.type !== 'OPP_PTS';
+  const sideChanged = sided && d.side !== e.side;
+  if (sideChanged) patch.side = d.side;
+  else if (!sided && e.side !== undefined) patch.side = undefined;
   const player = isPlayType(d.type);
   if (player) {
+    // A player id belongs to one roster, so an unchanged id after a team move is stale.
     if (d.playerId !== e.playerId) patch.playerId = d.playerId;
+    else if (sideChanged && e.playerId !== undefined) patch.playerId = undefined;
   } else if (e.playerId !== undefined) patch.playerId = undefined;
   if (d.type === 'TIMEOUT') {
     if (d.timeoutKind !== e.timeoutKind) patch.timeoutKind = d.timeoutKind;

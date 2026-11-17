@@ -7,7 +7,7 @@ import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, TAKE_ANYWAY, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, who, reconcileBanner,
+  BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, who, reconcileBanner,
   outReason, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
@@ -238,7 +238,7 @@ export function Live({ store }: { store: GameStore }) {
         <EventSheet
           player={picked.p}
           // Titled with the team, as the toasts are: `#14 Name (Away)`, or `Away` for + Play.
-          title={picked.p ? `${`#${picked.p.number} ${picked.p.name}`.trim()} (${sideName(game, picked.side)})` : sideName(game, picked.side)}
+          title={namedWho(picked.p, sideName(game, picked.side))}
           out={outReason(lineOf(picked))}
           toast={toast === sheetOpenedWith.current ? null : toast}
           onPlay={play}

@@ -242,8 +242,8 @@ export function ui(page: Page, ours: Side = 'Home') {
     logSection: (label: string) => page.getByRole('region', exact(label)),
     /** A Log row's text: `#44 Player Seven · +2`. */
     playText: (name: Name, play: '+2' | '+3') => `#${numberOf(name)} ${name} (Home) · ${play}`,
-    /** A Log row for the other team's no-number play from opp(n). Task 9 gives these rows their team name. */
-    oppText: (n: 1 | 2 | 3) => `#? (${other(ours)}) · ${n === 1 ? 'FT made' : `+${n}`}`,
+    /** A Log row for the other team's no-number play from opp(n): the team name, then the play. */
+    oppText: (n: 1 | 2 | 3) => `${other(ours)} · ${n === 1 ? 'FT made' : `+${n}`}`,
     /** The Log row starting with `text` (an "edited" tag may follow it). */
     logRow: (scope: Locator, text: string) =>
       scope.getByRole('button', { name: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }),

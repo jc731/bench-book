@@ -28,6 +28,11 @@ export function who(p: Player | null, tag: TeamTag): string {
   return p ? `#${p.number} (${tag})` : tag;
 }
 
+/** The full name form: `#4 Player One (Home)`, `#14 (Away)` when unnamed, or just the tag with no player. */
+export function namedWho(p: Player | null, tag: TeamTag): string {
+  return p ? `${`#${p.number} ${p.name}`.trim()} (${tag})` : tag;
+}
+
 /** Feedback / undo label for a player entry, e.g. `#4 (Home) +2`. */
 export function playLabel(type: PlayType, whoText: string): string {
   return `${whoText} ${PLAY_TEXT[type]}`;
@@ -136,7 +141,7 @@ export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext
     label = playLabel(type, who(null, ctx.tag));
   } else {
     const { p, fouls, techs } = ctx.player;
-    const named = `#${p.number} ${p.name}`.trim() + ` (${ctx.tag})`;
+    const named = namedWho(p, ctx.tag);
     const kind = type === 'TECH' ? 'tech foul' : 'foul';
     const out = fouls + 1 === 5 ? '5th, out' : type === 'TECH' && techs + 1 === 2 ? '2nd tech, out' : null;
     label = out ? `${named} ${kind} — ${out}` : playLabel(type, who(p, ctx.tag));

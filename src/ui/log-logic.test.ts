@@ -3,7 +3,7 @@ import { appendEvent, moveFrom, newGame } from '../core/events';
 import type { EventDraft, Game, GameEvent } from '../core/types';
 import { applyUndo, applyUpdate } from './game-state';
 import {
-  addedLabel, alsoMoveText, compatibleTypes, draftOf, editLabel, editPatch, editSave, editTitle, eventRowText,
+  addedLabel, alsoMoveText, canSave, eventLabel, compatibleTypes, draftOf, editLabel, editPatch, editSave, editTitle, eventRowText,
   followersCount, groupByPeriod, moveFromCount, moveFromLabel, playsCount, resumeText,
 } from './log-logic';
 
@@ -41,6 +41,48 @@ describe('eventRowText', () => {
     expect(eventRowText(g, g.events[2])).toBe('Opp +3');
     expect(eventRowText(g, g.events[3])).toBe('Home timeout (Full)');
     expect(eventRowText(g, g.events[4])).toBe('Home bench tech');
+  });
+});
+
+describe('their-side rows and labels', () => {
+  const opp = [{ id: 'x', number: '14', name: '', pos: '' }, { id: 'y', number: '3', name: 'Guest Three', pos: '' }];
+  const gg = { ...newGame(info, roster, NOW, opp), currentPeriod: 3 };
+  const g = [
+    { type: 'FG2', playerId: 'x', side: 'them' },
+    { type: 'FG2', side: 'them' },
+    { type: 'BENCH_TECH', side: 'them' },
+    { type: 'TIMEOUT', timeoutKind: 'thirty', side: 'them' },
+    { type: 'FG3', playerId: 'y', side: 'them' },
+    { type: 'FG2' },
+  ].reduce((acc, d) => appendEvent(acc, d as EventDraft, NOW), gg);
+  it('names the team on every row', () => {
+    expect(eventRowText(g, g.events[0])).toBe('#14 (Away) · +2');
+    expect(eventRowText(g, g.events[4])).toBe('#3 Guest Three (Away) · +3');
+    expect(eventRowText(g, g.events[1])).toBe('Away · +2');
+    expect(eventRowText(g, g.events[2])).toBe('Away bench tech');
+    expect(eventRowText(g, g.events[3])).toBe('Away timeout (30s)');
+    expect(eventRowText(g, g.events[5])).toBe('Home · +2');
+  });
+  it('labels toasts the same way', () => {
+    expect(eventLabel(g, g.events[0])).toBe('#14 (Away) +2');
+    expect(eventLabel(g, g.events[1])).toBe('Away +2');
+    expect(eventLabel(g, g.events[2])).toBe('Away bench tech');
+    expect(eventLabel(g, g.events[3])).toBe('Away timeout (30s)');
+  });
+  it('moves a play to the other team, clearing a stale player', () => {
+    const e = g.events[0];
+    expect(editPatch(e, { ...draftOf(e), side: undefined, playerId: 'a' })).toEqual({ side: undefined, playerId: 'a' });
+    expect('side' in editPatch(e, { ...draftOf(e), side: undefined, playerId: 'a' })).toBe(true);
+    const stale = editPatch(e, { ...draftOf(e), side: undefined });
+    expect('playerId' in stale && stale.playerId === undefined).toBe(true);
+    expect(editPatch(g.events[5], { ...draftOf(g.events[5]), side: 'them', playerId: undefined })).toEqual({ side: 'them' });
+    expect(editPatch(g.events[2], { ...draftOf(g.events[2]), side: undefined })).toEqual({ side: undefined });
+  });
+  it('labels a team move and needs a player pick after one', () => {
+    const e = g.events[0];
+    expect(editLabel(g, e, { side: undefined, playerId: 'a' })).toBe('Edited #14 (Away) +2 → #4 (Home) +2');
+    expect(canSave(draftOf(e))).toBe(true);
+    expect(canSave({ ...draftOf(e), unpicked: true })).toBe(false);
   });
 });
 

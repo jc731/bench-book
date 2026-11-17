@@ -1,13 +1,13 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
-import { deleteEvent } from '../core/events';
+import { deleteEvent, homeSide, rosterOf, sideOf } from '../core/events';
 import { periodLabel } from '../core/periods';
-import type { EventType, GameEvent, Player, TimeoutKind } from '../core/types';
+import type { EventType, GameEvent, Player, Side, TimeoutKind } from '../core/types';
 import { Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
-import { BENCH_TECH_TEXT, feedbackLine, playButtonText, timeoutKindText, type PlayType } from './live-logic';
+import { BENCH_TECH_TEXT, NO_NUMBER, feedbackLine, playButtonText, timeoutKindText, type PlayType } from './live-logic';
 import {
-  alsoMoveText, compatibleTypes, draftOf, editSave, editTitle, eventLabel, eventRowText, followersCount, groupByPeriod,
+  alsoMoveText, canSave, compatibleTypes, draftOf, editSave, editTitle, eventLabel, eventRowText, followersCount, groupByPeriod,
   isPlayType, timeoutKindsFor, type EditDraft,
 } from './log-logic';
 import type { GameStore } from './store';
@@ -153,6 +153,18 @@ function EditSheet({ game, event, draft, setDraft, alsoMove, setAlsoMove, onSave
   const kinds = timeoutKindsFor(event);
   const periods = Array.from({ length: game.currentPeriod }, (_, i) => i + 1);
   const followers = followersCount(game, event.id);
+  // Switching team drops the old team's player; going back to the play's own team restores it.
+  const draftSide: Side = draft.side === 'them' ? 'them' : 'us';
+  const pickTeam = (side: Side) => {
+    if (side === draftSide) return;
+    const own = side === sideOf(event);
+    setDraft({
+      ...draft,
+      side: side === 'them' ? 'them' : undefined,
+      playerId: own ? event.playerId : undefined,
+      unpicked: isPlayType(event.type) && !own,
+    });
+  };
   const typeText = (t: EventType) => (t === 'BENCH_TECH' ? BENCH_TECH_TEXT : t === 'TIMEOUT' ? 'Timeout' : t === 'OPP_PTS' ? 'Opp' : playButtonText(t as PlayType));
   return (
     <Sheet title={editTitle(game, event)} onClose={onClose}>
@@ -184,11 +196,30 @@ function EditSheet({ game, event, draft, setDraft, alsoMove, setAlsoMove, onSave
             ))}
           </Group>
         )}
+        {event.type !== 'OPP_PTS' && (
+          <Group label="Team" cols="grid-cols-2">
+            {(['Home', 'Away'] as const).map((tag) => {
+              const side: Side = (tag === 'Home') === (homeSide(game) === 'us') ? 'us' : 'them';
+              return (
+                <button key={tag} type="button" class={`${btn} ${draftSide === side ? on : ''}`} onClick={() => pickTeam(side)}>
+                  {tag}
+                </button>
+              );
+            })}
+          </Group>
+        )}
         {isPlayType(event.type) && (
           <Group label="Player" cols="grid-cols-2">
-            {game.roster.map((p) => (
-              <PlayerButton key={p.id} p={p} selected={draft.playerId === p.id} onClick={() => setDraft({ ...draft, playerId: p.id })} />
+            {rosterOf(game, draftSide).map((p) => (
+              <PlayerButton key={p.id} p={p} selected={draft.playerId === p.id} onClick={() => setDraft({ ...draft, playerId: p.id, unpicked: false })} />
             ))}
+            <button
+              type="button"
+              class={`${btn} ${draft.playerId === undefined && !draft.unpicked ? on : ''}`}
+              onClick={() => setDraft({ ...draft, playerId: undefined, unpicked: false })}
+            >
+              {NO_NUMBER}
+            </button>
           </Group>
         )}
         {periods.length > 1 && (
@@ -216,7 +247,7 @@ function EditSheet({ game, event, draft, setDraft, alsoMove, setAlsoMove, onSave
       <div class="mt-3 flex gap-2">
         <button type="button" class="min-h-12 rounded-lg border border-red-400 px-4 font-semibold text-red-300" onClick={onDelete}>Delete</button>
         <button type="button" class="ml-auto min-h-12 rounded-lg border border-slate-400 px-5 font-semibold" onClick={onClose}>Cancel</button>
-        <button type="button" class="min-h-12 rounded-lg bg-white px-6 font-semibold text-slate-900" onClick={onSave}>Save</button>
+        <button type="button" class="min-h-12 rounded-lg bg-white px-6 font-semibold text-slate-900 disabled:opacity-40" disabled={!canSave(draft)} onClick={onSave}>Save</button>
       </div>
     </Sheet>
   );
