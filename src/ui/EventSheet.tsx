@@ -98,18 +98,19 @@ export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClo
           </button>
         </div>
       </div>
-      {/* Below everything else and apart from it, so it never sits where a play button was. Gray: an ordinary button. */}
-      {subRow && (
-        <div class="mt-3 border-t border-slate-600 pt-3">
-          <button
-            type="button"
-            class="min-h-11 w-full rounded-lg border border-slate-400 font-semibold text-slate-200 active:bg-slate-700"
-            onClick={subRow.onSub}
-          >
-            {subRow.text}
-          </button>
-        </div>
-      )}
+      {/* Below everything else and apart from it. Gray: an ordinary button. Its space is kept, hidden, when there
+          is no row (an untracked team, an out player, + Play), so the plays sit at one height on every sheet. */}
+      <div class={`mt-3 border-t border-slate-600 pt-3 ${subRow ? '' : 'invisible'}`} aria-hidden={subRow ? undefined : true}>
+        <button
+          type="button"
+          class="block min-h-11 w-full rounded-lg border border-slate-400 font-semibold text-slate-200 active:bg-slate-700"
+          disabled={!subRow}
+          tabIndex={subRow ? undefined : -1}
+          onClick={subRow?.onSub}
+        >
+          {subRow?.text ?? ''}
+        </button>
+      </div>
     </Sheet>
   );
 }

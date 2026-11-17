@@ -117,9 +117,17 @@ export function Live({ store }: { store: GameStore }) {
     setAsking(null);
     return null;
   };
-  /** One Sub per completed sub sheet; its toast is worded from the game the sub is applied to. */
+  /**
+   * One Sub per completed sub sheet; its toast is worded from the game the sub is applied to. A forgotten
+   * sub (6 on, one taken off) stores only the out, but its toast names the player who came in by playing:
+   * the label only, so a Log fix to her play still takes her off the floor.
+   */
   const recordSubs = (side: Side, ins: string[], outs: string[]) => {
-    update((g, now) => ({ game: recordSub(g, side, ins, outs, now), label: subLabel(g, side, ins, outs) }), '');
+    update((g, now) => {
+      const l = lineup(g, side);
+      const shown = ins.length === 0 && outs.length === 1 && l.floor.length === 6 && l.justIn && l.justIn !== outs[0] ? [l.justIn] : ins;
+      return { game: recordSub(g, side, ins, outs, now), label: subLabel(g, side, shown, outs) };
+    }, '');
     setSubbing(null);
   };
   /** The play sheet's sub row, for a tracked team's player who is not out. */

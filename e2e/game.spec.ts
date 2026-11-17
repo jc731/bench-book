@@ -899,7 +899,8 @@ test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" wit
   await subRow(page, 11).click();
   await expect(sheet).toHaveCount(0);
   expect(await app.floorOf('Home')).toEqual(['10', '12', '13', '14', '15']);
-  await app.expectToastUndo('Home floor updated');
+  // The toast names the swap: #15 came in by playing, #11 is who she replaced. The stored sub is only #11 out.
+  await app.expectToastUndo('#15 (Home) in for #11');
   await expect(app.subButton('Home')).toHaveText('Sub');
 });
 
@@ -971,10 +972,65 @@ test('Starters: before the first play the button reads Starters; changing two st
   await tap(page, homeCard(page, 12), '+2');
   await expect(app.subButton('Home')).toHaveText('Sub');
   expect(await app.floorOf('Home')).toEqual(['12', '13', '14', '15', '16']);
-  // Away ignores its Starters: the first five start.
-  await tap(page, awayCard(page, 50), '+2');
+  // Away ignores its Starters: the first five start, and a non-starter's play promotes her to a sixth.
   expect(await app.floorOf('Away')).toEqual(nums(50, 5));
-  await expect(app.subButton('Away')).toHaveText('Sub');
+  await tap(page, awayCard(page, 55), '+2');
+  expect(await app.floorOf('Away')).toEqual(nums(50, 6));
+  await expect(app.subButton('Away')).toHaveText('Sub · 6 on');
+});
+
+test('"Who\'s on the floor?": Done with 4 on records the 4; Done with no change records nothing', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  // Unchanged Starters, then unchanged Sub: Done closes and nothing is recorded.
+  await app.setFloor('Home', nums(10, 5));
+  await expect(page.getByTestId('feedback-text')).toHaveText('');
+  await expect(page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
+  await tap(page, homeCard(page, 11), '+2');
+  await app.setFloor('Home', nums(10, 5));
+  await app.expectToastUndo('#11 (Home) +2');
+  // Four on: Done takes it as it is.
+  await app.subButton('Home').click();
+  await subRow(page, 10).click();
+  await expect(sheet.getByTestId('sub-count')).toHaveText('4 on the floor');
+  await sheet.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  expect(await app.floorOf('Home')).toEqual(nums(11, 4));
+  await app.expectToastUndo('Home floor updated');
+  await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
+});
+
+test('the sub row: only on a tracked team\'s player who is not out, and the plays sit at one height on every play sheet', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 3 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  const plus2 = async () => (await sheet.getByRole('button', { name: '+2', exact: true }).boundingBox())!;
+  const subRows = sheet.getByRole('button', { name: /(checks in|comes out)$/ });
+  const close = async () => {
+    await sheet.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(sheet).toHaveCount(0);
+  };
+  // A tracked team's player: the row is there.
+  await homeCard(page, 10).click();
+  await expect(subRows).toHaveCount(1);
+  const at = await plus2();
+  await close();
+  // A team of five or fewer, and + Play: no row, and the plays where they were.
+  await awayCard(page, 50).click();
+  await expect(subRows).toHaveCount(0);
+  expect(await plus2(), 'untracked player').toEqual(at);
+  await close();
+  await app.half('Home').getByRole('button', { name: '+ Play', exact: true }).click();
+  await expect(subRows).toHaveCount(0);
+  expect(await plus2(), '+ Play').toEqual(at);
+  await close();
+  // An out player: no row.
+  for (let i = 0; i < 5; i++) await tap(page, homeCard(page, 10), 'Foul');
+  await homeCard(page, 10).click();
+  await expect(sheet.getByTestId('out-warning')).toBeVisible();
+  await expect(subRows).toHaveCount(0);
+  await close();
 });
 
 test('Undo after a sub restores the previous floor', async ({ page }) => {
