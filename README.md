@@ -131,6 +131,17 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   bench's scrolling), and "Who's on the floor?" already toggles several players at once, so the
   design should start from what a real game shows that sheet missing.
 
+- **Explore: fewer taps per play.** Today a player's play is 2 taps (card, then play). Goal to
+  test: an average of 1.25–1.5 taps per play across a real game (the owner's arbitrary target,
+  open to critique). Steps:
+  1. Research: gather 30–40 real play-by-play logs, ideally high school or junior high (college if
+     nothing else), or post-game box scores to backfill from.
+  2. Measure: the mix of play types (2s, 3s, FT made/missed pairs, fouls, techs, timeouts, subs),
+     per team and per quarter, as a chart of where the bulk of a scorer's taps go.
+  3. Design: only then, ideas that cut taps for the common plays, judged against that data and
+     against mis-taps (a 1-tap play is also a 1-tap mistake).
+  Trigger: the owner wants to start it; nothing measured says 2 taps is too slow yet.
+
 **After 1.0 (1.x):**
 
 - Cross-scorer check at halftime and end of game: compare what you recorded with the other
