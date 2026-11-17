@@ -68,6 +68,14 @@ when adding to the interface:
 | **Green** | Done and fine | Matched, Fixed, saved files |
 | **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards, a player's first three fouls, the bar |
 
+Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
+each kept at 3:1 or better for borders and dots and 4.5:1 for text:
+
+| Card | Warn (4 fouls, bench tech) | Out | Warn text |
+|---|---|---|---|
+| Dark (away) | amber-400 border and dots | red-500 border and dots, red-400 OUT | amber-300 |
+| Light (home) cards | amber-600 border and dots (bench card amber-700), slate-900 text | red-600 border, dots and OUT | amber-800 |
+
 A status shown on a button (the amber check chip for a quarter that doesn't match) is still a
 state color: the color says what is true, and the button shape says it can be tapped.
 

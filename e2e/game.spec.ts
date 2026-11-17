@@ -1,7 +1,7 @@
 import pkg from '../package.json' with { type: 'json' };
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { downloadCsv } from './csv';
-import { ui, type Side } from './fixture';
+import { colorContrast, contrast, ui, type Side } from './fixture';
 
 // Invented names only: the roster is personal data about minors.
 const ROSTER = [
@@ -60,8 +60,8 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await expect(one).toHaveClass(/border-slate-\d00/); // the plain border: not amber, not red
   for (let i = 0; i < 4; i++) await tap(page, one, 'Foul');
   await expect(one).toHaveAccessibleName(/4 fouls/);
-  await expect(one).toHaveClass(/border-amber-400/);
-  await expect(one).not.toHaveClass(/border-red-500/);
+  await expect(one).toHaveClass(/border-amber-600/);
+  await expect(one).not.toHaveClass(/border-red-600/);
 
   // End Q1, reconcile 3 / 5
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
@@ -768,4 +768,38 @@ test('a game saved before 0.8, with opponent taps and no their roster, opens in 
   // New points for them go through + Play and add to the old taps.
   await tap(page, away.getByRole('button', { name: '+ Play', exact: true }), '+2');
   await expect(page.getByRole('banner').getByLabel('Score 2 to 7')).toBeVisible();
+});
+
+test('light cards: warn and OUT stay readable', async ({ page }) => {
+  const fouls = async (half: Locator, n: number) => {
+    const c = half.getByRole('button', { name: /^#(10|50)(,| Player 1,)/ });
+    for (let i = 0; i < n; i++) {
+      await c.click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Foul', exact: true }).click();
+    }
+    return c;
+  };
+  // One game: Home's cards are light, Away's (their roster, #50) dark. Both get the same checks.
+  await twoTeamGame(page);
+  for (const side of ['Home', 'Away'] as const) {
+    const half = ui(page).half(side);
+    const c = await fouls(half, 4);
+    // The 4-foul warning: the card's border against the card, and the filled dots against the card.
+    expect(await colorContrast(c, 'borderTopColor'), `${side} warn border`).toBeGreaterThanOrEqual(3);
+    expect(await colorContrast(c.locator('span.rounded-full').first(), 'backgroundColor', 'parent'), `${side} warn dots`).toBeGreaterThanOrEqual(3);
+    // The team-fouls count turns to its warning color on the half's own background.
+    await expect(half.getByText('Team fouls 4', { exact: true })).toBeVisible();
+    expect(await contrast(half.getByText('Team fouls 4', { exact: true })), `${side} team fouls`).toBeGreaterThanOrEqual(4.5);
+    // A bench tech turns the Bench card's border amber (and its count text).
+    await ui(page).benchTech(side);
+    const bench = half.getByRole('button', { name: /^Bench \/ coach tech/ });
+    expect(await colorContrast(bench, 'borderTopColor'), `${side} bench border`).toBeGreaterThanOrEqual(3);
+    expect(await contrast(half.getByTestId('bench-techs')), `${side} bench text`).toBeGreaterThanOrEqual(4.5);
+    // The 5th foul: OUT is readable, and its red border and dots keep full strength.
+    await fouls(half, 1);
+    const out = half.getByRole('button', { name: /, out$/ });
+    expect(await contrast(out.getByText('OUT', { exact: true })), `${side} OUT text`).toBeGreaterThanOrEqual(4.5);
+    expect(await colorContrast(out, 'borderTopColor'), `${side} out border`).toBeGreaterThanOrEqual(3);
+    expect(await colorContrast(out.locator('span.rounded-full').first(), 'backgroundColor', 'parent'), `${side} out dots`).toBeGreaterThanOrEqual(3);
+  }
 });

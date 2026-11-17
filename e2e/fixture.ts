@@ -339,8 +339,8 @@ export function ui(page: Page, ours: Side = 'Home') {
     async backToLive() {
       await page.getByRole('button', exact('Back to game')).click();
     },
-    /** The 4-foul warning, which shows only as the card's amber border. */
-    expectWarning: (name: Name) => expect(card(name)).toHaveClass(/border-amber-400/),
+    /** The 4-foul warning, which shows only as the card's amber border (amber-600 on the light Home half, amber-400 on the dark Away half). */
+    expectWarning: (name: Name) => expect(card(name)).toHaveClass(ours === 'Home' ? /border-amber-600/ : /border-amber-400/),
     /** A player card's foul state, through its accessible name (OUT reads ", out"). */
     async expectPlayer(name: Name, points: number, fouls: number, out = false) {
       const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
@@ -358,3 +358,49 @@ export async function expectNoOverflow(page: Page) {
 
 /** One line plus padding: the score (text-3xl), the period and the bonus badges. A wrap adds 20px or more. */
 const STRIP_MAX_HEIGHT = 56;
+
+/**
+ * WCAG contrast ratio of one of an element's colors against the nearest opaque background, read
+ * through a canvas because Tailwind 4 emits `oklch()`. `prop` is the color measured; `from` is where
+ * the background search starts: the element itself (its text or border sits on its own fill) or its
+ * parent (a dot's own fill is the color measured, so the card behind it is the background).
+ */
+export function colorContrast(
+  l: Locator,
+  prop: 'color' | 'borderTopColor' | 'backgroundColor' = 'color',
+  from: 'self' | 'parent' = 'self',
+): Promise<number> {
+  return l.evaluate(
+    (el, [p, f]) => {
+      const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+      const rgba = (css: string) => {
+        ctx.clearRect(0, 0, 1, 1);
+        ctx.fillStyle = '#000';
+        ctx.fillStyle = css;
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+        return { r, g, b, a };
+      };
+      const lum = ({ r, g, b }: { r: number; g: number; b: number }) => {
+        const c = [r, g, b].map((v) => {
+          const s = v / 255;
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      };
+      const fg = rgba((getComputedStyle(el) as unknown as Record<string, string>)[p]);
+      let node: Element | null = f === 'parent' ? el.parentElement : el;
+      let bg = { r: 255, g: 255, b: 255, a: 255 };
+      for (; node; node = node.parentElement) {
+        const c = rgba(getComputedStyle(node).backgroundColor);
+        if (c.a === 255) { bg = c; break; }
+      }
+      const [hi, lo] = [lum(fg), lum(bg)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    },
+    [prop, from] as const,
+  );
+}
+
+/** The WCAG ratio of an element's text color against its nearest opaque background. */
+export const contrast = (l: Locator) => colorContrast(l, 'color');

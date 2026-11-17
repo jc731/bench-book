@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- Light (home) cards: the 4-foul warning, OUT, and bench-tech colors use darker amber and red shades so they stay readable on white.
+
 ## [0.7.0] - 2026-11-16
 
 - The end-of-game button reads "End Q4" (and "End OT1"…) on one line. With a trailing "…" it wrapped on a phone and looked cut off.

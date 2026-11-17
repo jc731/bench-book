@@ -20,26 +20,36 @@ interface Props {
 }
 
 // One job per color (README § Colors) on both tones. An element whose border shows a state (a card,
-// Bench) gets exactly one border-color class: two on one element resolve by stylesheet order, not class order. Task 7 settles the light-card contrast; amber and
-// red keep their dark-card shades here so the 4-foul and out states read the same on either half.
+// Bench) gets exactly one border-color class: two on one element resolve by stylesheet order, not class order. The warn, out and bench-tech colors differ by tone because
+// amber-400 and red-500 sit under 3:1 on a white card; the light shades are amber-600 and red-600.
 const TONE = {
   light: {
     half: 'bg-slate-200 text-slate-900',
     card: 'bg-white active:bg-slate-100',
     ok: 'border-slate-400',
+    warn: 'border-amber-600',
+    out: 'border-red-600',
+    dotWarn: 'bg-amber-600',
+    dotOut: 'bg-red-600',
+    benchTech: 'border-amber-700',
     name: 'text-slate-600',
     dotEmpty: 'border border-slate-400',
     dotOk: 'bg-slate-700',
     outText: 'text-red-600',
     dashed: 'bg-slate-100 active:bg-slate-300',
     tag: 'border-slate-700 text-slate-700',
-    foulsWarn: 'text-amber-700',
+    foulsWarn: 'text-amber-800',
     timeout: 'border-slate-400 bg-white active:bg-slate-100',
   },
   dark: {
     half: 'bg-slate-900 text-white',
     card: 'bg-slate-800 active:bg-slate-700',
     ok: 'border-slate-600',
+    warn: 'border-amber-400',
+    out: 'border-red-500',
+    dotWarn: 'bg-amber-400',
+    dotOut: 'bg-red-500',
+    benchTech: 'border-amber-400',
     name: 'text-slate-300',
     dotEmpty: 'border border-slate-500',
     dotOk: 'bg-slate-300',
@@ -60,7 +70,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
   const t = TONE[tone];
   const fouls = team.teamFoulsForBonus(period);
   const kinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
-  const border = { ok: t.ok, warn: 'border-amber-400', out: 'border-red-500' } as const;
+  const border = { ok: t.ok, warn: t.warn, out: t.out } as const;
   return (
     <section role="region" aria-label={side} class={`flex min-h-0 flex-col overflow-y-auto ${t.half}`}>
       <div class={`sticky top-0 z-[1] flex h-7 shrink-0 items-center justify-between gap-1 px-2 ${t.half}`}>
@@ -98,7 +108,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
                   {[0, 1, 2, 3, 4].map((n) => (
                     <span
                       key={n}
-                      class={`h-2 w-2 rounded-full ${n >= pf ? t.dotEmpty : state === 'out' ? 'bg-red-500' : state === 'warn' ? 'bg-amber-400' : t.dotOk}`}
+                      class={`h-2 w-2 rounded-full ${n >= pf ? t.dotEmpty : state === 'out' ? t.dotOut : state === 'warn' ? t.dotWarn : t.dotOk}`}
                     />
                   ))}
                   {state === 'out' && <span class={`ml-0.5 text-[10px] font-bold leading-none ${t.outText}`}>OUT</span>}
@@ -120,7 +130,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
           {/* Named for what it records, so it is not read as "edit the bench/roster". Half a card's height. */}
           <button
             type="button"
-            class={`flex min-h-8 items-center justify-between gap-1 rounded-lg border-2 border-dashed px-2 text-xs font-bold ${t.dashed} ${team.benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
+            class={`flex min-h-8 items-center justify-between gap-1 rounded-lg border-2 border-dashed px-2 text-xs font-bold ${t.dashed} ${team.benchTechs > 0 ? t.benchTech : 'border-slate-500'}`}
             aria-label={`${BENCH_CARD_TEXT}${team.benchTechs > 0 ? `, ${countText(team.benchTechs, 'tech', 'techs')}` : ''}`}
             onClick={onBench}
           >
