@@ -1,15 +1,17 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
-import { addPlayer, appendEvent, homeSide, rosterOf, sideName } from '../core/events';
+import { addPlayer, appendEvent, homeSide, recordSub, rosterOf, sideName } from '../core/events';
 import { periodLabel } from '../core/periods';
 import { lineup } from '../core/lineup';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
 import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
 import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
+import { SubSheet } from './SubSheet';
+import { subRowText, type SubStart } from './sub-logic';
 import { FeedbackLine } from './FeedbackLine';
 import {
   BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, who, reconcileBanner,
-  outReason, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
+  outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
 import { notExportedText } from './reconcile-logic';
@@ -44,6 +46,8 @@ export function Live({ store }: { store: GameStore }) {
   const [benchSide, setBenchSide] = useState<Side>('us');
   // The + Play's play waiting at Whose number?, while that prompt is open.
   const [asking, setAsking] = useState<PlayType | null>(null);
+  // The sub sheet's team and the player a play sheet's sub row already moved, while it is open.
+  const [subbing, setSubbing] = useState<{ side: Side; start: SubStart } | null>(null);
   // The timeout tapped at zero, while its guard sheet is open.
   const [guard, setGuard] = useState<{ side: Side; kind: TimeoutKind } | null>(null);
   // The feedback present when a play sheet opened: the sheet shows only what came after it.
@@ -113,6 +117,21 @@ export function Live({ store }: { store: GameStore }) {
     setAsking(null);
     return null;
   };
+  /** One Sub per completed sub sheet; its toast is worded from the game the sub is applied to. */
+  const recordSubs = (side: Side, ins: string[], outs: string[]) => {
+    update((g, now) => ({ game: recordSub(g, side, ins, outs, now), label: subLabel(g, side, ins, outs) }), '');
+    setSubbing(null);
+  };
+  /** The play sheet's sub row, for a tracked team's player who is not out. */
+  const subRowFor = (pk: Picked) => {
+    if (!pk.p) return null;
+    const l = lineup(game, pk.side);
+    const text = l.tracked ? subRowText(l, pk.p.id, pk.p.number) : null;
+    if (!text) return null;
+    const id = pk.p.id;
+    const start: SubStart = l.floor.includes(id) ? { out: id } : { in: id };
+    return { text, onSub: () => { setPicked(null); setSubbing({ side: pk.side, start }); } };
+  };
   const takeTimeout = (side: Side, kind: TimeoutKind) =>
     add({ type: 'TIMEOUT', timeoutKind: kind, ...sided(side) }, timeoutLabel(kind, sideName(game, side)));
   // A timeout with none left asks first; the count shown never drops below 0.
@@ -178,8 +197,7 @@ export function Live({ store }: { store: GameStore }) {
             onPick={(p) => pick(side, p)}
             onTeamPlay={() => pick(side, null)}
             onBench={() => openBench(side)}
-            // Task 5 opens the sub sheet here.
-            onSub={() => {}}
+            onSub={() => setSubbing({ side, start: null })}
             onTimeout={(k) => timeout(side, k)}
           />
         ))}
@@ -242,6 +260,16 @@ export function Live({ store }: { store: GameStore }) {
           onUndo={undo}
           onRedo={redo}
           onClose={() => setPicked(null)}
+          subRow={subRowFor(picked)}
+        />
+      )}
+      {subbing && (
+        <SubSheet
+          game={game}
+          side={subbing.side}
+          start={subbing.start}
+          onRecord={(ins, outs) => recordSubs(subbing.side, ins, outs)}
+          onClose={() => setSubbing(null)}
         />
       )}
       {sheet === 'bench' && (

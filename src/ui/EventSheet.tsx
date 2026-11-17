@@ -41,9 +41,11 @@ interface Props {
   onClose: () => void;
   /** Why the player is out (`5 fouls`), or null. An out player's plays are grayed until confirmed. */
   out?: string | null;
+  /** The sub row at the foot (`#22 checks in` / `#10 comes out`), only for a team whose lineup is tracked. */
+  subRow?: { text: string; onSub: () => void } | null;
 }
 
-export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClose, out = null }: Props) {
+export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClose, out = null, subRow = null }: Props) {
   const [confirmed, setConfirmed] = useState(false);
   const locked = out !== null && !confirmed;
   const btn = (t: PlayType) => (
@@ -96,6 +98,18 @@ export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClo
           </button>
         </div>
       </div>
+      {/* Below everything else and apart from it, so it never sits where a play button was. Gray: an ordinary button. */}
+      {subRow && (
+        <div class="mt-3 border-t border-slate-600 pt-3">
+          <button
+            type="button"
+            class="min-h-11 w-full rounded-lg border border-slate-400 font-semibold text-slate-200 active:bg-slate-700"
+            onClick={subRow.onSub}
+          >
+            {subRow.text}
+          </button>
+        </div>
+      )}
     </Sheet>
   );
 }

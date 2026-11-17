@@ -835,6 +835,200 @@ test('12 players: the fixed block holds the floor as the last sub left it, 6 on 
   }
 });
 
+const homeCard = (page: Page, n: string | number) => ui(page).half('Home').getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
+const awayCard = (page: Page, n: string | number) => ui(page).half('Away').getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
+/** A row in the sub sheet, by number. */
+const subRow = (page: Page, n: string | number) => page.getByRole('dialog').getByRole('button', { name: new RegExp(`^#${n}(,| |$)`) });
+
+test('deliberate sub: #15 checks in for #10 in 3 taps; the toast names both and the half regroups', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  await tap(page, homeCard(page, 11), '+2');
+  // A floor player's sheet offers "comes out"; a bench player's "checks in". The plays sit in the same place on both.
+  await homeCard(page, 11).click();
+  await expect(sheet.getByRole('button', { name: '#11 comes out', exact: true })).toBeVisible();
+  await expect(sheet.getByRole('button', { name: /checks in$/ })).toHaveCount(0);
+  const floorPlus2 = (await sheet.getByRole('button', { name: '+2', exact: true }).boundingBox())!;
+  await sheet.getByRole('button', { name: 'Done', exact: true }).click();
+  // Tap 1: the bench player's card.
+  await homeCard(page, 15).click();
+  const row = sheet.getByRole('button', { name: '#15 checks in', exact: true });
+  await expect(sheet.getByRole('button', { name: /comes out$/ })).toHaveCount(0);
+  expect(await sheet.getByRole('button', { name: '+2', exact: true }).boundingBox()).toEqual(floorPlus2);
+  // At the foot, below the plays and the Done row with at least 8px between, a 44px gray outline.
+  const done = (await sheet.getByRole('button', { name: 'Done', exact: true }).boundingBox())!;
+  const r = (await row.boundingBox())!;
+  expect(r.y).toBeGreaterThanOrEqual(done.y + done.height + 8);
+  expect(r.height).toBeGreaterThanOrEqual(44);
+  await expect(row).toHaveClass(/border-slate-/);
+  await expect(row).not.toHaveClass(/bg-white|sky|amber|green/);
+  // Tap 2: the sub row. #15 is already on, so the floor is 6.
+  await row.click();
+  await expect(sheet).toHaveAccessibleName('Who went out?');
+  await expect(subRow(page, 15)).toHaveAccessibleName('#15 Player 6, just in');
+  // Tap 3: the partner. Five on, so it closes and records.
+  await subRow(page, 10).click();
+  await expect(sheet).toHaveCount(0);
+  await app.expectToastUndo('#15 (Home) in for #10');
+  expect(await app.floorOf('Home')).toEqual(['11', '12', '13', '14', '15']);
+  // The half regroups: the floor first, then the bench.
+  expect(await cardOrder(page, 'Home')).toEqual(['11', '12', '13', '14', '15', '10', '16']);
+  await expect(app.subButton('Home')).toHaveText('Sub');
+});
+
+test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" with #15 "just in" and a "likely" tag; one tap on the likely player closes it at 5', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  await tap(page, homeCard(page, 10), '+2');
+  await tap(page, homeCard(page, 15), '+2');
+  await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
+  await app.subButton('Home').click();
+  await expect(sheet).toHaveAccessibleName('Who went out?');
+  // The floor, all six, and nobody from the bench.
+  expect(await sheet.getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))).toEqual([
+    '#10 Player 1', '#11 Player 2, likely', '#12 Player 3', '#13 Player 4', '#14 Player 5', '#15 Player 6, just in',
+  ]);
+  // The tags are information: gray.
+  for (const tag of ['likely', 'just in']) {
+    await expect(sheet.getByText(tag, { exact: true })).toHaveCount(1);
+    await expect(sheet.getByText(tag, { exact: true })).toHaveClass(/text-slate-/);
+  }
+  await expect(sheet).not.toContainText('Done');
+  await subRow(page, 11).click();
+  await expect(sheet).toHaveCount(0);
+  expect(await app.floorOf('Home')).toEqual(['10', '12', '13', '14', '15']);
+  await app.expectToastUndo('Home floor updated');
+  await expect(app.subButton('Home')).toHaveText('Sub');
+});
+
+test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way, Done; toast "Home floor updated"', async ({ page }) => {
+  await twoTeamGame(page, { ours: 9, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  await tap(page, homeCard(page, 10), '+2');
+  await page.getByRole('navigation').getByRole('button', { name: 'End Q1', exact: true }).click();
+  await expect(app.subButton('Home')).toHaveText('Sub');
+  await app.subButton('Home').click();
+  await expect(sheet).toHaveAccessibleName("Who's on the floor?");
+  const group = (name: string) => sheet.getByRole('group', { name, exact: true }).getByRole('button', { name: /^#/ });
+  await expect(group('On the floor')).toHaveCount(5);
+  await expect(group('On the bench')).toHaveCount(4);
+  const count = sheet.getByTestId('sub-count');
+  await expect(count).toHaveText('5 on the floor');
+  await expect(count).toHaveClass(/text-green-/);
+  for (const n of [10, 11, 12, 13]) {
+    await expect(subRow(page, n)).toHaveAttribute('aria-pressed', 'true');
+    await subRow(page, n).click();
+    await expect(subRow(page, n)).toHaveAttribute('aria-pressed', 'false');
+  }
+  await expect(count).toHaveText('1 on the floor');
+  await expect(count).not.toHaveClass(/green/);
+  for (const n of [15, 16, 17]) await subRow(page, n).click();
+  // Done never requires 5: at 4 the sheet is still open, waiting for Done.
+  await expect(count).toHaveText('4 on the floor');
+  await subRow(page, 18).click();
+  await expect(count).toHaveText('5 on the floor');
+  await expect(sheet).toHaveCount(1);
+  await expect(sheet.getByRole('button', { name: 'Done', exact: true })).toHaveClass(/bg-white/);
+  await sheet.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  await app.expectToastUndo('Home floor updated');
+  expect(await app.floorOf('Home')).toEqual(['14', '15', '16', '17', '18']);
+  expect(await cardOrder(page, 'Home')).toEqual(['14', '15', '16', '17', '18', '10', '11', '12', '13']);
+});
+
+test('foul-out: Sub · 4 on → "Who came in?" → #15 closes it', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  for (let i = 0; i < 5; i++) await tap(page, homeCard(page, 10), 'Foul');
+  await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
+  await app.subButton('Home').click();
+  await expect(sheet).toHaveAccessibleName('Who came in?');
+  // The bench: the out player grayed with her reason, and not selectable.
+  expect(await sheet.getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))).toEqual([
+    '#10 Player 1, 5 fouls', '#15 Player 6', '#16 Player 7',
+  ]);
+  await expect(subRow(page, 10)).toBeDisabled();
+  await expect(subRow(page, 10)).toHaveClass(/opacity-/);
+  await subRow(page, 15).click();
+  await expect(sheet).toHaveCount(0);
+  expect(await app.floorOf('Home')).toEqual(['11', '12', '13', '14', '15']);
+  await app.expectToastUndo('Home floor updated');
+  await expect(app.subButton('Home')).toHaveText('Sub');
+});
+
+test('Starters: before the first play the button reads Starters; changing two starters and Done sets the floor; ignoring it keeps the first five', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  await expect(app.subButton('Home')).toHaveText('Starters');
+  await app.setFloor('Home', ['12', '13', '14', '15', '16']);
+  expect(await app.floorOf('Home')).toEqual(['12', '13', '14', '15', '16']);
+  await app.expectToastUndo('Home floor updated');
+  // The first play keeps that floor: the Starters sub sits before it.
+  await tap(page, homeCard(page, 12), '+2');
+  await expect(app.subButton('Home')).toHaveText('Sub');
+  expect(await app.floorOf('Home')).toEqual(['12', '13', '14', '15', '16']);
+  // Away ignores its Starters: the first five start.
+  await tap(page, awayCard(page, 50), '+2');
+  expect(await app.floorOf('Away')).toEqual(nums(50, 5));
+  await expect(app.subButton('Away')).toHaveText('Sub');
+});
+
+test('Undo after a sub restores the previous floor', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  await tap(page, homeCard(page, 11), '+2');
+  await app.subIn('Home', '15', '10');
+  expect(await app.floorOf('Home')).toEqual(['11', '12', '13', '14', '15']);
+  await app.undo();
+  expect(await app.floorOf('Home')).toEqual(nums(10, 5));
+  expect(await cardOrder(page, 'Home')).toEqual(nums(10, 7));
+  // One step: the play before it is still there.
+  await expect(homeCard(page, 11)).toHaveAccessibleName(/, 2 points,/);
+});
+
+test('Cancel records nothing', async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  const sheet = page.getByRole('dialog');
+  await tap(page, homeCard(page, 11), '+2');
+  for (const close of ['cancel', 'backdrop'] as const) {
+    await app.subButton('Home').click();
+    await subRow(page, 10).click();
+    await subRow(page, 15).click();
+    if (close === 'cancel') await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+    else await page.mouse.click(10, 10);
+    await expect(sheet).toHaveCount(0);
+    expect(await app.floorOf('Home'), close).toEqual(nums(10, 5));
+    await app.expectToastUndo('#11 (Home) +2');
+  }
+  // From a play sheet's row too: the pre-moved player goes back.
+  await homeCard(page, 15).click();
+  await sheet.getByRole('button', { name: '#15 checks in', exact: true }).click();
+  await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+  expect(await app.floorOf('Home')).toEqual(nums(10, 5));
+  await app.expectToastUndo('#11 (Home) +2');
+});
+
+test("the other team's sub works the same (Away)", async ({ page }) => {
+  await twoTeamGame(page, { ours: 7, theirs: 7 });
+  const app = ui(page);
+  await tap(page, awayCard(page, 51), '+2');
+  await app.subIn('Away', '55', '50');
+  await app.expectToastUndo('#55 (Away) in for #50');
+  expect(await app.floorOf('Away')).toEqual(['51', '52', '53', '54', '55']);
+  expect(await app.floorOf('Home')).toEqual(nums(10, 5));
+  // Its foul-out asks "Who came in?" the same way.
+  for (let i = 0; i < 5; i++) await tap(page, awayCard(page, 51), 'Foul');
+  await app.subButton('Away').click();
+  await expect(page.getByRole('dialog')).toHaveAccessibleName('Who came in?');
+  await subRow(page, 56).click();
+  expect(await app.floorOf('Away')).toEqual(['52', '53', '54', '55', '56']);
+});
+
 test("a bench card's contrast: the bench tag and the ghost border are readable on both tones", async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   for (const [side, n] of [['Home', '16'], ['Away', '56']] as const) {

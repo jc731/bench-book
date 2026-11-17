@@ -47,6 +47,10 @@ export function ui(page: Page, ours: Side = 'Home') {
   const half = (side: Side) => page.getByRole('region', exact(side));
 
   const card = (name: Name) => half(ours).getByRole('button', { name: new RegExp(`^#${numberOf(name)} ${name},`) });
+  /** A fixture name's number, or the string itself when it is already a number. */
+  const numOrName = (who: string) => ROSTER.find((p) => p.name === who)?.number ?? who;
+  /** A player's row in the sub sheet, by name or number. */
+  const subRow = (who: string) => dialog().getByRole('button', { name: new RegExp(`^#${numOrName(who)}(,| |$)`) });
 
   /** Taps a player, then each play button. FT buttons keep the sheet open for the pair, so close it with Done. */
   async function onPlayer(name: Name, plays: string[], closeWithDone: boolean) {
@@ -87,6 +91,29 @@ export function ui(page: Page, ours: Side = 'Home') {
     half,
     /** A half's Sub button, beside + Play; it reads `Starters`, `Sub` or `Sub · N on`. Absent with five players or fewer. */
     subButton: (side: Side) => half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }),
+    /**
+     * A deliberate sub from the play sheet, 3 taps: the in player's card, her `#N checks in` row, then
+     * the out player in "Who went out?". Players are fixture names or bare numbers (`'55'`).
+     */
+    async subIn(side: Side, inName: string, outName: string) {
+      const n = numOrName(inName);
+      await half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) }).click();
+      await dialog().getByRole('button', exact(`#${n} checks in`)).click();
+      await expect(dialog()).toHaveAccessibleName('Who went out?');
+      await subRow(outName).click();
+      await expect(dialog()).toHaveCount(0);
+    },
+    /** The team's Sub (or Starters) button, then "Who's on the floor?" toggled to exactly `names`, then Done. */
+    async setFloor(side: Side, names: string[]) {
+      await half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }).click();
+      await expect(dialog()).toHaveAccessibleName("Who's on the floor?");
+      const want = names.map(numOrName);
+      const rows = await dialog().getByRole('button', { name: /^#/ }).evaluateAll((els) =>
+        els.map((el) => ({ n: /^#([^\s,]+)/.exec(el.getAttribute('aria-label')!)![1], on: el.getAttribute('aria-pressed') === 'true' })));
+      for (const { n, on } of rows) if (on !== want.includes(n)) await subRow(n).click();
+      await dialog().getByRole('button', exact('Done')).click();
+      await expect(dialog()).toHaveCount(0);
+    },
     /** The numbers on a half's floor cards, in display order: every card whose name doesn't end `, bench` or `, out`. */
     floorOf: (side: Side) =>
       half(side).getByRole('button', { name: /^#/ }).evaluateAll((els) =>
