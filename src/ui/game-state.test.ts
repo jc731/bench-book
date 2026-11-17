@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appendEvent, deleteEvent, editEvent, moveFrom, newGame } from '../core/events';
+import { appendEvent, deleteEvent, editEvent, moveFrom, newGame, recordSub } from '../core/events';
 import { endGame, isExported, markExported, reopenGame, saveReconcile } from '../core/reconcile';
 import type { Game, GameInfo } from '../core/types';
 import { applyRedo, applyUndo, applyUpdate, type GameState } from './game-state';
@@ -103,6 +103,12 @@ describe('an export counts only until the game changes after it', () => {
     expect(isExported(s.game!)).toBe(true);
     s = applyUpdate(s, (g, t) => markExported(g, 'book', t), 'Exported Book CSV', later, false);
     expect(s.game?.exported).toEqual({ book: later.toISOString(), plays: now.toISOString() });
+  });
+  it('recording a sub keeps the export marks: no file holds the subs', () => {
+    const s = applyUpdate(exported(), (g, t) => ({ game: recordSub(g, 'us', ['a'], ['b'], t), label: 'Sub', keepExports: true }), '', later);
+    expect(s.game?.subs).toHaveLength(1);
+    expect(s.stack).toHaveLength(1);
+    expect(isExported(s.game!)).toBe(true);
   });
   it('undoing an edit made after the export still reads not saved: undo errs toward exporting again', () => {
     let s = applyUpdate(exported(), (g, t) => appendEvent(g, { type: 'TIMEOUT', timeoutKind: 'full' }, t), 'TO', later);

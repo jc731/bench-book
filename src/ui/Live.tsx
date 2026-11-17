@@ -127,7 +127,8 @@ export function Live({ store }: { store: GameStore }) {
     update((g, now) => {
       const l = lineup(g, side);
       const shown = ins.length === 0 && outs.length === 1 && l.floor.length === 6 && l.justIn && l.justIn !== outs[0] ? [l.justIn] : ins;
-      return { game: recordSub(g, side, ins, outs, now), label: subLabel(g, side, shown, outs) };
+      // No CSV holds the subs, so a file saved before one still matches the game.
+      return { game: recordSub(g, side, ins, outs, now), label: subLabel(g, side, shown, outs), keepExports: true };
     }, '');
     setSubbing(null);
   };

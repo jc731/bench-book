@@ -18,7 +18,8 @@ function staleExports(g: Game): Game {
 /**
  * `undoable: false` records a fact rather than an edit (a file was saved, a check draft): it adds no
  * undo step and leaves the export marks alone. Every edit, by contrast, can change what a CSV holds
- * (plays, a Reopen, a check or note), so it drops the marks, and the files read "not saved" again.
+ * (plays, a Reopen, a check or note), so it drops the marks, and the files read "not saved" again,
+ * unless its updater says `keepExports` (a sub, which no CSV holds).
  */
 export function applyUpdate(
   state: GameState,
@@ -30,8 +31,11 @@ export function applyUpdate(
   return applyLabeled(state, fn, label, now, undoable).state;
 }
 
-/** An updater returns the next game, or the next game with its own label, worded from the game it was given. */
-export type Updater = (g: Game, now: Date) => Game | { game: Game; label: string };
+/**
+ * An updater returns the next game, or the next game with its own label, worded from the game it was given.
+ * `keepExports` marks an undoable edit that no file holds (a sub): the export marks stay.
+ */
+export type Updater = (g: Game, now: Date) => Game | { game: Game; label: string; keepExports?: boolean };
 
 /** applyUpdate, also returning the label used (the updater's own when it gave one). */
 export function applyLabeled(
@@ -47,7 +51,8 @@ export function applyLabeled(
   const used = 'game' in r ? r.label : label;
   if (next === state.game) return { state, label: used }; // nothing changed: no undo step
   if (!undoable) return { state: { ...state, game: next }, label: used };
-  return { state: { game: staleExports(next), stack: pushUndo(state.stack, { snapshot: state.game, label: used }), redo: [] }, label: used };
+  const keep = 'game' in r && r.keepExports === true;
+  return { state: { game: keep ? next : staleExports(next), stack: pushUndo(state.stack, { snapshot: state.game, label: used }), redo: [] }, label: used };
 }
 
 /** A snapshot restored by Undo or Redo: its export marks dropped, the current check drafts kept. */
