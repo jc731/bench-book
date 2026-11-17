@@ -4,14 +4,14 @@ import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
 import { appendEvent, rosterOf, sideName } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
-import type { Player, Side } from '../core/types';
+import type { Player } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { addedLabel } from './log-logic';
 import { feedbackLine, who, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
-  MISMATCH_HINT, appHasText, compareText, isMismatch, theirScoreLine, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -82,12 +82,13 @@ export function Reconcile({ store }: { store: GameStore }) {
   const blocked = invalid || usProblem !== null || oppProblem !== null;
   const live = usProblem ? null : compareText(bookUsTotal, c);
   const recorded = oppPointsRecorded(game);
-  const theirs = oppProblem || !recorded ? null : theirScoreLine({ ...c, bookOppTotal });
+  // Gated on their points being recorded (controller ruling): with none, there is no app total to compare, so a warning would be noise.
+  const theirs = oppProblem ? null : theirScoreLineIfRecorded(c, bookOppTotal, recorded);
   const mismatch = !usProblem && isMismatch(bookUsTotal, c);
   const span = spanLabel(c.spanFrom, period);
   const both = hasOppRecord(game);
   // Home first, then Away; with no record of the other team, only ours, as before.
-  const foulSides: Side[] = !both ? ['us'] : sideName(game, 'us') === 'Home' ? ['us', 'them'] : ['them', 'us'];
+  const foulSides = foulSidesOf(game);
 
   // Only Save saves; the comparison above it is live. A save that would change nothing is skipped,
   // so repeating it adds no undo step.

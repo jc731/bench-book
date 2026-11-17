@@ -1,8 +1,9 @@
-import { derive, oppPointsRecorded } from '../core/derive';
+import { derive, hasOppRecord, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { hoursUntilPurge } from '../core/storage';
 import { isExported, type PeriodCheck, type PeriodStatus } from '../core/reconcile';
-import type { ExportKind, Game, PeriodRecord } from '../core/types';
+import { sideName } from '../core/events';
+import type { ExportKind, Game, PeriodRecord, Side } from '../core/types';
 
 /** The saved check's anchor values a live comparison needs (see `checkPeriod`). */
 type Basis = Pick<PeriodCheck, 'period' | 'spanFrom' | 'anchorBook' | 'anchorApp' | 'appTotal' | 'appSpan'>;
@@ -90,6 +91,17 @@ export function theirScoreLine(c: OppBasis & Pick<PeriodCheck, 'bookOppTotal'>):
   const off = Math.abs(c.bookOppTotal - app);
   if (off === 0) return { text: `Their score: book ${c.bookOppTotal} · app ${app} ✓`, warn: false };
   return { text: `Their score: book ${c.bookOppTotal} · app ${app} — ${off} off`, warn: true };
+}
+
+/** The line for the typed total, or null when none of their points are recorded (nothing to compare). */
+export function theirScoreLineIfRecorded(c: OppBasis, bookOppTotal: number | null, recorded: boolean): { text: string; warn: boolean } | null {
+  return recorded ? theirScoreLine({ ...c, bookOppTotal }) : null;
+}
+
+/** Whose fouls the check lists, Home first: only ours with no record of the other team. */
+export function foulSidesOf(g: Game): Side[] {
+  if (!hasOppRecord(g)) return ['us'];
+  return sideName(g, 'us') === 'Home' ? ['us', 'them'] : ['them', 'us'];
 }
 
 /** Placeholder for their box: the app's game total of their points as a hint, never as a value. */

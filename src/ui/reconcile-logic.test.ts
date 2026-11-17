@@ -3,7 +3,7 @@ import { appendEvent, newGame } from '../core/events';
 import { checkPeriod, endGame, markExported, saveReconcile } from '../core/reconcile';
 import type { Game } from '../core/types';
 import {
-  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, oppPlaceholder, parseScore,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, theirScoreLineIfRecorded, foulSidesOf, oppPlaceholder, parseScore,
   reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 
@@ -189,5 +189,20 @@ describe('their score never moves the quarter status', () => {
     const c = checkPeriod(g, 1);
     expect(theirScoreLine(c)?.warn).toBe(true);
     expect(c.status).toBe('matched');
+  });
+});
+
+describe('the their-score gate and the fouls order', () => {
+  const basis = { period: 1, oppSpanFrom: 1, anchorOppBook: 0, oppTapped: 0 };
+  it('says nothing about their score until some of their points are recorded', () => {
+    expect(theirScoreLineIfRecorded(basis, 6, false)).toBeNull();
+    expect(theirScoreLineIfRecorded({ ...basis, oppTapped: 3 }, 6, true)?.text).toBe('Their score: book 6 \u00b7 app 3 \u2014 3 off');
+  });
+  it('lists only ours without an opponent record, then Home first', () => {
+    expect(foulSidesOf(base())).toEqual(['us']);
+    const home = appendEvent({ ...base(), info: { ...base().info, homeAway: 'home' } }, { type: 'OPP_PTS', oppPoints: 2, period: 1 }, t0);
+    const away = appendEvent({ ...base(), info: { ...base().info, homeAway: 'away' } }, { type: 'OPP_PTS', oppPoints: 2, period: 1 }, t0);
+    expect(foulSidesOf(home)).toEqual(['us', 'them']);
+    expect(foulSidesOf(away)).toEqual(['them', 'us']);
   });
 });
