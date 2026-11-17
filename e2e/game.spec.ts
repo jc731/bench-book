@@ -713,6 +713,11 @@ test("each half records for its own team: + Play, their cards, Bench and timeout
   // Their bench tech counts to their team fouls, not ours.
   await app.benchTech('Away');
   await expect(toast).toHaveText('Away bench tech');
+  // A tech on the card turns its dashed border amber (and only theirs).
+  const awayBench = away.getByRole('button', { name: /^Bench \/ coach tech/ });
+  await expect(awayBench).toHaveClass(/border-amber-400/);
+  await expect(awayBench).toHaveCSS('border-top-color', 'oklch(0.828 0.189 84.429)'); // amber-400
+  await expect(home.getByRole('button', { name: /^Bench \/ coach tech/ })).not.toHaveCSS('border-top-color', 'oklch(0.828 0.189 84.429)');
   await expect(away.getByText('Team fouls 1', { exact: true })).toBeVisible();
   await expect(home.getByText('Team fouls 0', { exact: true })).toBeVisible();
 
@@ -736,6 +741,11 @@ test('a timeout button at zero draws grayed and still records the timeout', asyn
   await app.timeout('30s');
   await expect(page.getByTestId('feedback-text')).toHaveText('Home timeout (30s)');
   await expect(zero).toBeVisible(); // the count never shows below zero
+  // The tap at zero was recorded: one Undo takes it back and leaves two used, so the button still reads 0.
+  await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.getByTestId('feedback-text')).toHaveText('Undid Home timeout (30s)');
+  await expect(zero).toBeVisible();
+  await expect(app.half('Home').getByRole('button', { name: '30s: 1', exact: true })).toHaveCount(0);
 });
 
 test('a game saved before 0.8, with opponent taps and no their roster, opens in the two halves', async ({ page }) => {

@@ -19,7 +19,8 @@ interface Props {
   onTimeout: (kind: TimeoutKind) => void;
 }
 
-// One job per color (README § Colors) on both tones. Task 7 settles the light-card contrast; amber and
+// One job per color (README § Colors) on both tones. An element whose border shows a state (a card,
+// Bench) gets exactly one border-color class: two on one element resolve by stylesheet order, not class order. Task 7 settles the light-card contrast; amber and
 // red keep their dark-card shades here so the 4-foul and out states read the same on either half.
 const TONE = {
   light: {
@@ -30,7 +31,7 @@ const TONE = {
     dotEmpty: 'border border-slate-400',
     dotOk: 'bg-slate-700',
     outText: 'text-red-600',
-    dashed: 'border-slate-500 bg-slate-100 active:bg-slate-300',
+    dashed: 'bg-slate-100 active:bg-slate-300',
     tag: 'border-slate-700 text-slate-700',
     foulsWarn: 'text-amber-700',
     timeout: 'border-slate-400 bg-white active:bg-slate-100',
@@ -43,7 +44,7 @@ const TONE = {
     dotEmpty: 'border border-slate-500',
     dotOk: 'bg-slate-300',
     outText: 'text-red-400',
-    dashed: 'border-slate-500 bg-slate-900 active:bg-slate-700',
+    dashed: 'bg-slate-900 active:bg-slate-700',
     tag: 'border-white text-white',
     foulsWarn: 'text-amber-300',
     timeout: 'border-slate-500 bg-slate-700 active:bg-slate-600',
@@ -111,7 +112,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
           {/* A play for the team with no player picked. Task 8 adds the Whose number? prompt after the play. */}
           <button
             type="button"
-            class={`min-h-8 rounded-lg border-2 border-dashed px-2 text-sm font-bold ${t.dashed}`}
+            class={`min-h-8 rounded-lg border-2 border-dashed border-slate-500 px-2 text-sm font-bold ${t.dashed}`}
             onClick={onTeamPlay}
           >
             + Play
@@ -119,7 +120,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
           {/* Named for what it records, so it is not read as "edit the bench/roster". Half a card's height. */}
           <button
             type="button"
-            class={`flex min-h-8 items-center justify-between gap-1 rounded-lg border-2 border-dashed px-2 text-xs font-bold ${t.dashed} ${team.benchTechs > 0 ? 'border-amber-400' : ''}`}
+            class={`flex min-h-8 items-center justify-between gap-1 rounded-lg border-2 border-dashed px-2 text-xs font-bold ${t.dashed} ${team.benchTechs > 0 ? 'border-amber-400' : 'border-slate-500'}`}
             aria-label={`${BENCH_CARD_TEXT}${team.benchTechs > 0 ? `, ${countText(team.benchTechs, 'tech', 'techs')}` : ''}`}
             onClick={onBench}
           >
