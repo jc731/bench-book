@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
 import { addPlayer, appendEvent, homeSide, recordSub, rosterOf, sideName } from '../core/events';
 import { periodLabel } from '../core/periods';
@@ -10,7 +10,7 @@ import { SubSheet } from './SubSheet';
 import { subRowText, type SubStart } from './sub-logic';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, TAKE_ANYWAY, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, who, reconcileBanner,
+  BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, who, reconcileBanner,
   outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
@@ -53,6 +53,25 @@ export function Live({ store }: { store: GameStore }) {
   const [guard, setGuard] = useState<{ side: Side; kind: TimeoutKind } | null>(null);
   // The feedback present when a play sheet opened: the sheet shows only what came after it.
   const sheetOpenedWith = useRef<Toast | null>(null);
+  // The last End tap (the bar's End slot or a choice on the Q4/OT sheet). For END_GUARD_MS after it the
+  // End slot, the sheet's choices and backdrop, and Undo ignore taps: a double-tap must not end a second
+  // quarter, choose on the sheet the first tap opened, or land on Undo. `endCooling` shows it (disabled).
+  const lastEndAt = useRef<number | null>(null);
+  const [endCooling, setEndCooling] = useState(false);
+  useEffect(() => {
+    if (!endCooling) return;
+    const t = setTimeout(() => setEndCooling(false), END_GUARD_MS);
+    return () => clearTimeout(t);
+  }, [endCooling]);
+  const endGuarded = () => !endTapAllowed(lastEndAt.current, Date.now());
+  /** Runs an End action unless one ran within the guard, and starts the guard. */
+  const endTap = (act: () => void) => {
+    const now = Date.now();
+    if (!endTapAllowed(lastEndAt.current, now)) return;
+    lastEndAt.current = now;
+    setEndCooling(true);
+    act();
+  };
   const pick = (side: Side, p: Player | null) => {
     sheetOpenedWith.current = toast;
     setAsking(null);
@@ -154,19 +173,19 @@ export function Live({ store }: { store: GameStore }) {
     setBenchSide(side);
     setSheet('bench');
   };
-  const doEndPeriod = () => {
+  const doEndPeriod = () => endTap(() => {
     update((g, now) => endPeriod(g, now), endPeriodLabel(period));
     setSheet(null);
-  };
-  const doEndGame = () => {
+  });
+  const doEndGame = () => endTap(() => {
     update((g, now) => (g.endedAt ? g : endGame(g, now)), 'End game');
     setSheet(null);
     setView('end');
-  };
-  const startOt = () => {
+  });
+  const startOt = () => endTap(() => {
     update((g, now) => startOvertime(g, now), 'Start overtime');
     setSheet(null);
-  };
+  });
   // Only opens Final; the game ends from the Q4/OT sheet or Final's End game early.
   const openEnd = () => {
     setSheet(null);
@@ -226,10 +245,10 @@ export function Live({ store }: { store: GameStore }) {
           <button
             type="button"
             class={bar}
-            disabled={!canUndo}
+            disabled={!canUndo || endCooling}
             aria-label={undoAriaLabel(canUndo, game.events.length > 0)}
             aria-describedby={line.entry?.undoable ? 'feedback-text' : undefined}
-            onClick={undo}
+            onClick={() => !endGuarded() && undo()}
           >
             Undo
           </button>
@@ -238,7 +257,8 @@ export function Live({ store }: { store: GameStore }) {
             type="button"
             class={`${barBase} whitespace-nowrap ${endTone[end.tone]}`}
             data-tone={end.tone}
-            onClick={() => (end.opens === 'final' ? openEnd() : end.opens === 'endSheet' ? setSheet('endPeriod') : doEndPeriod())}
+            disabled={endCooling}
+            onClick={() => (end.opens === 'final' ? openEnd() : end.opens === 'endSheet' ? endTap(() => setSheet('endPeriod')) : doEndPeriod())}
           >
             {end.text}
             {end.mark && <span aria-hidden="true"> {end.mark}</span>}
@@ -322,10 +342,12 @@ export function Live({ store }: { store: GameStore }) {
         </Sheet>
       )}
       {sheet === 'endPeriod' && (
-        <Sheet title={`End ${periodLabel(period)}`} onClose={() => setSheet(null)}>
+        <Sheet title={`End ${periodLabel(period)}`} onClose={() => !endGuarded() && setSheet(null)}>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" class={`${opt} border-2 border-sky-400`} onClick={startOt}>{endChoices(period).overtime}</button>
-            <button type="button" class={`${opt} border-2 border-red-500 leading-tight`} onClick={doEndGame}>
+            <button type="button" class={`${opt} border-2 border-sky-400 disabled:opacity-40`} disabled={endCooling} onClick={startOt}>
+              {endChoices(period).overtime}
+            </button>
+            <button type="button" class={`${opt} border-2 border-red-500 leading-tight disabled:opacity-40`} disabled={endCooling} onClick={doEndGame}>
               <span class="block">{endChoices(period).endGameMain}</span>{' '}
               <span class="block text-sm font-semibold">{endChoices(period).endGameNote}</span>
             </button>

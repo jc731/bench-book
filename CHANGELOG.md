@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- A double-tap on End no longer skips a quarter. For a second after an End, the End button, Undo and the Q4/OT sheet's choices ignore taps (they show dimmed), so the second tap of a double-tap cannot end the next quarter, end the game from the sheet the first tap opened, or undo the End. After that second, End and Undo work as before.
+
 ## [0.9.0] - 2026-11-17
 
 - The live screen shows who is on the floor. Each team's first five start; their cards are solid, and the rest of the roster is the bench: ghosted cards with a small gray "bench" tag. Nothing is hidden, and with 11 or more players the floor stays in view while only the bench scrolls. Cards are 60 px tall (64 px in 0.8), so ten players and the controls still fit each half.

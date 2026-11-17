@@ -117,6 +117,17 @@ export function endSlot(period: number, ended: boolean): EndSlot {
   return { text: endPeriodLabel(period), opens: 'endPeriod', tone: 'quarter' };
 }
 
+/**
+ * A double-tap on End used to skip a quarter: End Q1–Q3 end with one tap and the next End button appears
+ * in the same spot, so the second tap ended the next quarter (two reviewers, 150 ms apart). The End slot,
+ * the Q4/OT sheet it opens and the bar's Undo ignore taps for this long after an End.
+ */
+export const END_GUARD_MS = 1000;
+/** Whether an End tap at `now` counts, given the last End at `last` (null: none yet). A clock that went back counts. */
+export function endTapAllowed(last: number | null, now: number): boolean {
+  return last === null || now < last || now - last >= END_GUARD_MS;
+}
+
 /** Whether ending this period could end the game (after Q4 or any OT) rather than just advance. */
 export function mayEndGame(period: number): boolean {
   return period >= 4;

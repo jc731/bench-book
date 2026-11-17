@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
   TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, foulOutLabel, lineupSuffix, playToast, subLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
-  stripPeriodText, subButtonAmber, subButtonText, undoAriaLabel,
+  END_GUARD_MS, endTapAllowed, stripPeriodText, subButtonAmber, subButtonText, undoAriaLabel,
 } from './live-logic';
 import type { Lineup } from '../core/lineup';
 import { outReason } from './live-logic';
@@ -52,6 +52,19 @@ describe('a finished game looks finished', () => {
   it('stripPeriodText', () => {
     expect(stripPeriodText(5, false)).toBe('OT1');
     expect(stripPeriodText(5, true)).toBe('Final');
+  });
+});
+
+describe('endTapAllowed: a second End tap inside the guard is ignored', () => {
+  it('allows the first End, refuses one 150 ms later, allows one after the guard', () => {
+    expect(END_GUARD_MS).toBe(1000);
+    expect(endTapAllowed(null, 5_000)).toBe(true);
+    expect(endTapAllowed(5_000, 5_150)).toBe(false);
+    expect(endTapAllowed(5_000, 5_999)).toBe(false);
+    expect(endTapAllowed(5_000, 6_000)).toBe(true);
+  });
+  it('a clock that went backwards does not lock End forever', () => {
+    expect(endTapAllowed(5_000, 4_000)).toBe(true);
   });
 });
 

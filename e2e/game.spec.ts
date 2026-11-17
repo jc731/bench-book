@@ -560,6 +560,54 @@ test('the End button is blue for a quarter, red once it can end the game, plain 
   await expect(tone('Final')).toHaveAttribute('data-tone', 'final');
 });
 
+/** Two real taps at the same spot `gapMs` apart, without waiting for the button under them (a double-tap). */
+async function doubleTap(page: Page, target: Locator, gapMs = 150) {
+  const box = (await target.boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.click(x, y);
+  await page.waitForTimeout(gapMs);
+  await page.mouse.click(x, y);
+}
+
+test('a double-tap on End Q1 ends only Q1; a second End after a second still works', async ({ page }) => {
+  await onePlayerGame(page);
+  await doubleTap(page, endSlotButton(page, 'End Q1'));
+  await expect(stripPeriod(page, 'Q2')).toBeVisible();
+  await page.waitForTimeout(400);
+  await expect(stripPeriod(page, 'Q2')).toBeVisible();
+  await expect(stripPeriod(page, 'Q3')).toHaveCount(0);
+  // Past the guard, End works again.
+  await page.waitForTimeout(1100);
+  await page.mouse.click(...(await center(endSlotButton(page, 'End Q2'))));
+  await expect(stripPeriod(page, 'Q3')).toBeVisible();
+  // Undo still undoes an End.
+  await page.waitForTimeout(1100);
+  await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(stripPeriod(page, 'Q2')).toBeVisible();
+});
+
+test('a double-tap on End Q4 opens its sheet and chooses nothing: the game is not ended', async ({ page }) => {
+  await onePlayerGame(page);
+  for (const q of ['Q1', 'Q2', 'Q3']) await endSlotButton(page, `End ${q}`).click();
+  // End Q3 starts the guard too: tap End Q4 only once it takes taps.
+  await expect(endSlotButton(page, 'End Q4')).toBeEnabled();
+  await doubleTap(page, endSlotButton(page, 'End Q4'));
+  const sheet = page.getByRole('dialog', { name: 'End Q4' });
+  await expect(sheet).toBeVisible();
+  await page.waitForTimeout(400);
+  await expect(sheet).toBeVisible();
+  await expect(stripPeriod(page, 'Q4')).toBeVisible();
+  // Past the guard, the sheet's choices work.
+  await sheet.getByRole('button', { name: 'Start overtime', exact: true }).click();
+  await expect(stripPeriod(page, 'OT1')).toBeVisible();
+});
+
+const center = async (l: Locator): Promise<[number, number]> => {
+  const b = (await l.boundingBox())!;
+  return [b.x + b.width / 2, b.y + b.height / 2];
+};
+
 test('the page has a favicon that loads', async ({ page, request }) => {
   await page.goto('/');
   const href = await page.locator('link[rel="icon"]').getAttribute('href');
