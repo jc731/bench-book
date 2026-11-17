@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-16
+
 - Both teams on one live screen. Home is always on the left with light cards and Away on the right with dark ones; a small US tag marks your team, the one thing that changes between a home night and an away night. Every play, for either team, is tap the player, then the play. The Opp +1/+2/+3 taps and the "Also keep their score" option are gone.
 - Setup has a second roster for the other team: numbers, with names if you have them. Both rosters are optional. Yours still prefills from the saved roster; theirs is not saved, since the opponent changes every game.
 - + Play, at the foot of each half, records a play without tapping a card. After the play, "Whose number?" asks who: a typed number credits that player and adds them to that team if they are new (a late arrival, or a mis-entered roster); No number records the play for the team only; Stop asking this game skips the question for that team from then on. Each team's Bench sheet now holds only the bench tech.
