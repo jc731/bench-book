@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-17
+
 - Floor cards have darker outlines on the light Home half and lighter ones on the dark Away half, so the five on the floor stand out from the ghosted bench. Before, the bench outlines were the stronger ones. The colors are unchanged: still gray, with amber and red as before.
 
 ## [0.9.1] - 2026-11-17
