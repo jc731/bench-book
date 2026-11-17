@@ -1,0 +1,323 @@
+import { expect, test, type Page } from '@playwright/test';
+import { downloadCsv } from './csv';
+import { OPPONENT, TEAM, ui } from './fixture';
+
+/*
+ * Both-teams release test: one home game with both rosters, played by number, with every
+ * expected number worked out BY HAND from the table below. Nothing here imports from src/.
+ *
+ * Ours (fixture roster): #4 One, #00 Two, #0 Three, #12 Four, #23 Five, #31 Six, #44 Seven.
+ * Theirs (set up): #4 Rival One (the SAME number as our #4), #24 Rival Two, #10 Rival Three,
+ * #15 Rival Four. Their #33 is not on the roster: added mid-game at Whose number?.
+ *
+ *  ev | per | event                                    |  Us | Them | notes
+ *  ---+-----+------------------------------------------+-----+------+---------------------------
+ *   1 | Q1  | us   #4  One      +2                     |   2 |    0 |
+ *   2 | Q1  | them #4           +3                     |   2 |    3 | same number, other card
+ *   3 | Q1  | us   #44 Seven    +2                     |   4 |    3 |
+ *   4 | Q1  | them #24          Foul                   |   4 |    3 | their TF 1
+ *   5 | Q1  | them #24          Foul                   |   4 |    3 | their TF 2
+ *   6 | Q1  | them #10          +2                     |   4 |    5 |
+ *   7 | Q1  | us   #12 Four     Foul                   |   4 |    5 | our TF 1
+ *   8 | Q1  | us   #0  Three    +3                     |   7 |    5 |
+ *   9 | Q1  | them Full timeout                        |   7 |    5 | their Full 1 of 3
+ *     |     | End Q1. Check Q1: book 7 / 5             |     |      | MATCHED
+ *  10 | Q2  | them #24          Foul                   |   7 |    5 | #24 has 3
+ *  11 | Q2  | us   #00 Two      FT made                |   8 |    5 |
+ *  12 | Q2  | us   #00 Two      FT missed              |   8 |    5 | really MADE (fix a: -> 9)
+ *  13 | Q2  | them #24          Foul                   |   8 |    5 | #24 has 4
+ *  14 | Q2  | them Full timeout                        |   8 |    5 | their Full 2 of 3
+ *  15 | Q2  | us   #12 Four     Foul                   |   8 |    5 | our Q2 TF 1
+ *  16 | Q2  | them #15          +2                     |   8 |    7 |
+ *  17 | Q2  | them #24          Foul                   |   8 |    7 | #24 has 5 -> OUT; their Q2 TF 3
+ *  18 | Q2  | them Full timeout                        |   8 |    7 | their Full 3 of 3 (0 left)
+ *  19 | Q2  | them Full timeout, Take one anyway       |   8 |    7 | their Full 4 of 3
+ *  20 | Q2  | us   #23 Five     Foul                   |   8 |    7 | our Q2 TF 2 (book says 3)
+ *  21 | Q2  | us   #31 Six      +3                     |  11 |    7 |
+ *  22 | Q2  | them #4           FT made                |  11 |    8 |
+ *  23 | Q2  | them #10          +3                     |  11 |   11 | Q2: us 1+3 = 4, them 2+1+3 = 6
+ *     |     | End Q2. Check Q2: book 12 / 11           |     |      | us 1 short (FT), fouls 1 short
+ *  24 | Q2  | ADD us #31 Six Foul from the check       |  11 |   11 | score unchanged; our Q2 TF 3
+ *     |     | fix a: ev 12 FT missed -> FT made        |  12 |   11 | MATCHED -> Fixed
+ *  25 | Q3  | them +Play +3, Whose number? 33 (new)    |  12 |   14 | #33 joins their roster
+ *  26 | Q3  | us   #4  One      +2                     |  14 |   14 |
+ *  27 | Q3  | us   #44 Seven    +3                     |  17 |   14 | End Q3. Check Q3: 17 / 14 MATCHED
+ *  28 | Q4  | them #33          +2                     |  17 |   16 |
+ *  29 | Q4  | them +Play FT made, 33, then FT made     |  17 |   18 | #33 sheet for the pair
+ *  30 | Q4  | us   #0  Three    +2                     |  19 |   18 |
+ *  31 | Q4  | us   #00 Two      +3                     |  22 |   18 | End Q4 -> End game; Q4 unchecked
+ *
+ * Events: Q1 9 + Q2 14 + 1 added + Q3 3 + Q4 5 = 32 (ours 14, theirs 18).
+ * Final: Test Home 22, Test Opp 18.
+ * Their #24: 5 fouls (2 in Q1, 3 in Q2). Their #33: 3 + 2 + 1 + 1 = 7 points, no fouls.
+ * Their team fouls: Q1 2, Q2 3. Ours: Q1 1, Q2 3 (2 logged + 1 added). Timeouts used: theirs Full 4 of 3.
+ */
+
+const theirs = (page: Page) => ui(page).half('Away');
+const exact = (name: string) => ({ name, exact: true });
+/** Their player's card by number: `#24 Rival Two, 0 points, ...` or, for a nameless one, `#33, ...`. */
+const theirCard = (page: Page, no: string) => theirs(page).getByRole('button', { name: new RegExp(`^#${no}[ ,]`) });
+
+/** Taps their card, then each play; an FT pair closes with Done. */
+async function their(page: Page, no: string, plays: string[], done = false) {
+  const dialog = page.getByRole('dialog');
+  await theirCard(page, no).click();
+  for (const p of plays) await dialog.getByRole('button', exact(p)).click();
+  if (done) await dialog.getByRole('button', exact('Done')).click();
+  await expect(dialog).toHaveCount(0);
+}
+
+/** Their + Play, the play, then a number typed at Whose number?. Returns with the sheet that follows still open for an FT. */
+async function theirPlusPlay(page: Page, play: string, number: string) {
+  const dialog = page.getByRole('dialog');
+  await theirs(page).getByRole('button', exact('+ Play')).click();
+  await dialog.getByRole('button', exact(play)).click();
+  await expect(dialog).toHaveAccessibleName('Whose number?');
+  await dialog.getByLabel('Number', { exact: true }).fill(number);
+  await dialog.getByRole('button', exact('Save')).click();
+}
+
+test('both teams: a game by number with a halftime fix, a foul-out, a timeout at zero and an added player', async ({ page }) => {
+  const app = ui(page);
+  const dialog = page.getByRole('dialog');
+  const FULL_TIMEOUTS = { full: 3, thirty: 2 };
+  const strip = (us: number, opp: number, period: string, fouls: number) =>
+    app.expectStrip({ us, opp, period, fouls, bonus: false, timeouts: FULL_TIMEOUTS });
+
+  await test.step('setup: both rosters, #4 on both teams', async () => {
+    await page.goto('/');
+    await app.fillSetup(OPPONENT, TEAM);
+    await app.fillOppRoster([
+      { number: '4', name: 'Rival One' },
+      { number: '24', name: 'Rival Two' },
+      { number: '10', name: 'Rival Three' },
+      { number: '15', name: 'Rival Four' },
+    ]);
+    await app.startGame();
+    await strip(0, 0, 'Q1', 0);
+  });
+
+  await test.step('Q1: plays for both teams by number; the shared #4 is two different cards', async () => {
+    await app.score('Player One', '+2');
+    await their(page, '4', ['+3']);
+    await app.expectToast('#4 (Away) +3');
+    await expect(app.card('Player One')).toHaveAccessibleName('#4 Player One, 2 points, 0 fouls');
+    await expect(theirCard(page, '4')).toHaveAccessibleName('#4 Rival One, 3 points, 0 fouls');
+    await app.score('Player Seven', '+2');
+    await their(page, '24', ['Foul']);
+    await their(page, '24', ['Foul']);
+    await their(page, '10', ['+2']);
+    await app.foul('Player Four');
+    await app.score('Player Three', '+3');
+    await app.timeout('Full', 'Away');
+    await app.expectToast('Away timeout (Full)');
+    await expect(theirs(page).getByRole('button', exact('Full: 2'))).toBeVisible();
+    await strip(7, 5, 'Q1', 1);
+    await expect(theirs(page).getByText('Team fouls 2', { exact: true })).toBeVisible();
+    await expect(theirCard(page, '24')).toHaveAccessibleName('#24 Rival Two, 0 points, 2 fouls');
+
+    await app.endPeriod('Q1');
+    await app.checkQuarter('Q1', 7, 5);
+    await app.expectMatches();
+    await app.saveCheck();
+    await expect(app.banner('Q1')).toHaveCount(0);
+  });
+
+  await test.step('Q2: their #24 fouls out, 3 Full timeouts, a 4th taken anyway at zero', async () => {
+    await their(page, '24', ['Foul']);
+    await app.ft('Player Two', true, false); // the second is logged as missed, though it went in
+    await their(page, '24', ['Foul']);
+    await app.timeout('Full', 'Away');
+    await app.foul('Player Four');
+    await their(page, '15', ['+2']);
+    await their(page, '24', ['Foul']);
+    await expect(theirCard(page, '24')).toHaveAccessibleName('#24 Rival Two, 0 points, 5 fouls, out');
+    // The out warning shows on their sheet and every play is grayed out.
+    await theirCard(page, '24').click();
+    await expect(dialog.getByTestId('out-warning')).toContainText('Out: 5 fouls.');
+    await expect(dialog.getByRole('button', exact('+2'))).toBeDisabled();
+    await dialog.getByRole('button', exact('Done')).click();
+    await expect(dialog).toHaveCount(0);
+
+    await app.timeout('Full', 'Away'); // the third and last
+    const zero = theirs(page).getByRole('button', exact('Full: 0'));
+    await expect(zero).toBeVisible();
+    await zero.click();
+    await expect(dialog).toContainText('Away has no full timeouts left. Are you sure?');
+    await dialog.getByRole('button', exact('Take one anyway')).click();
+    await expect(dialog).toHaveCount(0);
+    await app.expectToast('Away timeout (Full)');
+    await expect(zero).toBeVisible(); // never below 0
+    await app.foul('Player Five');
+    await app.score('Player Six', '+3');
+    await their(page, '4', ['FT made'], true);
+    await their(page, '10', ['+3']);
+    await strip(11, 11, 'Q2', 2);
+    await expect(theirs(page).getByText('Team fouls 3', { exact: true })).toBeVisible();
+    await app.endPeriod('Q2');
+  });
+
+  await test.step('halftime check: the book is at 12 / 11; one FT and one foul to fix', async () => {
+    await app.checkQuarter('Q2', 12, 11);
+    await app.expectAppHas('Q2', 4, 6, 11, 11);
+    await app.expectShort('Q2', 12, 11, 1);
+    await app.expectMismatchHint();
+    // Their score matches the book, so nothing warns there.
+    await expect(page.getByTestId('compare-opp')).not.toHaveAttribute('class', /amber/);
+    const homeFouls = page.getByText(/^Team fouls in Q2 \(Home\):/);
+    const awayFouls = page.getByText(/^Team fouls in Q2 \(Away\):/);
+    await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 2');
+    await expect(awayFouls).toHaveText('Team fouls in Q2 (Away): 3');
+
+    // b) A foul never logged: the book has 3. Adding it moves the fouls, not the score.
+    await app.fixRegion().getByRole('button', exact('Add play to Q2')).click();
+    await dialog.getByRole('button', exact('#31 Player Six')).click();
+    await dialog.getByRole('button', exact('Foul')).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 3');
+    await expect(awayFouls).toHaveText('Team fouls in Q2 (Away): 3');
+    await app.expectAppHas('Q2', 4, 6, 11, 11);
+    await app.expectShort('Q2', 12, 11, 1);
+    await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem').filter({ hasText: '#31 Player Six' })).toHaveText('#31 Player Six1');
+
+    // a) A free throw logged as missed that went in: change its type in the fix sheet.
+    const row = app.logRow(app.fixRegion(), '#00 Player Two (Home) · FT missed');
+    await expect(row).toHaveCount(1);
+    await row.click();
+    await dialog.getByRole('group', exact('Play')).getByRole('button', exact('FT made')).click();
+    await dialog.getByRole('button', exact('Save')).click();
+    await expect(dialog).toHaveCount(0);
+    await app.expectAppHas('Q2', 5, 6, 12, 11);
+    await app.expectMatches();
+    await expect(homeFouls).toHaveText('Team fouls in Q2 (Home): 3');
+    await app.saveCheck();
+    await expect(app.banner('Q2')).toHaveCount(0);
+  });
+
+  await test.step('Q3: their late #33 joins at Whose number? and scores; check matches', async () => {
+    await expect(theirCard(page, '33')).toHaveCount(0);
+    await theirPlusPlay(page, '+3', '33');
+    await expect(dialog).toHaveCount(0);
+    await app.expectToast('#33 (Away) +3');
+    await expect(theirCard(page, '33')).toHaveCount(1);
+    await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 3 points, 0 fouls');
+    await app.score('Player One', '+2');
+    await app.score('Player Seven', '+3');
+    await strip(17, 14, 'Q3', 0);
+    await app.endPeriod('Q3');
+    await app.checkQuarter('Q3', 17, 14);
+    await app.expectMatches();
+    await app.saveCheck();
+  });
+
+  await test.step('Q4: #33 again by card and by number; End game with Q4 unchecked', async () => {
+    await their(page, '33', ['+2']);
+    // A known number is the same player: no second #33 card.
+    await theirPlusPlay(page, 'FT made', '33');
+    await expect(dialog).toHaveAccessibleName('#33 (Away)');
+    await dialog.getByRole('button', exact('FT made')).click();
+    await dialog.getByRole('button', exact('Done')).click();
+    await expect(theirCard(page, '33')).toHaveCount(1);
+    await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 7 points, 0 fouls');
+    await app.score('Player Three', '+2');
+    await app.score('Player Two', '+3');
+    await strip(22, 18, 'Q4', 0);
+    await app.endPeriodThen('Q4', 'End game (no overtime)');
+    await app.expectFinalScore(22, 18);
+    await expect(app.issue('Q4', 'pending')).toBeVisible();
+    await expect(app.issues()).not.toContainText('Q2');
+    await expect(app.issues()).not.toContainText('Q3');
+  });
+
+  await test.step('Book CSV: our block, their block with #24 out and 4 of 3 timeouts', async () => {
+    const rows = await downloadCsv(page, app.exportButton('Book CSV'));
+    const at = (first: string) => rows.findIndex((r) => r[0] === first);
+
+    const score = at('Score by period (running score after each)');
+    expect(rows[score + 1]).toEqual(['', 'Q1', 'Q2', 'Q3', 'Q4', 'Final']);
+    expect(rows[score + 2]).toEqual([TEAM, '7', '12', '17', '22*', '22*']);
+    expect(rows[score + 3]).toEqual([OPPONENT, '5', '11', '14', '18*', '18*']);
+
+    // Our block runs to the first block heading; theirs follows it.
+    const heading = rows.findIndex((r) => /\((Home|Away)\)$/.test(r[0]));
+    expect(heading).toBeGreaterThan(0);
+    const mine = rows.slice(0, heading);
+    const theirBlock = rows.slice(heading);
+    expect(theirBlock[0][0]).toBe(`${OPPONENT} (Away)`);
+
+    const colOf = (block: string[][], name: string) => block[block.findIndex((r) => r[0] === 'POS')].indexOf(name);
+    const line = (block: string[][], name: string) => block.find((r) => r[1] === name)!;
+    const fouls = (block: string[][], name: string) => line(block, name)[colOf(block, 'FOULS')];
+    const tp = (block: string[][], name: string) => line(block, name)[colOf(block, 'TP')];
+
+    // Ours: Player Six's added foul, Player Two's fixed FT.
+    expect(fouls(mine, 'Player Six')).toBe('1');
+    expect(fouls(mine, 'Player Four')).toBe('2');
+    expect(tp(mine, 'Player Two')).toBe('5');
+    expect(line(mine, 'Player Two')[colOf(mine, 'FTM')]).toBe('2');
+    expect(mine.find((r) => r[0] === 'TEAM TOTALS')![colOf(mine, 'TP')]).toBe('22');
+    expect(mine.filter((r) => r[0] === 'Team fouls')).toEqual([
+      ['Team fouls', 'Q1', '1'], ['Team fouls', 'Q2', '3'], ['Team fouls', 'Q3', '0'], ['Team fouls', 'Q4', '0'],
+    ]);
+    expect(mine.filter((r) => r[0] === 'Timeouts used')).toEqual([
+      ['Timeouts used', 'Full', '0 of 3'], ['Timeouts used', '30', '0 of 2'], ['Timeouts used', 'OT', '0 of 0'],
+    ]);
+
+    // Theirs.
+    expect(fouls(theirBlock, 'Rival Two')).toBe('5');
+    expect(line(theirBlock, 'Rival Two')[2]).toBe('#24');
+    expect(tp(theirBlock, 'Rival One')).toBe('4');
+    expect(line(theirBlock, 'Rival One')[2]).toBe('#4');
+    expect(tp(theirBlock, 'Rival Three')).toBe('5');
+    expect(tp(theirBlock, 'Rival Four')).toBe('2');
+    // The added #33 is a row with no name and 7 points: 3 + 2 + 1 + 1.
+    const added = theirBlock.find((r) => r[2] === '#33')!;
+    expect(added[1]).toBe('');
+    expect(added[colOf(theirBlock, 'TP')]).toBe('7');
+    expect(added[colOf(theirBlock, 'FTM')]).toBe('2');
+    expect(added[colOf(theirBlock, 'FOULS')]).toBe('0');
+    expect(theirBlock.find((r) => r[0] === 'TEAM TOTALS')![colOf(theirBlock, 'TP')]).toBe('18');
+    expect(theirBlock.filter((r) => r[0] === 'Team fouls')).toEqual([
+      ['Team fouls', 'Q1', '2'], ['Team fouls', 'Q2', '3'], ['Team fouls', 'Q3', '0'], ['Team fouls', 'Q4', '0'],
+    ]);
+    expect(theirBlock.filter((r) => r[0] === 'Timeouts used')).toEqual([
+      ['Timeouts used', 'Full', '4 of 3'], ['Timeouts used', '30', '0 of 2'], ['Timeouts used', 'OT', '0 of 0'],
+    ]);
+  });
+
+  await test.step('Plays CSV: every row on its own side, their #33 rows, the fixed FT', async () => {
+    const [header, ...plays] = await downloadCsv(page, app.exportButton('Plays CSV'));
+    const c = (name: string) => header.indexOf(name);
+    expect(plays).toHaveLength(32);
+    expect(['Q1', 'Q2', 'Q3', 'Q4'].map((p) => plays.filter((r) => r[c('period')] === p).length)).toEqual([9, 15, 3, 5]);
+
+    // team and side agree on every row: us is Home, they are Away.
+    for (const r of plays) expect(r[c('side')]).toBe(r[c('team')] === 'us' ? 'home' : 'away');
+    expect(plays.filter((r) => r[c('team')] === 'us')).toHaveLength(14);
+    expect(plays.filter((r) => r[c('side')] === 'away')).toHaveLength(18);
+    // Their points are their own plays now, never the old OPP_PTS.
+    expect(plays.filter((r) => r[c('event')] === 'OPP_PTS')).toHaveLength(0);
+
+    const rowsOf = (team: string, no: string) => plays.filter((r) => r[c('team')] === team && r[c('number')] === no).map((r) => r[c('event')]);
+    expect(rowsOf('opp', '33')).toEqual(['FG3', 'FG2', 'FTM', 'FTM']);
+    expect(plays.filter((r) => r[c('number')] === '33').map((r) => [r[c('team')], r[c('player')], r[c('side')]]))
+      .toEqual(Array(4).fill(['opp', '', 'away']));
+    expect(rowsOf('opp', '24')).toEqual(Array(5).fill('FOUL'));
+    // The same number on both teams stays apart.
+    expect(rowsOf('us', '4')).toEqual(['FG2', 'FG2']);
+    expect(rowsOf('opp', '4')).toEqual(['FG3', 'FTM']);
+
+    // Their four Full timeouts, no number, on their side.
+    expect(plays.filter((r) => r[c('event')] === 'TIMEOUT').map((r) => [r[c('team')], r[c('side')], r[c('detail')]]))
+      .toEqual(Array(4).fill(['opp', 'away', 'full']));
+
+    // The fixed FT is the one edit, and it now reads FTM; the added foul is the last Q2 row.
+    const edited = plays.filter((r) => r[c('edited')] === 'yes');
+    expect(edited.map((r) => [r[c('period')], r[c('team')], r[c('number')], r[c('event')]])).toEqual([['Q2', 'us', '00', 'FTM']]);
+    const q2 = plays.filter((r) => r[c('period')] === 'Q2');
+    expect(q2[q2.length - 1].slice(c('team'), c('event') + 1)).toEqual(['us', '31', 'Player Six', 'FOUL']);
+
+    const last = plays[plays.length - 1];
+    expect([last[c('us_score')], last[c('opp_score')]]).toEqual(['22', '18']);
+  });
+});
