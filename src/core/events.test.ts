@@ -365,6 +365,53 @@ describe('recording a sub', () => {
     expect(g.events.find((e) => e.id === block[1].id)!.order).toBeLessThan(g.events[1].order);
   });
 
+  test('moveFrom after a missed End Q carries a sub inside the block, so a later Q1 play sorts before them all', () => {
+    // Q1 play, End Q1 missed, then a "Q2" play, a sub and a "Q2" play, all recorded in Q1.
+    let g = newGame(info, two, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0);
+    g = recordSub(g, 'us', ['p2'], ['p1'], t1);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p2' }, t0);
+    const [, A, B] = orderedEvents(g);
+    g = moveFrom(g, A.id, 2, t1);
+    const sub = g.subs![0];
+    expect(sub.period).toBe(2);
+    const order = (id: string) => g.events.find((e) => e.id === id)!.order;
+    expect(sub.order).toBeGreaterThan(order(A.id));
+    expect(sub.order).toBeLessThan(order(B.id));
+    g = appendEvent(g, { type: 'FTM', playerId: 'p1', period: 1 }, t1);
+    expect(orderedEvents(g).map((e) => e.period)).toEqual([1, 1, 2, 2]);
+    expect(orderedEvents(g)[1].order).toBeLessThan(sub.order);
+  });
+
+  test('moveFrom backward re-slots a sub in the block with the plays, after the play it followed', () => {
+    let g = { ...newGame(info, two, t0), currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1', period: 1 }, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0); // Q2b stays in Q2
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1' }, t0); // C: moved back
+    g = recordSub(g, 'us', ['p2'], ['p1'], t1);
+    g = appendEvent(g, { type: 'FG3', playerId: 'p2' }, t0); // D: moved back
+    const [, Q2b, C, D] = orderedEvents(g);
+    g = moveFrom(g, C.id, 1, t1);
+    const sub = g.subs![0];
+    const order = (id: string) => g.events.find((e) => e.id === id)!.order;
+    expect(sub.period).toBe(1);
+    expect(order(C.id)).toBeLessThan(sub.order);
+    expect(sub.order).toBeLessThan(order(D.id));
+    expect(order(D.id)).toBeLessThan(order(Q2b.id));
+    expectMonotonic(g);
+  });
+
+  test('moveFrom leaves a sub of another period, or before the moved play, where it was', () => {
+    let g = newGame(info, two, t0);
+    g = appendEvent(g, { type: 'FG2', playerId: 'p1' }, t0);
+    g = recordSub(g, 'us', ['p2'], ['p1'], t1); // before the block
+    g = appendEvent(g, { type: 'FG2', playerId: 'p2' }, t0);
+    const before = g.subs![0];
+    g = moveFrom(g, orderedEvents(g)[1].id, 2, t1);
+    expect(g.subs![0]).toEqual(before);
+  });
+
   test('a sub on an empty game gets order 0', () => {
     const g = recordSub(newGame(info, two, t0), 'us', ['p2'], ['p1'], t1);
     expect(g.subs![0].order).toBe(0);

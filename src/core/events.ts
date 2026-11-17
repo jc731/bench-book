@@ -55,9 +55,9 @@ function makeEvent(d: EventDraft, order: number, period: number, now: Date): Gam
 }
 
 /**
- * Orders for `count` events that belong in `period`: after the last of `others` (by order) whose
- * period is `period` or earlier, and before the event that follows it. With nothing after, they
- * count up from the last order; with nothing at or before `period`, they go before the first event.
+ * Orders for `count` plays or subs that belong in `period`: after the last of `others` (plays and subs,
+ * by order) whose period is `period` or earlier, and before the play or sub that follows it. With nothing
+ * after, they count up from the last order; with nothing at or before `period`, they go before the first.
  */
 export function slotOrders(others: { order: number; period: number }[], period: number, count: number): number[] {
   const sorted = [...others].sort((a, b) => a.order - b.order);
@@ -123,28 +123,34 @@ export function deleteEvent(g: Game, id: string, now: Date): Game {
   return withEvents(g, g.events.filter((e) => e.id !== id), now);
 }
 
-// Sets `period` on fromId and on every later event (by order) in the SAME original period as fromId; plays in other periods stay.
-// Moving forward (the missed End Q) puts the moved plays at the START of the target period, ahead of its own plays: one
-// quarter on, they were already the tail of their period, so the order is left alone; past a quarter that has plays,
-// they are re-slotted after the last play before the target period. Moving backward from mid-period would leave them
-// after plays of a later period, so they are re-slotted, in their own order, at the END of the target period.
+// Sets `period` on fromId and on every later play or sub (by order) in the SAME original period as fromId; plays and subs in
+// other periods stay. A sub inside the block happened among those plays, so it moves with them: left behind, it would split
+// the earlier quarter from a play added to it later. Moving forward (the missed End Q) puts the moved items at the START of
+// the target period, ahead of its own: one quarter on, they were already the tail of their period, so the order is left
+// alone; past a quarter that has plays, they are re-slotted after the last item before the target period. Moving backward
+// from mid-period would leave them after plays of a later period, so they are re-slotted, in their own order (a sub ahead of
+// a play it tied, as the lineup replays them), at the END of the target period.
 export function moveFrom(g: Game, fromId: string, period: number, now: Date): Game {
   const from = g.events.find((e) => e.id === fromId);
   if (!from) throw new Error(`No event with id ${fromId}`);
-  const inBlock = (e: GameEvent) => e.id === fromId || (e.order > from.order && e.period === from.period);
-  const others = [...g.events.filter((e) => !inBlock(e)), ...(g.subs ?? [])];
+  const later = (x: { order: number; period: number }) => x.order > from.order && x.period === from.period;
+  const inBlock = (e: GameEvent) => e.id === fromId || later(e);
+  const subs = g.subs ?? [];
+  const blockSubs = subs.filter(later);
+  const others = [...g.events.filter((e) => !inBlock(e)), ...subs.filter((s) => !later(s))];
   const skipsPlays = others.some((e) => e.order > from.order && e.period > from.period && e.period < period);
   const behindLater = others.some((e) => e.order < from.order && e.period > period);
-  const block = g.events.filter(inBlock).sort((a, b) => a.order - b.order);
+  const block: { id: string; order: number; sub: boolean }[] = [
+    ...g.events.filter(inBlock).map((e) => ({ id: e.id, order: e.order, sub: false })),
+    ...blockSubs.map((s) => ({ id: s.id, order: s.order, sub: true })),
+  ].sort((a, b) => a.order - b.order || Number(b.sub) - Number(a.sub));
   const orders = skipsPlays
     ? slotOrders(others, period - 1, block.length)
     : behindLater
       ? slotOrders(others, period, block.length)
       : block.map((e) => e.order);
   const orderOf = new Map(block.map((e, i) => [e.id, orders[i]]));
-  return withEvents(
-    g,
-    g.events.map((e) => (orderOf.has(e.id) ? { ...e, period, order: orderOf.get(e.id)! } : e)),
-    now,
-  );
+  const move = <T extends { id: string }>(x: T): T => (orderOf.has(x.id) ? { ...x, period, order: orderOf.get(x.id)! } : x);
+  const moved = withEvents(g, g.events.map(move), now);
+  return blockSubs.length === 0 ? moved : { ...moved, subs: subs.map(move) };
 }
