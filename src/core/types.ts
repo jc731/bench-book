@@ -81,6 +81,26 @@ export interface Game {
    * Whose number? prompt. Absent (or a side absent) means ask; games saved before it have none.
    */
   noNumbers?: Partial<Record<Side, boolean>>;
+  /**
+   * Deliberate substitutions, both teams, anchored among the plays by `order`. Not plays: never in the
+   * CSVs, the Log or any count. Absent in games saved before 0.9; readers treat absent as [].
+   */
+  subs?: Sub[];
+}
+
+/**
+ * One substitution for one team: who went in and who came out. Replayed against the derived floor, so an
+ * in already on the floor or an out already off it is skipped (see `lineup`).
+ */
+export interface Sub {
+  id: string;
+  side: Side;
+  ins: string[];
+  outs: string[];
+  /** Same scale as `GameEvent.order`; on a tie with a play, the sub comes first. */
+  order: number;
+  period: number;
+  enteredAt: string; // ISO
 }
 
 /**

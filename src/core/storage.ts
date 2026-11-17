@@ -35,7 +35,8 @@ function safeWrite(s: Storage, key: string, value: unknown): boolean {
 /**
  * Brings a stored game up to the current shape. Games saved before per-file export tracking carry
  * a single `exportedAt`, which was set by either button; it is read as both files saved, since the
- * old screen called that game exported.
+ * old screen called that game exported. Games saved before 0.9 have no `subs`; it stays absent, and
+ * readers (`lineup`) treat absent as no subs.
  */
 export function migrateGame(g: Game): Game {
   return migrateOppRoster(migrateChecks(migrateExport(g)));

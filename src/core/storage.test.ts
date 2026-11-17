@@ -15,6 +15,7 @@ import {
   saveGame,
   saveRoster,
 } from './storage';
+import { lineup } from './lineup';
 import type { Game, Player } from './types';
 
 class FakeStorage implements Storage {
@@ -243,6 +244,17 @@ describe('migrateGame (per-file export state)', () => {
     const s = new FakeStorage();
     s.data.set(GAME_KEY, JSON.stringify({ ...game(), exportedAt: stamp }));
     expect(loadGame(s, T0)?.exported).toEqual({ book: stamp, plays: stamp });
+  });
+});
+
+describe('migrateGame (games saved before subs, 0.9)', () => {
+  it('leaves subs absent, and the floor replays from the first five', () => {
+    const roster: Player[] = ['4', '5', '7', '10', '12', '22'].map((n) => ({ id: `q${n}`, number: n, name: `Kit ${n}`, pos: '' }));
+    const s = new FakeStorage();
+    s.data.set(GAME_KEY, JSON.stringify({ ...game(), roster }));
+    const loaded = loadGame(s, T0)!;
+    expect('subs' in loaded).toBe(false);
+    expect(lineup(loaded, 'us').floor).toEqual(['q4', 'q5', 'q7', 'q10', 'q12']);
   });
 });
 
