@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- Floor cards have darker outlines on the light Home half and lighter ones on the dark Away half, so the five on the floor stand out from the ghosted bench. Before, the bench outlines were the stronger ones. The colors are unchanged: still gray, with amber and red as before.
+
 ## [0.9.1] - 2026-11-17
 
 - A double-tap on End no longer skips a quarter. For a second after an End, the End button, Undo and the Q4/OT sheet's choices ignore taps (they show dimmed), so the second tap of a double-tap cannot end the next quarter, end the game from the sheet the first tap opened, or undo the End. After that second, End and Undo work as before.

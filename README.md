@@ -91,7 +91,7 @@ when adding to the interface:
 | **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
-| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards, ghosted bench cards and their "bench" tag, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
+| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (floor outlines stronger than the bench's: slate-600 on Home, slate-400 on Away), ghosted bench cards and their "bench" tag, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
 
 Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
 each kept at 3:1 or better for borders and dots and 4.5:1 for text:
@@ -143,19 +143,17 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   - Explain the bonus and amber team fouls in the How-to; say the first five start on Setup;
     "Full: 3" doesn't say left or used; two Save buttons on the check with a play open.
   - Plays CSV for spreadsheets: #0 and #00 merge in Excel; no date/opponent columns; explain `*`.
-  - Accessibility: brighter solid-card borders on the dark half; "pressed" rows in Who went out?
+  - Accessibility (brighter solid-card borders done in 0.9.2): "pressed" rows in Who went out?
     read wrong to a screen reader; 40 px timeout buttons; larger phone text pushes timeouts
     below the fold.
 
-- **Recorded, not planned: making the floor stand out from the bench.** Floor cards are solid and
-  bench cards ghosted, and at a glance the difference is weak (measured 2026-11-17): five floor
-  cards in two columns end mid-row beside a bench card, and the bench outlines contrast more than
-  the floor's (about 3.8:1 against 2.1–2.4:1). Nobody has misread floor vs bench (0.9.0 audit: no
-  finding), so nothing is built. Options already explored: brighter gray floor borders (cheap); full-width floor
-  rows with the bench as three-across chips (fits 10 a side; drops bench names; a promoted bench
-  player stays a chip, so "wide = floor" is wrong exactly when the lineup is). Any one-tap point
-  button must work on bench cards too (forgotten subs), so that belongs to the taps-per-play work.
-  Trigger: a scorer enters a play for the wrong player because they misread who was on the floor.
+- **Recorded, not planned: a bigger floor/bench layout change.** 0.9.2 gave floor cards the
+  stronger gray outline. The five floor cards still end mid-row beside a bench card. Explored on
+  2026-11-17: full-width floor rows with the bench as three-across chips. It fits 10 a side, but it
+  drops bench names, and a promoted bench player stays a chip, so "wide = floor" is wrong exactly
+  when the lineup is. Any one-tap point button must work on bench cards too (forgotten subs), so
+  that question belongs to the taps-per-play work. Trigger: a scorer enters a play for the wrong
+  player because they misread who was on the floor.
 - **Explore: fewer taps per play.** Today a player's play is 2 taps (card, then play). Goal to
   test: an average of 1.25–1.5 taps per play across a real game (the owner's arbitrary target,
   open to critique). Steps:

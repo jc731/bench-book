@@ -33,7 +33,7 @@ const TONE = {
   light: {
     half: 'bg-slate-200 text-slate-900',
     card: 'bg-white active:bg-slate-100',
-    ok: 'border-slate-400',
+    ok: 'border-slate-600',
     warn: 'border-amber-600',
     out: 'border-red-600',
     dotWarn: 'bg-amber-600',
@@ -58,7 +58,7 @@ const TONE = {
   dark: {
     half: 'bg-slate-900 text-white',
     card: 'bg-slate-800 active:bg-slate-700',
-    ok: 'border-slate-600',
+    ok: 'border-slate-400',
     warn: 'border-amber-400',
     out: 'border-red-500',
     dotWarn: 'bg-amber-400',
