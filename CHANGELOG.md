@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-17
+
 - The live screen shows who is on the floor. Each team's first five start; their cards are solid, and the rest of the roster is the bench: ghosted cards with a small gray "bench" tag. Nothing is hidden, and with 11 or more players the floor stays in view while only the bench scrolls. Cards are 60 px tall (64 px in 0.8), so ten players and the controls still fit each half.
 - Subbing is optional. A bench player who makes a play (+2, +3, a free throw or a foul) goes on the floor by herself and nobody comes off; the line above the bar adds "· now on the floor". A tech, a play entered anyway for an out player, or a play with no number never moves anyone.
 - A Sub button beside each team's + Play (none for a roster of five or fewer). It reads Starters until that team's first play (a timeout or bench tech isn't one), then Sub, or "Sub · 6 on" / "Sub · 4 on" when the floor isn't five: amber from the play that changed it until that team's next play, then gray.
