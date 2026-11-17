@@ -11,7 +11,7 @@ import { addedLabel } from './log-logic';
 import { NO_NUMBER, feedbackLine, namedWho, who, type PlayType, type Toast } from './live-logic';
 import { Log } from './Log';
 import {
-  MISMATCH_HINT, appHasText, compareText, isMismatch, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, comparePanel, isMismatch, savedCheckText, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -85,11 +85,12 @@ export function Reconcile({ store }: { store: GameStore }) {
   const usProblem = totalProblem(game, period, bookUsTotal, 'bookUsTotal');
   const oppProblem = totalProblem(game, period, bookOppTotal, 'bookOppTotal');
   const blocked = invalid || usProblem !== null || oppProblem !== null;
-  const live = usProblem ? null : compareText(bookUsTotal, c);
   const recorded = oppPointsRecorded(game);
   // Gated on their points being recorded: a scorer who records nothing for the other team may still type their book
   // total, and warning "app 0 — 22 off" every quarter would be noise.
   const theirs = oppProblem ? null : theirScoreLineIfRecorded(c, bookOppTotal, recorded);
+  // Green only when ours matches and theirs is not off; the status still follows ours alone.
+  const live = usProblem ? null : comparePanel(bookUsTotal, c, theirs);
   const mismatch = !usProblem && isMismatch(bookUsTotal, c);
   const span = spanLabel(c.spanFrom, period);
   // Home first, then Away; with no plays or roster for the other team, only ours, as before.
@@ -109,7 +110,7 @@ export function Reconcile({ store }: { store: GameStore }) {
         const rec = reconcileDraftToSave(g.periods.find((p) => p.period === period), draft);
         return rec ? saveReconcile(g, period, rec.bookUsTotal, rec.bookOppTotal, rec.note, now, saw) : g;
       },
-      `Saved ${periodLabel(period)} check`,
+      savedCheckText(bookUsTotal, c),
     );
     return true;
   };
@@ -169,8 +170,8 @@ export function Reconcile({ store }: { store: GameStore }) {
         )}
 
         {live && (
-          <div class={`rounded-lg px-3 py-3 ${mismatch ? 'bg-amber-400 text-slate-900' : 'bg-emerald-800'}`}>
-            <p class="text-lg font-bold" role="status" data-testid="compare">{live}</p>
+          <div class={`rounded-lg px-3 py-3 ${live.tone === 'off' ? 'bg-amber-400 text-slate-900' : 'bg-emerald-800'}`} data-tone={live.tone}>
+            <p class="text-lg font-bold" role="status" data-testid="compare">{live.text}</p>
             {mismatch && <p class="mt-1 text-sm font-semibold" data-testid="compare-hint">{MISMATCH_HINT}</p>}
           </div>
         )}

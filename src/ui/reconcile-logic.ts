@@ -32,6 +32,36 @@ export function isMismatch(bookTotal: number | null, c: Basis): boolean {
   return bookTotal !== null && bookTotal - c.anchorBook !== c.appSpan;
 }
 
+/**
+ * The Save toast: `Saved Q1 check`, or, when our score still disagrees with the book over the checked
+ * span, the gap in the compare panel's words: `Saved Q1 check — app still 2 short`. A saved mismatch
+ * read exactly like a match before 0.9.1.
+ */
+export function savedCheckText(bookTotal: number | null, c: Basis): string {
+  const saved = `Saved ${periodLabel(c.period)} check`;
+  if (bookTotal === null || !isMismatch(bookTotal, c)) return saved;
+  const diff = bookTotal - c.anchorBook - c.appSpan;
+  return `${saved} — app still ${Math.abs(diff)} ${way(diff)}`;
+}
+
+/**
+ * The compare panel: its text and whether it reads as a match (green) or not (amber). Our score alone
+ * sets the quarter's status, but a green "✓ Matches" over their score being off read as all clear, so
+ * then the panel is amber: `Ours matches · theirs 1 off`. Null until our total is typed.
+ */
+export function comparePanel(
+  bookTotal: number | null,
+  c: Basis,
+  theirs: { off: number } | null,
+): { text: string; tone: 'match' | 'off' } | null {
+  const text = compareText(bookTotal, c);
+  if (text === null) return null;
+  if (isMismatch(bookTotal, c)) return { text, tone: 'off' };
+  if (!theirs || theirs.off === 0) return { text, tone: 'match' };
+  const ours = text === '✓ Matches' ? 'Ours matches' : text.replace(/^✓ /, '');
+  return { text: `${ours} · theirs ${theirs.off} off`, tone: 'off' };
+}
+
 export const MISMATCH_HINT = 'Add the missing play, fix one below, or write a note and Save.';
 
 /**
@@ -85,16 +115,17 @@ type OppBasis = Pick<PeriodCheck, 'period' | 'oppSpanFrom' | 'anchorOppBook' | '
  * their points since. A blank box is not a book number, so it says nothing. It warns, never blocks:
  * the quarter's status follows our score alone.
  */
-export function theirScoreLine(c: OppBasis & Pick<PeriodCheck, 'bookOppTotal'>): { text: string; warn: boolean } | null {
+export type TheirScoreLine = { text: string; warn: boolean; off: number };
+export function theirScoreLine(c: OppBasis & Pick<PeriodCheck, 'bookOppTotal'>): TheirScoreLine | null {
   if (c.bookOppTotal === null) return null;
   const app = c.anchorOppBook + c.oppTapped;
   const off = Math.abs(c.bookOppTotal - app);
-  if (off === 0) return { text: `Their score: book ${c.bookOppTotal} · app ${app} ✓`, warn: false };
-  return { text: `Their score: book ${c.bookOppTotal} · app ${app} — ${off} off`, warn: true };
+  if (off === 0) return { text: `Their score: book ${c.bookOppTotal} · app ${app} ✓`, warn: false, off };
+  return { text: `Their score: book ${c.bookOppTotal} · app ${app} — ${off} off`, warn: true, off };
 }
 
 /** The line for the typed total, or null when none of their points are recorded (nothing to compare). */
-export function theirScoreLineIfRecorded(c: OppBasis, bookOppTotal: number | null, recorded: boolean): { text: string; warn: boolean } | null {
+export function theirScoreLineIfRecorded(c: OppBasis, bookOppTotal: number | null, recorded: boolean): TheirScoreLine | null {
   return recorded ? theirScoreLine({ ...c, bookOppTotal }) : null;
 }
 

@@ -6,6 +6,8 @@ All notable changes to Bench Book are listed here, in the
 ## [Unreleased]
 
 - A double-tap on End no longer skips a quarter. For a second after an End, the End button, Undo and the Q4/OT sheet's choices ignore taps (they show dimmed), so the second tap of a double-tap cannot end the next quarter, end the game from the sheet the first tap opened, or undo the End. After that second, End and Undo work as before.
+- Saving a quarter check whose score still doesn't match the book says so: "Saved Q1 check — app still 2 short" (or "1 over"), in the compare panel's words. A match still reads "Saved Q1 check".
+- When our score matches but their typed score is off, the compare panel is amber and reads "Ours matches · theirs 1 off", not the green "✓ Matches". The quarter's status still follows our score alone; with their box blank, or none of their points recorded, the panel is as before.
 
 ## [0.9.0] - 2026-11-17
 

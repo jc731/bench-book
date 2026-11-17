@@ -1570,14 +1570,42 @@ test('check: their score off warns but the quarter still saves as matched', asyn
   const line = page.getByTestId('compare-opp');
   await expect(line).toHaveText('Their score: book 5 · app 3 — 2 off');
   await expect(line).toHaveClass(/text-amber/);
+  // Ours matches, but the panel is not the green "✓ Matches": theirs is off, so it is amber and says so.
+  const compare = page.getByTestId('compare');
+  await app.expectMatches('Ours matches · theirs 2 off');
+  await expect(compare.locator('..')).toHaveClass(/bg-amber-400/);
+  await expect(compare.locator('..')).not.toHaveClass(/bg-emerald/);
+  // With their box fixed to the app's 3, it is the green match again.
+  await page.getByLabel(/Their game score after Q1/).fill('3');
   await app.expectMatches();
+  await expect(compare.locator('..')).toHaveClass(/bg-emerald-800/);
+  // ...and blank, as today: green.
+  await page.getByLabel(/Their game score after Q1/).fill('');
+  await app.expectMatches();
+  await expect(compare.locator('..')).toHaveClass(/bg-emerald-800/);
+  await page.getByLabel(/Their game score after Q1/).fill('5');
+  await app.expectMatches('Ours matches · theirs 2 off');
   await app.saveCheck();
+  // The quarter's status follows our score: the toast is the matched one.
+  await app.expectToast('Saved Q1 check');
   await app.openLog();
   await expect(app.chip('Q1', 'matched')).toBeVisible();
   await app.back();
   await app.openEnd();
   await expect(page.getByTestId('final-us')).toBeVisible();
   await expect(app.issues()).toHaveCount(0);
+});
+
+test('check: saving a quarter whose score is still off says the gap in the toast', async ({ page }) => {
+  await onePlayerGame(page);
+  const app = ui(page);
+  await tap(page, card(page, '4', 'Player One'), '+2');
+  await app.endPeriod('Q1');
+  await app.banner('Q1').click();
+  await page.getByLabel(/Our game score after Q1/).fill('4');
+  await app.expectShort('Q1', 4, 2, 2);
+  await app.saveCheck();
+  await app.expectToast('Saved Q1 check — app still 2 short');
 });
 
 test('check: when the other team has plays, both teams get their quarter and whole-game fouls', async ({ page }) => {

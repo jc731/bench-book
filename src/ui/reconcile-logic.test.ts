@@ -4,7 +4,7 @@ import { checkPeriod, endGame, markExported, saveReconcile } from '../core/recon
 import type { Game } from '../core/types';
 import {
   MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, theirScoreLineIfRecorded, foulSidesOf, oppPlaceholder, parseScore,
-  reconcileDraftToSave, statusChipText,
+  comparePanel, reconcileDraftToSave, savedCheckText, statusChipText,
 } from './reconcile-logic';
 
 const t0 = new Date('2026-11-10T10:00:00Z');
@@ -35,6 +35,46 @@ describe('compareText (typed game totals)', () => {
   it('names the span when an earlier check was skipped', () => {
     const q3 = { period: 3, spanFrom: 2, anchorBook: 10, anchorApp: 10, appTotal: 24, appSpan: 14 };
     expect(compareText(25, q3)).toBe('Book 25 · App 24 — app is 1 short in Q2–Q3');
+  });
+});
+
+describe('savedCheckText: the Save toast says when our score is still off', () => {
+  const q1 = { period: 1, spanFrom: 1, anchorBook: 0, anchorApp: 0, appTotal: 10, appSpan: 10 };
+  it('a match reads as today', () => {
+    expect(savedCheckText(10, q1)).toBe('Saved Q1 check');
+  });
+  it('short and over name the gap, in the compare panel\'s words', () => {
+    expect(savedCheckText(12, q1)).toBe('Saved Q1 check — app still 2 short');
+    expect(savedCheckText(9, q1)).toBe('Saved Q1 check — app still 1 over');
+  });
+  it('a blank box (a note only) says nothing about a gap', () => {
+    expect(savedCheckText(null, q1)).toBe('Saved Q1 check');
+  });
+  it('grades the quarter, not a gap carried from a noted quarter', () => {
+    const q2 = { period: 2, spanFrom: 2, anchorBook: 12, anchorApp: 10, appTotal: 18, appSpan: 8 };
+    expect(savedCheckText(20, q2)).toBe('Saved Q2 check');
+    expect(savedCheckText(23, q2)).toBe('Saved Q2 check — app still 3 short');
+  });
+});
+
+describe('comparePanel: green only when ours matches and theirs is not off', () => {
+  const q1 = { period: 1, spanFrom: 1, anchorBook: 0, anchorApp: 0, appTotal: 10, appSpan: 10 };
+  const theirs = (off: number) => ({ text: '', warn: off !== 0, off });
+  it('ours matches, theirs matches, blank or not recorded: green "✓ Matches" as today', () => {
+    expect(comparePanel(10, q1, theirs(0))).toEqual({ text: '✓ Matches', tone: 'match' });
+    expect(comparePanel(10, q1, null)).toEqual({ text: '✓ Matches', tone: 'match' });
+  });
+  it('ours matches but theirs is off: amber, and says so', () => {
+    expect(comparePanel(10, q1, theirs(1))).toEqual({ text: 'Ours matches · theirs 1 off', tone: 'off' });
+    const q2 = { period: 2, spanFrom: 2, anchorBook: 12, anchorApp: 10, appTotal: 18, appSpan: 8 };
+    expect(comparePanel(20, q2, theirs(3))).toEqual({ text: 'Q2 matches — app still 2 short from Q1 · theirs 3 off', tone: 'off' });
+  });
+  it('ours off: amber with the existing text, whatever theirs says', () => {
+    expect(comparePanel(12, q1, theirs(1))).toEqual({ text: 'Book 12 · App 10 — app is 2 short in Q1', tone: 'off' });
+    expect(comparePanel(12, q1, null)).toEqual({ text: 'Book 12 · App 10 — app is 2 short in Q1', tone: 'off' });
+  });
+  it('nothing typed for ours: no panel', () => {
+    expect(comparePanel(null, q1, theirs(2))).toBeNull();
   });
 });
 
@@ -103,14 +143,14 @@ describe('their score line', () => {
   const c = (book: number | null, taps: number, anchor = 0) =>
     ({ period: 2, oppSpanFrom: 1, anchorOppBook: anchor, oppTapped: taps, bookOppTotal: book });
   it('warns, with how far off, when the book and the app disagree', () => {
-    expect(theirScoreLine(c(22, 20))).toEqual({ text: 'Their score: book 22 \u00b7 app 20 \u2014 2 off', warn: true });
-    expect(theirScoreLine(c(18, 20))).toEqual({ text: 'Their score: book 18 \u00b7 app 20 \u2014 2 off', warn: true });
+    expect(theirScoreLine(c(22, 20))).toEqual({ text: 'Their score: book 22 \u00b7 app 20 \u2014 2 off', warn: true, off: 2 });
+    expect(theirScoreLine(c(18, 20))).toEqual({ text: 'Their score: book 18 \u00b7 app 20 \u2014 2 off', warn: true, off: 2 });
   });
   it('ticks when they agree', () => {
-    expect(theirScoreLine(c(20, 20))).toEqual({ text: 'Their score: book 20 \u00b7 app 20 \u2713', warn: false });
+    expect(theirScoreLine(c(20, 20))).toEqual({ text: 'Their score: book 20 \u00b7 app 20 \u2713', warn: false, off: 0 });
   });
   it('counts their points on top of the last typed total', () => {
-    expect(theirScoreLine(c(14, 5, 9))).toEqual({ text: 'Their score: book 14 \u00b7 app 14 \u2713', warn: false });
+    expect(theirScoreLine(c(14, 5, 9))).toEqual({ text: 'Their score: book 14 \u00b7 app 14 \u2713', warn: false, off: 0 });
   });
   it('says nothing for a blank box, never a match', () => {
     expect(theirScoreLine(c(null, 6))).toBeNull();
