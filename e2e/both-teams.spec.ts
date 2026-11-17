@@ -8,20 +8,28 @@ import { OPPONENT, TEAM, ui } from './fixture';
  *
  * Ours (fixture roster): #4 One, #00 Two, #0 Three, #12 Four, #23 Five, #31 Six, #44 Seven.
  * Theirs (set up): #4 Rival One (the SAME number as our #4), #24 Rival Two, #10 Rival Three,
- * #15 Rival Four. Their #33 is not on the roster: added mid-game at Whose number?.
+ * #15 Rival Four, #5 Rival Five, #21 Rival Six. Their #33 is not on the roster: added mid-game at
+ * Whose number?. Rival Five and Rival Six make no play: they give their team a bench (six players),
+ * so #24's foul-out has a sub to fill it.
+ *
+ * The lineup (S rows) changes no score, foul, timeout or play count: the numbers are as before 0.9.
+ * Each team's first five start: ours #4 #00 #0 #12 #23 (bench #31 #44), theirs #4 #24 #10 #15 #5
+ * (bench #21).
  *
  *  ev | per | event                                    |  Us | Them | notes
  *  ---+-----+------------------------------------------+-----+------+---------------------------
  *   1 | Q1  | us   #4  One      +2                     |   2 |    0 |
  *   2 | Q1  | them #4           +3                     |   2 |    3 | same number, other card
- *   3 | Q1  | us   #44 Seven    +2                     |   4 |    3 |
+ *   3 | Q1  | us   #44 Seven    +2                     |   4 |    3 | bench -> floor: Sub · 6 on (forgotten sub)
  *   4 | Q1  | them #24          Foul                   |   4 |    3 | their TF 1
  *   5 | Q1  | them #24          Foul                   |   4 |    3 | their TF 2
  *   6 | Q1  | them #10          +2                     |   4 |    5 |
  *   7 | Q1  | us   #12 Four     Foul                   |   4 |    5 | our TF 1
  *   8 | Q1  | us   #0  Three    +3                     |   7 |    5 |
  *   9 | Q1  | them Full timeout                        |   7 |    5 | their Full 1 of 3
+ *  S1 | Q1  | us   Sub · 6 on: tap the likely #00      |     |      | "#44 (Home) in for #00"
  *     |     | End Q1. Check Q1: book 7 / 5             |     |      | MATCHED
+ *  S2 | Q2  | us   #00 checks in for #44 (3 taps)     |     |      | deliberate sub
  *  10 | Q2  | them #24          Foul                   |   7 |    5 | #24 has 3
  *  11 | Q2  | us   #00 Two      FT made                |   8 |    5 |
  *  12 | Q2  | us   #00 Two      FT missed              |   8 |    5 | really MADE (fix a: -> 9)
@@ -30,16 +38,19 @@ import { OPPONENT, TEAM, ui } from './fixture';
  *  15 | Q2  | us   #12 Four     Foul                   |   8 |    5 | our Q2 TF 1
  *  16 | Q2  | them #15          +2                     |   8 |    7 |
  *  17 | Q2  | them #24          Foul                   |   8 |    7 | #24 has 5 -> OUT; their Q2 TF 3
+ *  S3 | Q2  | them Sub · 4 on: Who came in? #21      |     |      | "Away floor updated"
  *  18 | Q2  | them Full timeout                        |   8 |    7 | their Full 3 of 3 (0 left)
  *  19 | Q2  | them Full timeout, Take one anyway       |   8 |    7 | their Full 4 of 3
  *  20 | Q2  | us   #23 Five     Foul                   |   8 |    7 | our Q2 TF 2 (book says 3)
+ *  S4 | Q2  | us   #31 checks in for #23 (3 taps)     |     |      | deliberate sub
  *  21 | Q2  | us   #31 Six      +3                     |  11 |    7 |
  *  22 | Q2  | them #4           FT made                |  11 |    8 |
  *  23 | Q2  | them #10          +3                     |  11 |   11 | Q2: us 1+3 = 4, them 2+1+3 = 6
  *     |     | End Q2. Check Q2: book 12 / 11           |     |      | us 1 short (FT), fouls 1 short
  *  24 | Q2  | ADD us #31 Six Foul from the check       |  11 |   11 | score unchanged; our Q2 TF 3
  *     |     | fix a: ev 12 FT missed -> FT made        |  12 |   11 | MATCHED -> Fixed
- *  25 | Q3  | them +Play +3, Whose number? 33 (new)    |  12 |   14 | #33 joins their roster
+ *  S5 | Q3  | us   halftime line change: #12, #31 off; #23, #44 on (Who's on the floor?)
+ *  25 | Q3  | them +Play +3, Whose number? 33 (new)    |  12 |   14 | #33 joins their roster; Sub · 6 on, left
  *  26 | Q3  | us   #4  One      +2                     |  14 |   14 |
  *  27 | Q3  | us   #44 Seven    +3                     |  17 |   14 | End Q3. Check Q3: 17 / 14 MATCHED
  *  28 | Q4  | them #33          +2                     |  17 |   16 |
@@ -51,6 +62,8 @@ import { OPPONENT, TEAM, ui } from './fixture';
  * Final: Test Home 22, Test Opp 18.
  * Their #24: 5 fouls (2 in Q1, 3 in Q2). Their #33: 3 + 2 + 1 + 1 = 7 points, no fouls.
  * Their team fouls: Q1 2, Q2 3. Ours: Q1 1, Q2 3 (2 logged + 1 added). Timeouts used: theirs Full 4 of 3.
+ * Floor at the end: ours #4 #0 #00 #23 #44 (5); theirs #4 #10 #15 #5 #21 #33 (6: nobody told the app
+ * who #33 replaced, and nothing asks).
  */
 
 const theirs = (page: Page) => ui(page).half('Away');
@@ -77,7 +90,7 @@ async function theirPlusPlay(page: Page, play: string, number: string) {
   await dialog.getByRole('button', exact('Save')).click();
 }
 
-test('both teams: a game by number with a halftime fix, a foul-out, a timeout at zero and an added player', async ({ page }) => {
+test('both teams: a game by number with a halftime fix, a foul-out, a timeout at zero, an added player and subs', async ({ page }) => {
   const app = ui(page);
   const dialog = page.getByRole('dialog');
   const FULL_TIMEOUTS = { full: 3, thirty: 2 };
@@ -92,9 +105,16 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
       { number: '24', name: 'Rival Two' },
       { number: '10', name: 'Rival Three' },
       { number: '15', name: 'Rival Four' },
+      { number: '5', name: 'Rival Five' },
+      { number: '21', name: 'Rival Six' },
     ]);
     await app.startGame();
     await strip(0, 0, 'Q1', 0);
+    // Each team's first five start; the rest are the bench. Before a team's first play its Sub button reads Starters.
+    expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '12', '23']);
+    expect(await app.floorOf('Away')).toEqual(['4', '24', '10', '15', '5']);
+    await expect(app.subButton('Home')).toHaveText('Starters');
+    await expect(app.subButton('Away')).toHaveText('Starters');
   });
 
   await test.step('Q1: plays for both teams by number; the shared #4 is two different cards', async () => {
@@ -103,7 +123,11 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.expectToast('#4 (Away) +3');
     await expect(app.card('Player One')).toHaveAccessibleName('#4 Player One, 2 points, 0 fouls');
     await expect(theirCard(page, '4')).toHaveAccessibleName('#4 Rival One, 3 points, 0 fouls');
+    // A forgotten sub: #44 scores from the bench. She goes on, nobody comes off, and the Sub button says so.
     await app.score('Player Seven', '+2');
+    await app.expectToast('#44 (Home) +2 · now on the floor');
+    await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
+    await expect(app.subButton('Home')).toHaveClass(/amber/);
     await their(page, '24', ['Foul']);
     await their(page, '24', ['Foul']);
     await their(page, '10', ['+2']);
@@ -112,6 +136,19 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.timeout('Full', 'Away');
     await app.expectToast('Away timeout (Full)');
     await expect(theirs(page).getByRole('button', exact('Full: 2'))).toBeVisible();
+    // During the timeout, the forgotten sub: still 6 on, gray since our next play. #00 has made no play, so she is
+    // the likely one; one tap closes the sheet at five.
+    await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
+    await expect(app.subButton('Home')).not.toHaveClass(/amber/);
+    await app.subButton('Home').click();
+    await expect(dialog).toHaveAccessibleName('Who went out?');
+    await expect(dialog.getByRole('button', { name: /^#44 / })).toHaveAccessibleName('#44 Player Seven, just in');
+    await expect(dialog.getByRole('button', { name: /^#00 / })).toHaveAccessibleName('#00 Player Two, likely');
+    await dialog.getByRole('button', { name: /^#00 / }).click();
+    await expect(dialog).toHaveCount(0);
+    await app.expectToastUndo('#44 (Home) in for #00');
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '23', '44']);
+    await expect(app.subButton('Home')).toHaveText('Sub');
     await strip(7, 5, 'Q1', 1);
     await expect(theirs(page).getByText('Team fouls 2', { exact: true })).toBeVisible();
     await expect(theirCard(page, '24')).toHaveAccessibleName('#24 Rival Two, 0 points, 2 fouls');
@@ -124,6 +161,10 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
   });
 
   await test.step('Q2: their #24 fouls out, 3 Full timeouts, a 4th taken anyway at zero', async () => {
+    // A deliberate sub at the quarter break, 3 taps: #00 checks in for #44.
+    await app.subIn('Home', 'Player Two', 'Player Seven');
+    await app.expectToastUndo('#00 (Home) in for #44');
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '23', '00']);
     await their(page, '24', ['Foul']);
     await app.ft('Player Two', true, false); // the second is logged as missed, though it went in
     await their(page, '24', ['Foul']);
@@ -131,7 +172,9 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.foul('Player Four');
     await their(page, '15', ['+2']);
     await their(page, '24', ['Foul']);
+    await app.expectToast('#24 Rival Two (Away) out, 5 fouls. Tell the official.');
     await expect(theirCard(page, '24')).toHaveAccessibleName('#24 Rival Two, 0 points, 5 fouls, out');
+    await expect(app.subButton('Away')).toHaveText('Sub · 4 on');
     // The out warning shows on their sheet and every play is grayed out.
     await theirCard(page, '24').click();
     await expect(dialog.getByTestId('out-warning')).toContainText('Out: 5 fouls.');
@@ -140,6 +183,15 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     }
     await dialog.getByRole('button', exact('Done')).click();
     await expect(dialog).toHaveCount(0);
+    // The foul-out's sub: #21 checks in. Who came in? lists the bench, #24 grayed with her reason.
+    await app.subButton('Away').click();
+    await expect(dialog).toHaveAccessibleName('Who came in?');
+    await expect(dialog.getByRole('button', { name: /^#24 / })).toBeDisabled();
+    await dialog.getByRole('button', { name: /^#21 / }).click();
+    await expect(dialog).toHaveCount(0);
+    await app.expectToastUndo('Away floor updated');
+    expect(await app.floorOf('Away')).toEqual(['4', '10', '15', '5', '21']);
+    await expect(app.subButton('Away')).toHaveText('Sub');
 
     await app.timeout('Full', 'Away'); // the third and last
     const zero = theirs(page).getByRole('button', exact('Full: 0'));
@@ -151,7 +203,11 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.expectToast('Away timeout (Full)');
     await expect(zero).toBeVisible(); // never below 0
     await app.foul('Player Five');
+    // Another deliberate sub: #31 checks in for #23, so her three is no promotion.
+    await app.subIn('Home', 'Player Six', 'Player Five');
+    await app.expectToastUndo('#31 (Home) in for #23');
     await app.score('Player Six', '+3');
+    await app.expectToast('#31 (Home) +3');
     await their(page, '4', ['FT made'], true);
     await their(page, '10', ['+3']);
     await strip(11, 11, 'Q2', 2);
@@ -194,15 +250,33 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem').filter({ hasText: '#31 Player Six' })).toHaveText('#31 Player Six1');
     await app.saveCheck();
     await expect(app.banner('Q2')).toHaveCount(0);
+    // The foul added from the check was #31's while she was on: the floor is as the last sub left it.
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '00', '31']);
+  });
+
+  await test.step('halftime: a line change on "Who\'s on the floor?"; it changes no count', async () => {
+    await expect(app.subButton('Home')).toHaveText('Sub');
+    await app.subButton('Home').click();
+    await expect(dialog).toHaveAccessibleName("Who's on the floor?");
+    for (const n of ['12', '31', '23', '44']) await dialog.getByRole('button', { name: new RegExp(`^#${n} `) }).click();
+    await expect(dialog.getByTestId('sub-count')).toHaveText('5 on the floor');
+    await dialog.getByRole('button', exact('Done')).click();
+    await expect(dialog).toHaveCount(0);
+    await app.expectToastUndo('Home floor updated');
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '00', '23', '44']);
+    await strip(12, 11, 'Q3', 0);
   });
 
   await test.step('Q3: their late #33 joins at Whose number? and scores; check matches', async () => {
     await expect(theirCard(page, '33')).toHaveCount(0);
     await theirPlusPlay(page, '+3', '33');
     await expect(dialog).toHaveCount(0);
-    await app.expectToast('#33 (Away) +3');
+    // Their seventh player: she joins on the bench, and her play puts her on.
+    await app.expectToast('#33 (Away) +3 · now on the floor');
     await expect(theirCard(page, '33')).toHaveCount(1);
     await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 3 points, 0 fouls');
+    // Nobody tells the app who she replaced, and nothing asks: the Sub button just counts.
+    await expect(app.subButton('Away')).toHaveText('Sub · 6 on');
     await app.score('Player One', '+2');
     await app.score('Player Seven', '+3');
     await strip(17, 14, 'Q3', 0);
@@ -224,6 +298,10 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.score('Player Three', '+2');
     await app.score('Player Two', '+3');
     await strip(22, 18, 'Q4', 0);
+    // Every Q3 and Q4 scorer of ours was in the halftime five: no promotion. Theirs is still 6 on.
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '00', '23', '44']);
+    expect(await app.floorOf('Away')).toEqual(['4', '10', '15', '5', '21', '33']);
+    await expect(app.subButton('Home')).toHaveText('Sub');
     await app.endPeriodThen('Q4', 'End game (no overtime)');
     await app.expectFinalScore(22, 18);
     await expect(app.issue('Q4', 'pending')).toBeVisible();
@@ -272,6 +350,10 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     expect(line(theirBlock, 'Rival One')[2]).toBe('#4');
     expect(tp(theirBlock, 'Rival Three')).toBe('5');
     expect(tp(theirBlock, 'Rival Four')).toBe('2');
+    // The two who only ever sat on the bench or subbed in: a line each, all zeros.
+    for (const name of ['Rival Five', 'Rival Six']) {
+      expect([tp(theirBlock, name), fouls(theirBlock, name)], name).toEqual(['0', '0']);
+    }
     // The added #33 is a row with no name and 7 points: 3 + 2 + 1 + 1.
     const added = theirBlock.find((r) => r[2] === '#33')!;
     expect(added[1]).toBe('');
@@ -290,6 +372,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
   await test.step('Plays CSV: every row on its own side, their #33 rows, the fixed FT', async () => {
     const [header, ...plays] = await downloadCsv(page, app.exportButton('Plays CSV'));
     const c = (name: string) => header.indexOf(name);
+    // The 32 plays and nothing else: the five subs are not plays.
     expect(plays).toHaveLength(32);
     expect(['Q1', 'Q2', 'Q3', 'Q4'].map((p) => plays.filter((r) => r[c('period')] === p).length)).toEqual([9, 15, 3, 5]);
 
