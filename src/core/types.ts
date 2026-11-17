@@ -76,6 +76,11 @@ export interface Game {
    * reads it but the check screen, and it is never exported. Absent in games saved before drafts.
    */
   checkDrafts?: Record<number, CheckDraft>;
+  /**
+   * Teams whose scorer chose "Stop asking this game": their + Play records team plays with no
+   * Whose number? prompt. Absent (or a side absent) means ask; games saved before it have none.
+   */
+  noNumbers?: Partial<Record<Side, boolean>>;
 }
 
 /**

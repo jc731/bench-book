@@ -85,11 +85,13 @@ export function ui(page: Page, ours: Side = 'Home') {
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
     tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
     half,
-    /** Points for the other team with no number, through their + Play: 1 is an FT made (then Done), 2 a +2, 3 a +3. */
+    /** Points for the other team with no number, through their + Play and Whose number? > No number: 1 is an FT made (then Done), 2 a +2, 3 a +3. */
     async opp(n: 1 | 2 | 3) {
       await half(other(ours)).getByRole('button', exact('+ Play')).click();
       await expect(dialog()).toHaveAccessibleName(other(ours));
       await dialog().getByRole('button', exact(n === 1 ? 'FT made' : `+${n}`)).click();
+      await expect(dialog()).toHaveAccessibleName('Whose number?');
+      await dialog().getByRole('button', exact('No number')).click();
       if (n === 1) await dialog().getByRole('button', exact('Done')).click();
       await expect(dialog()).toHaveCount(0);
     },
@@ -306,7 +308,7 @@ export function ui(page: Page, ours: Side = 'Home') {
       const box = await h.boundingBox();
       expect(box!.height).toBeLessThanOrEqual(STRIP_MAX_HEIGHT);
       const [home, away] = ours === 'Home' ? [s.us, s.opp] : [s.opp, s.us];
-      await expect(h.getByLabel(`Score ${home} to ${away}`)).toBeVisible();
+      await expect(h.getByLabel(`Score Home ${home}, Away ${away}`)).toBeVisible();
       await expect(h.getByText(s.period, { exact: true })).toBeVisible();
       await expect(half(ours).getByText(`Team fouls ${s.fouls}`, { exact: true })).toBeVisible();
       await expect(h.getByText(`${other(ours)} shoots`, { exact: true })).toHaveCount(s.bonus ? 1 : 0);

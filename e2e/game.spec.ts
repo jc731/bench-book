@@ -48,7 +48,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await page.getByRole('button', { name: 'Start game' }).click();
 
   // Live, Q1
-  const score = (us: number, opp: number) => page.getByLabel(`Score ${us} to ${opp}`);
+  const score = (us: number, opp: number) => page.getByLabel(`Score Home ${us}, Away ${opp}`);
   await expect(score(0, 0)).toBeVisible();
   await expect(page.getByText('Q1', { exact: true })).toBeVisible();
   expect(await noOverflow(page)).toBe(true);
@@ -133,14 +133,14 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
   await page.getByLabel('Player 1 name', { exact: true }).fill('Player One');
   await page.getByRole('button', { name: 'Start game' }).click();
   await tap(page, card(page, '4', 'Player One'), '+2');
-  await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 2, Away 0')).toBeVisible();
 
   // Cancel returns to Live with the game intact.
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: 'New game' }).click();
   await expect(page.getByText(/A game is in progress \(vs First Opp\)/)).toBeVisible();
   await page.getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 2, Away 0')).toBeVisible();
 
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: 'New game' }).click();
@@ -148,7 +148,7 @@ test('a second game: Live menu -> New game -> discard -> roster prefilled -> 0-0
   await expect(page.getByLabel('Player 1 name', { exact: true })).toHaveValue('Player One');
   await page.getByText('Game details', { exact: true }).click();
   await page.getByRole('button', { name: 'Start game' }).click();
-  await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 0, Away 0')).toBeVisible();
   await expect(page.getByText('Q1', { exact: true })).toBeVisible();
 });
 
@@ -509,20 +509,20 @@ test('Redo: five Undos where four were meant, then Redo puts the last one back; 
     await card.click();
     await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
   }
-  await expect(page.getByLabel('Score 10 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 10, Away 0')).toBeVisible();
   const undo = page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true });
   for (let i = 0; i < 5; i++) await undo.click();
-  await expect(page.getByLabel('Score 0 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 0, Away 0')).toBeVisible();
   const redo = page.getByRole('button', { name: 'Redo', exact: true });
   await expect(page.getByTestId('feedback-text')).toHaveText('Undid #4 (Home) +2');
   await redo.click();
-  await expect(page.getByLabel('Score 2 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 2, Away 0')).toBeVisible();
   await expect(page.getByTestId('feedback-text')).toHaveText('Redid #4 (Home) +2');
   // More is left to redo, so Redo stays; a new play forks the history and Redo goes.
   await expect(redo).toBeVisible();
   await card.click();
   await page.getByRole('dialog').getByRole('button', { name: '+3', exact: true }).click();
-  await expect(page.getByLabel('Score 5 to 0')).toBeVisible();
+  await expect(page.getByLabel('Score Home 5, Away 0')).toBeVisible();
   await expect(redo).toHaveCount(0);
 });
 
@@ -559,7 +559,7 @@ test("the check's player fouls are labeled as whole-game totals, apart from the 
 });
 
 test("setup: the other team's roster is optional, numbered, and starts the game with it", async ({ page }) => {
-  const score = (us: number, opp: number) => page.getByLabel(`Score ${us} to ${opp}`);
+  const score = (us: number, opp: number) => page.getByLabel(`Score Home ${us}, Away ${opp}`);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Their roster \(optional\)/ })).toBeVisible();
   // No players at all, theirs or ours: Start succeeds.
@@ -665,7 +665,7 @@ test('the strip: score home–away, team fouls per half, the bonus badge over th
   const app = ui(page);
   const strip = page.getByRole('banner');
   await app.opp(3);
-  await expect(strip.getByLabel('Score 0 to 3')).toBeVisible();
+  await expect(strip.getByLabel('Score Home 0, Away 3')).toBeVisible();
   for (let i = 0; i < 5; i++) await tap(page, card(page, String(10 + i), `Player ${i + 1}`), 'Foul');
   await expect(app.half('Home').getByText('Team fouls 5', { exact: true })).toBeVisible();
   await expect(app.half('Away').getByText('Team fouls 0', { exact: true })).toBeVisible();
@@ -682,7 +682,7 @@ test('the strip: score home–away, team fouls per half, the bonus badge over th
   await page.evaluate(() => localStorage.clear());
   await twoTeamGame(page, { away: true });
   await tap(page, card(page, '10', 'Player 1'), '+2');
-  await expect(strip.getByLabel('Score 0 to 2')).toBeVisible();
+  await expect(strip.getByLabel('Score Home 0, Away 2')).toBeVisible();
 });
 
 test("each half records for its own team: + Play, their cards, Bench and timeouts", async ({ page }) => {
@@ -693,22 +693,24 @@ test("each half records for its own team: + Play, their cards, Bench and timeout
   const dialog = page.getByRole('dialog');
   const toast = page.getByTestId('feedback-text');
 
-  // + Play, no number: FT made keeps the sheet open for the pair, titled with the team.
+  // + Play, No number: FT made goes back to the sheet for the pair, titled with the team.
   await away.getByRole('button', { name: '+ Play', exact: true }).click();
   await expect(dialog).toHaveAccessibleName('Away');
   await dialog.getByRole('button', { name: 'FT made', exact: true }).click();
+  await dialog.getByRole('button', { name: 'No number', exact: true }).click();
+  await expect(dialog).toHaveAccessibleName('Away');
   await expect(dialog.getByTestId('sheet-status')).toHaveText('Away FT made');
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
-  await expect(page.getByLabel('Score 0 to 1')).toBeVisible();
-  await tap(page, home.getByRole('button', { name: '+ Play', exact: true }), '+3');
+  await expect(page.getByLabel('Score Home 0, Away 1')).toBeVisible();
+  await tap(page, home.getByRole('button', { name: '+ Play', exact: true }), '+3', 'No number');
   await expect(toast).toHaveText('Home +3');
-  await expect(page.getByLabel('Score 3 to 1')).toBeVisible();
+  await expect(page.getByLabel('Score Home 3, Away 1')).toBeVisible();
 
   // Their player's card takes the same sheet and credits them.
   await tap(page, away.getByRole('button', { name: /^#50,/ }), '+2');
   await expect(toast).toHaveText('#50 (Away) +2');
   await expect(away.getByRole('button', { name: /^#50,/ })).toHaveAccessibleName('#50, 2 points, 0 fouls');
-  await expect(page.getByLabel('Score 3 to 3')).toBeVisible();
+  await expect(page.getByLabel('Score Home 3, Away 3')).toBeVisible();
 
   // Their bench tech counts to their team fouls, not ours.
   await app.benchTech('Away');
@@ -731,23 +733,6 @@ test("each half records for its own team: + Play, their cards, Bench and timeout
   await expect(away.getByRole('button', { name: 'Full: 3', exact: true })).toBeVisible();
 });
 
-test('a timeout button at zero draws grayed and still records the timeout', async ({ page }) => {
-  await twoTeamGame(page);
-  const app = ui(page);
-  for (let i = 0; i < 2; i++) await app.timeout('30s');
-  const zero = app.half('Home').getByRole('button', { name: '30s: 0', exact: true });
-  await expect(zero).toHaveClass(/opacity-50/);
-  await expect(zero).toBeEnabled();
-  await app.timeout('30s');
-  await expect(page.getByTestId('feedback-text')).toHaveText('Home timeout (30s)');
-  await expect(zero).toBeVisible(); // the count never shows below zero
-  // The tap at zero was recorded: one Undo takes it back and leaves two used, so the button still reads 0.
-  await page.getByRole('navigation').getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(page.getByTestId('feedback-text')).toHaveText('Undid Home timeout (30s)');
-  await expect(zero).toBeVisible();
-  await expect(app.half('Home').getByRole('button', { name: '30s: 1', exact: true })).toHaveCount(0);
-});
-
 test('a game saved before 0.8, with opponent taps and no their roster, opens in the two halves', async ({ page }) => {
   const now = new Date().toISOString();
   const ev = (order: number, rest: object) => ({ id: `e${order}`, order, period: 1, enteredAt: now, ...rest });
@@ -760,14 +745,14 @@ test('a game saved before 0.8, with opponent taps and no their roster, opens in 
   await page.addInitScript((g) => localStorage.setItem('benchbook:game', JSON.stringify(g)), legacy);
   await page.goto('/');
   const away = ui(page).half('Away');
-  await expect(page.getByRole('banner').getByLabel('Score 2 to 5')).toBeVisible();
+  await expect(page.getByRole('banner').getByLabel('Score Home 2, Away 5')).toBeVisible();
   await expect(away.getByRole('button', { name: /^#/ })).toHaveCount(0);
   await expect(away.getByRole('button', { name: '+ Play', exact: true })).toBeVisible();
   await expect(away.getByRole('button', { name: 'Bench / coach tech', exact: true })).toBeVisible();
   await expect(away.getByRole('button', { name: 'Full: 3', exact: true })).toBeVisible();
   // New points for them go through + Play and add to the old taps.
-  await tap(page, away.getByRole('button', { name: '+ Play', exact: true }), '+2');
-  await expect(page.getByRole('banner').getByLabel('Score 2 to 7')).toBeVisible();
+  await tap(page, away.getByRole('button', { name: '+ Play', exact: true }), '+2', 'No number');
+  await expect(page.getByRole('banner').getByLabel('Score Home 2, Away 7')).toBeVisible();
 });
 
 test('light cards: warn and OUT stay readable', async ({ page }) => {
@@ -802,4 +787,190 @@ test('light cards: warn and OUT stay readable', async ({ page }) => {
     expect(await colorContrast(out, 'borderTopColor'), `${side} out border`).toBeGreaterThanOrEqual(3);
     expect(await colorContrast(out.locator('span.rounded-full').first(), 'backgroundColor', 'parent'), `${side} out dots`).toBeGreaterThanOrEqual(3);
   }
+});
+
+// ---- Live sheets: + Play and Whose number?, Stop asking, the zero-timeout guard -------------
+
+const plusPlay = (page: Page, side: Side) => ui(page).half(side).getByRole('button', { name: '+ Play', exact: true });
+const cards = (page: Page, side: Side, n: string) => ui(page).half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
+
+/** + Play, a play, then the Whose number? sheet (left open). */
+async function plusPlayAsk(page: Page, side: Side, play: string) {
+  await plusPlay(page, side).click();
+  await page.getByRole('dialog').getByRole('button', { name: play, exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveAccessibleName('Whose number?');
+}
+
+test("a player card's sheet is titled with its team, and the strip's score says whose", async ({ page }) => {
+  await twoTeamGame(page);
+  const dialog = page.getByRole('dialog');
+  await card(page, '10', 'Player 1').click();
+  await expect(dialog).toHaveAccessibleName('#10 Player 1 (Home)');
+  await dialog.getByRole('button', { name: '+2', exact: true }).click();
+  await ui(page).half('Away').getByRole('button', { name: /^#50,/ }).click();
+  await expect(dialog).toHaveAccessibleName('#50 (Away)');
+  await dialog.getByRole('button', { name: '+3', exact: true }).click();
+  await expect(page.getByRole('banner').getByLabel('Score Home 2, Away 3', { exact: true })).toBeVisible();
+});
+
+test('+ Play, then a new number: the player joins that team and takes the play; a known number is credited', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  const dialog = page.getByRole('dialog');
+  const toast = page.getByTestId('feedback-text');
+
+  // Their #33 is new: Save adds the card and credits the +2.
+  await plusPlayAsk(page, 'Away', '+2');
+  await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+  await dialog.getByLabel('Number', { exact: true }).fill('33');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(toast).toHaveText('#33 (Away) +2');
+  await expect(cards(page, 'Away', '33')).toHaveAccessibleName('#33, 2 points, 0 fouls');
+  await expect(page.getByLabel('Score Home 0, Away 2', { exact: true })).toBeVisible();
+
+  // #33 again is the same player: a foul on the card, no second #33.
+  await plusPlayAsk(page, 'Away', 'Foul');
+  await dialog.getByLabel('Number', { exact: true }).fill(' 33 ');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(cards(page, 'Away', '33')).toHaveCount(1);
+  await expect(cards(page, 'Away', '33')).toHaveAccessibleName('#33, 2 points, 1 foul');
+  await expect(app.half('Away').getByText('Team fouls 1', { exact: true })).toBeVisible();
+
+  // Ours too: Home's + Play adds our #22, and one Undo takes back both the play and the card.
+  await plusPlayAsk(page, 'Home', '+3');
+  await dialog.getByLabel('Number', { exact: true }).fill('22');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(toast).toHaveText('#22 (Home) +3');
+  await expect(cards(page, 'Home', '22')).toHaveAccessibleName('#22, 3 points, 0 fouls');
+  await expect(app.half('Away').getByRole('button', { name: /^#22/ })).toHaveCount(0);
+  await app.undo();
+  await expect(cards(page, 'Home', '22')).toHaveCount(0);
+  await expect(page.getByLabel('Score Home 0, Away 2', { exact: true })).toBeVisible();
+
+  // A free throw with a new number goes on to that player's sheet, for the second shot.
+  await plusPlayAsk(page, 'Away', 'FT made');
+  await dialog.getByLabel('Number', { exact: true }).fill('41');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog).toHaveAccessibleName('#41 (Away)');
+  await expect(dialog.getByTestId('sheet-status')).toHaveText('#41 (Away) FT made');
+  await dialog.getByRole('button', { name: 'FT made', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(cards(page, 'Away', '41')).toHaveAccessibleName('#41, 2 points, 0 fouls');
+});
+
+test('Whose number? keeps a team to 15 players, and closing it records nothing', async ({ page }) => {
+  await twoTeamGame(page, { theirs: 15 });
+  const dialog = page.getByRole('dialog');
+  await plusPlayAsk(page, 'Away', '+2');
+  await dialog.getByLabel('Number', { exact: true }).fill('99');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toHaveText('At most 15 players.');
+  await expect(cards(page, 'Away', '99')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByLabel('Score Home 0, Away 0', { exact: true })).toBeVisible();
+});
+
+test('+ Play, No number: their score and team fouls only, no player', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  const dialog = page.getByRole('dialog');
+  const toast = page.getByTestId('feedback-text');
+  await plusPlayAsk(page, 'Away', '+2');
+  await dialog.getByRole('button', { name: 'No number', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(toast).toHaveText('Away +2');
+  await expect(page.getByLabel('Score Home 0, Away 2', { exact: true })).toBeVisible();
+  await expect(app.half('Away').getByRole('button', { name: /^#/ })).toHaveCount(2);
+  // A foul with no number: Away's team fouls, and at the 5th the toast says bonus.
+  for (let i = 0; i < 5; i++) {
+    await plusPlayAsk(page, 'Away', 'Foul');
+    await dialog.getByRole('button', { name: 'No number', exact: true }).click();
+  }
+  await expect(toast).toHaveText('Away Foul — bonus');
+  await expect(app.half('Away').getByText('Team fouls 5', { exact: true })).toBeVisible();
+  await expect(app.half('Home').getByText('Team fouls 0', { exact: true })).toBeVisible();
+  for (const n of ['50', '51']) await expect(cards(page, 'Away', n)).toHaveAccessibleName(`#${n}, 0 points, 0 fouls`);
+});
+
+test('Stop asking this game: that team only, kept on the game through a reload', async ({ page }) => {
+  await twoTeamGame(page);
+  const dialog = page.getByRole('dialog');
+  const toast = page.getByTestId('feedback-text');
+  await plusPlayAsk(page, 'Away', '+3');
+  await dialog.getByRole('button', { name: 'Stop asking this game', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(toast).toHaveText('Away +3');
+  // Their next + Play records in two taps.
+  await tap(page, plusPlay(page, 'Away'), '+2');
+  await expect(toast).toHaveText('Away +2');
+  await expect(page.getByLabel('Score Home 0, Away 5', { exact: true })).toBeVisible();
+  await page.reload();
+  await tap(page, plusPlay(page, 'Away'), '+2');
+  await expect(page.getByLabel('Score Home 0, Away 7', { exact: true })).toBeVisible();
+  // Ours still asks.
+  await plusPlayAsk(page, 'Home', '+2');
+});
+
+test("their foul-out: 5 fouls on their #50 — OUT on the card and the out warning on its sheet", async ({ page }) => {
+  await twoTeamGame(page);
+  const c = ui(page).half('Away').getByRole('button', { name: /^#50,/ });
+  for (let i = 0; i < 5; i++) await tap(page, c, 'Foul');
+  await expect(page.getByTestId('feedback-text')).toHaveText('#50 (Away) foul — 5th, out — bonus');
+  await expect(c).toHaveAccessibleName('#50, 0 points, 5 fouls, out');
+  await c.click();
+  await expect(page.getByRole('dialog').getByTestId('out-warning')).toContainText('Out: 5 fouls.');
+  await expect(page.getByRole('dialog').getByRole('button', { name: '+2', exact: true })).toBeDisabled();
+  await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
+  // Typing an out player's number at Whose number? opens their sheet, warning first: nothing is recorded yet.
+  await plusPlayAsk(page, 'Away', '+2');
+  await page.getByRole('dialog').getByLabel('Number', { exact: true }).fill('50');
+  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveAccessibleName('#50 (Away)');
+  await expect(page.getByRole('dialog').getByTestId('out-warning')).toBeVisible();
+  await expect(page.getByLabel('Score Home 0, Away 0', { exact: true })).toBeVisible();
+});
+
+test('the same number on both teams: each card and each toast is its own', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Player 1 number', { exact: true }).fill('4');
+  await ui(page).fillOppRoster([{ number: '4' }]);
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
+  const toast = page.getByTestId('feedback-text');
+  await tap(page, cards(page, 'Home', '4'), '+2');
+  await expect(toast).toHaveText('#4 (Home) +2');
+  await tap(page, cards(page, 'Away', '4'), '+2');
+  await expect(toast).toHaveText('#4 (Away) +2');
+  await expect(cards(page, 'Home', '4')).toHaveAccessibleName('#4, 2 points, 0 fouls');
+  await expect(cards(page, 'Away', '4')).toHaveAccessibleName('#4, 2 points, 0 fouls');
+});
+
+test('a timeout at zero is guarded: grayed, a warning, Cancel records nothing, Take one anyway records it', async ({ page }) => {
+  await twoTeamGame(page);
+  const app = ui(page);
+  const dialog = page.getByRole('dialog');
+  for (let i = 0; i < 3; i++) await app.timeout('Full', 'Away');
+  const zero = app.half('Away').getByRole('button', { name: 'Full: 0', exact: true });
+  await expect(zero).toHaveClass(/opacity-50/);
+  const logged = async () => {
+    await app.openLog();
+    const n = await page.getByRole('button', { name: /^Away timeout \(Full\)/ }).count();
+    await app.back();
+    return n;
+  };
+  expect(await logged()).toBe(3);
+  await zero.click();
+  await expect(dialog).toContainText('Away has no full timeouts left. Are you sure?');
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await logged()).toBe(3);
+  await zero.click();
+  await dialog.getByRole('button', { name: 'Take one anyway', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId('feedback-text')).toHaveText('Away timeout (Full)');
+  expect(await logged()).toBe(4);
+  // Home's are untouched and still take one tap.
+  await app.timeout('Full', 'Home');
+  await expect(app.half('Home').getByRole('button', { name: 'Full: 2', exact: true })).toBeVisible();
 });

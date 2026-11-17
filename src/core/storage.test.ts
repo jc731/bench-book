@@ -293,3 +293,19 @@ describe('migrateGame (opponent roster)', () => {
     expect(m.events).toBe(old.events);
   });
 });
+
+describe('Stop asking (noNumbers)', () => {
+  it('is kept on the game through a save and load, per team', () => {
+    const s = new FakeStorage();
+    const g: Game = { ...game(), noNumbers: { them: true } };
+    saveGame(s, g);
+    expect(loadGame(s, at(HOUR))?.noNumbers).toEqual({ them: true });
+  });
+  it('loads as absent on a game saved before it', () => {
+    const s = new FakeStorage();
+    saveGame(s, game());
+    const loaded = loadGame(s, at(HOUR))!;
+    expect(loaded).not.toHaveProperty('noNumbers');
+    expect(loaded.noNumbers?.them).toBeUndefined();
+  });
+});

@@ -276,6 +276,14 @@ describe('sides and opponent roster', () => {
     expect(h.roster).toEqual(g.roster);
     expect(() => addPlayer(h, 'them', { id: 'y', number: '14', name: '', pos: '' }, new Date())).toThrow();
   });
+  test('addPlayer on our side: our roster grows, theirs stays, and the same number is ours to take once', () => {
+    const g = newGame(info, roster, new Date(), [{ id: 'o1', number: '1', name: '', pos: '' }]);
+    const h = addPlayer(g, 'us', { id: 'x', number: '14', name: 'Player Two', pos: '' }, t1);
+    expect(h.roster.map((p) => p.number)).toEqual(['1', '14']);
+    expect(h.oppRoster).toEqual(g.oppRoster);
+    expect(h.updatedAt).toBe(t1.toISOString());
+    expect(() => addPlayer(h, 'us', { id: 'y', number: ' 14 ', name: '', pos: '' }, t1)).toThrow('Duplicate number: #14.');
+  });
   test('sideName', () => {
     const g = newGame(info, roster, new Date());
     expect(sideName(g, 'us')).toBe('Home');

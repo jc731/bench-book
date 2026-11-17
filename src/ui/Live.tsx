@@ -1,15 +1,16 @@
 import { useRef, useState } from 'preact/hooks';
 import { derive } from '../core/derive';
-import { appendEvent, homeSide, rosterOf, sideName } from '../core/events';
+import { addPlayer, appendEvent, homeSide, rosterOf, sideName } from '../core/events';
 import { periodLabel } from '../core/periods';
 import { endGame, endPeriod, openIssues, oppTotal, startOvertime } from '../core/reconcile';
 import type { EventDraft, Player, Side, TimeoutKind } from '../core/types';
-import { EventSheet, Sheet } from './EventSheet';
+import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
 import {
-  BENCH_TECH_TEXT, BONUS_AT, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, who, reconcileBanner,
-  outReason, timeoutLabel, undoAriaLabel, type PlayType, type Toast,
+  BENCH_TECH_TEXT, TAKE_ANYWAY, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, who, reconcileBanner,
+  outReason, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
+import { validateRoster } from './roster';
 import { notExportedText } from './reconcile-logic';
 import { StatusStrip } from './StatusStrip';
 import { TeamHalf } from './TeamHalf';
@@ -25,9 +26,10 @@ const endTone = {
   final: 'border border-slate-500',
 } as const;
 
-type SheetKind = 'endPeriod' | 'menu' | 'bench' | null;
+type SheetKind = 'endPeriod' | 'menu' | 'bench' | 'timeoutGuard' | null;
 /** Whose play sheet is open: a player's card (`p`), or a team's + Play card (`p` null, no number). */
 type Picked = { side: Side; p: Player | null };
+const isFt = (t: PlayType) => t === 'FTM' || t === 'FTX';
 
 export function Live({ store }: { store: GameStore }) {
   const { game, toast, update, undo, redo, canUndo, setView, openReconcile, openHowto } = store;
@@ -35,10 +37,15 @@ export function Live({ store }: { store: GameStore }) {
   const [sheet, setSheet] = useState<SheetKind>(null);
   // The Bench sheet's team.
   const [benchSide, setBenchSide] = useState<Side>('us');
+  // The + Play's play waiting at Whose number?, while that prompt is open.
+  const [asking, setAsking] = useState<PlayType | null>(null);
+  // The timeout tapped at zero, while its guard sheet is open.
+  const [guard, setGuard] = useState<{ side: Side; kind: TimeoutKind } | null>(null);
   // The feedback present when a play sheet opened: the sheet shows only what came after it.
   const sheetOpenedWith = useRef<Toast | null>(null);
   const pick = (side: Side, p: Player | null) => {
     sheetOpenedWith.current = toast;
+    setAsking(null);
     setPicked({ side, p });
   };
 
@@ -52,28 +59,70 @@ export function Live({ store }: { store: GameStore }) {
   // Absent means ours, so only their events carry a side.
   const sided = (side: Side): Pick<EventDraft, 'side'> => (side === 'them' ? { side: 'them' } : {});
   const lineOf = (pk: Picked) => (pk.p ? teamOf(pk.side).players.find((l) => l.playerId === pk.p!.id) : undefined);
+  /** The toast for a play: a foul goes through foulLabel (out and bonus), the rest read `#14 (Away) +2` / `Away +2`. */
+  const labelFor = (side: Side, p: Player | null, type: PlayType) => {
+    const tag = sideName(game, side);
+    if (type !== 'FOUL' && type !== 'TECH') return playLabel(type, who(p, tag));
+    const line = p ? lineOf({ side, p }) : undefined;
+    const player = p ? { p, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 } : null;
+    return foulLabel(type, { player, teamFouls: teamOf(side).teamFoulsForBonus(period), tag });
+  };
+  /** Records one play; a new player joins the roster and Stop asking is set in the same entry, so one Undo takes it all back. */
+  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) =>
+    update((g, now) => {
+      let h = opts.newPlayer && p ? addPlayer(g, side, p, now) : g;
+      if (opts.stopAsking) h = { ...h, noNumbers: { ...h.noNumbers, [side]: true } };
+      return appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
+    }, labelFor(side, p, type));
   const play = (type: PlayType) => {
     if (!picked) return;
     const { side, p } = picked;
-    const tag = sideName(game, side);
-    const teamFouls = teamOf(side).teamFoulsForBonus(period);
-    const line = lineOf(picked);
-    let label: string;
-    if (type !== 'FOUL' && type !== 'TECH') label = playLabel(type, who(p, tag));
-    else if (p) label = foulLabel(type, { player: { p, fouls: line?.fouls ?? 0, techs: line?.techs ?? 0 }, teamFouls, tag });
-    else {
-      // A foul with no number: the team's, toward its bonus like any other.
-      const base = playLabel(type, who(null, tag));
-      label = teamFouls + 1 === BONUS_AT ? `${base} — bonus` : base;
+    // A team's + Play asks whose number, unless the scorer chose Stop asking for that team.
+    if (!p && !game.noNumbers?.[side]) {
+      setAsking(type);
+      return;
     }
-    // + Play records the team's play with no number. Task 8 puts the Whose number? prompt here,
-    // before the play is added, for a team that has not chosen Stop asking.
-    add({ type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, label);
-    if (type !== 'FTM' && type !== 'FTX') setPicked(null);
+    record(side, p, type);
+    if (!isFt(type)) setPicked(null);
   };
-  // One tap takes the timeout, at zero too (the count shown never drops below 0). Task 8 guards zero.
-  const timeout = (side: Side, kind: TimeoutKind) =>
+  /** No number / Stop asking: the team's play. A free throw goes back to the team's sheet for the pair. */
+  const recordNoNumber = (stopAsking: boolean) => {
+    if (!picked || !asking) return;
+    record(picked.side, null, asking, { stopAsking });
+    if (!isFt(asking)) setPicked(null);
+    setAsking(null);
+  };
+  /** A number typed at Whose number?: credits that player, adding them to the team first if new. */
+  const saveNumber = (number: string): string | null => {
+    if (!picked || !asking) return null;
+    const { side } = picked;
+    const roster = rosterOf(game, side);
+    const known = roster.find((q) => q.number.trim() === number);
+    if (known && outReason(lineOf({ side, p: known }))) {
+      // An out player: their own sheet, with its warning, before anything is recorded.
+      setAsking(null);
+      setPicked({ side, p: known });
+      return null;
+    }
+    const p = known ?? { id: crypto.randomUUID(), number, name: '', pos: '' };
+    if (!known) {
+      const error = validateRoster([...roster, p])[0];
+      if (error) return error;
+    }
+    record(side, p, asking, { newPlayer: !known });
+    // A free throw goes on to that player's sheet for the second shot.
+    setPicked(isFt(asking) ? { side, p } : null);
+    setAsking(null);
+    return null;
+  };
+  const takeTimeout = (side: Side, kind: TimeoutKind) =>
     add({ type: 'TIMEOUT', timeoutKind: kind, ...sided(side) }, timeoutLabel(kind, sideName(game, side)));
+  // A timeout with none left asks first; the count shown never drops below 0.
+  const timeout = (side: Side, kind: TimeoutKind) => {
+    if (timeoutsLeft(teamOf(side).timeouts, kind) > 0) return takeTimeout(side, kind);
+    setGuard({ side, kind });
+    setSheet('timeoutGuard');
+  };
   const openBench = (side: Side) => {
     setBenchSide(side);
     setSheet('bench');
@@ -169,10 +218,23 @@ export function Live({ store }: { store: GameStore }) {
         </div>
       </nav>
 
-      {picked && (
+      {picked && asking && (
+        <WhoseNumberSheet
+          play={playLabel(asking, sideName(game, picked.side))}
+          onSave={saveNumber}
+          onNoNumber={() => recordNoNumber(false)}
+          onStopAsking={() => recordNoNumber(true)}
+          onClose={() => {
+            setAsking(null);
+            setPicked(null);
+          }}
+        />
+      )}
+      {picked && !asking && (
         <EventSheet
           player={picked.p}
-          title={picked.p ? undefined : sideName(game, picked.side)}
+          // Titled with the team, as the toasts are: `#14 Name (Away)`, or `Away` for + Play.
+          title={picked.p ? `${`#${picked.p.number} ${picked.p.name}`.trim()} (${sideName(game, picked.side)})` : sideName(game, picked.side)}
           out={outReason(lineOf(picked))}
           toast={toast === sheetOpenedWith.current ? null : toast}
           onPlay={play}
@@ -197,6 +259,26 @@ export function Live({ store }: { store: GameStore }) {
           >
             {BENCH_TECH_TEXT}
           </button>
+        </Sheet>
+      )}
+      {sheet === 'timeoutGuard' && guard && (
+        <Sheet title={timeoutLabel(guard.kind, sideName(game, guard.side))} onClose={() => setSheet(null)}>
+          <p class="mb-3 font-semibold text-amber-300" role="alert">{zeroTimeoutWarning(sideName(game, guard.side), guard.kind)}</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="min-h-12 rounded-xl border border-slate-400 font-semibold" onClick={() => setSheet(null)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="min-h-12 rounded-xl border-2 border-amber-400 font-semibold text-amber-300"
+              onClick={() => {
+                takeTimeout(guard.side, guard.kind);
+                setSheet(null);
+              }}
+            >
+              {TAKE_ANYWAY}
+            </button>
+          </div>
         </Sheet>
       )}
       {sheet === 'endPeriod' && (

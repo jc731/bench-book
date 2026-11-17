@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { Player } from '../core/types';
-import { OUT_ANYWAY, OUT_WARNING, playButtonText, type PlayType, type Toast } from './live-logic';
+import { NO_NUMBER, OUT_ANYWAY, OUT_WARNING, STOP_ASKING, WHOSE_NUMBER, playButtonText, type PlayType, type Toast } from './live-logic';
 
 /** Bottom sheet over a dimmed backdrop; tapping the backdrop or pressing Escape closes it. */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ComponentChildren }) {
@@ -95,6 +95,62 @@ export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClo
             Done
           </button>
         </div>
+      </div>
+    </Sheet>
+  );
+}
+
+interface WhoseProps {
+  /** The play waiting for a number, as its no-number toast reads: `Away +2`. */
+  play: string;
+  /** Credits the number; returns an error to show (`At most 15 players.`), or null when done. */
+  onSave: (number: string) => string | null;
+  onNoNumber: () => void;
+  onStopAsking: () => void;
+  onClose: () => void;
+}
+
+/**
+ * The prompt after a + Play: a typed number credits that player (and adds them to the team if new),
+ * No number records the play for the team only, and Stop asking does that and skips the prompt for
+ * the rest of the game. Closing it records nothing.
+ */
+export function WhoseNumberSheet({ play, onSave, onNoNumber, onStopAsking, onClose }: WhoseProps) {
+  const [number, setNumber] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const save = () => setError(onSave(number.trim()));
+  const secondary = 'min-h-12 rounded-xl border border-slate-400 px-3 font-semibold active:bg-slate-700';
+  return (
+    <Sheet title={WHOSE_NUMBER} onClose={onClose}>
+      <p class="mb-2 text-sm text-slate-300">{play}</p>
+      <form
+        class="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (number.trim()) save();
+        }}
+      >
+        <label class="sr-only" for="whose-number">Number</label>
+        <input
+          id="whose-number"
+          class="min-h-12 w-24 min-w-0 rounded-lg border border-slate-500 bg-slate-900 px-3 text-xl font-bold text-white placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
+          placeholder="#"
+          inputMode="numeric"
+          autoComplete="off"
+          value={number}
+          onInput={(e) => {
+            setNumber(e.currentTarget.value);
+            setError(null);
+          }}
+        />
+        <button type="submit" class="min-h-12 flex-1 rounded-xl bg-white font-semibold text-slate-900 disabled:opacity-40" disabled={!number.trim()}>
+          Save
+        </button>
+      </form>
+      {error && <p class="mt-2 text-sm font-semibold text-red-300" role="alert">{error}</p>}
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" class={secondary} onClick={onNoNumber}>{NO_NUMBER}</button>
+        <button type="button" class={secondary} onClick={onStopAsking}>{STOP_ASKING}</button>
       </div>
     </Sheet>
   );

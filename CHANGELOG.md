@@ -5,6 +5,9 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- + Play on either half asks "Whose number?" after the play. A typed number credits that player and adds them to the team if they are new; No number records the play for the team only; Stop asking this game skips the question for that team from then on.
+- A timeout button at zero asks first ("Away has no full timeouts left. Are you sure?"), and Take one anyway records it.
+- Each play sheet's title names the team, like the toasts (`#14 (Away)`), and the score reads "Score Home 2, Away 3" to screen readers.
 - Light (home) cards: the 4-foul warning, OUT, and bench-tech colors use darker amber and red shades so they stay readable on white.
 
 ## [0.7.0] - 2026-11-16

@@ -115,7 +115,7 @@ export function countText(n: number, one: string, many: string): string {
 }
 
 export interface FoulContext {
-  /** The player's fouls (FOUL + TECH) and techs before this entry; null for a bench tech. */
+  /** The player's fouls (FOUL + TECH) and techs before this entry; null for a bench tech or a foul with no number. */
   player: { p: Player; fouls: number; techs: number } | null;
   /** Team fouls toward the bonus before this entry. */
   teamFouls: number;
@@ -129,8 +129,11 @@ export interface FoulContext {
  */
 export function foulLabel(type: 'FOUL' | 'TECH' | 'BENCH_TECH', ctx: FoulContext): string {
   let label: string;
-  if (type === 'BENCH_TECH' || !ctx.player) {
+  if (type === 'BENCH_TECH') {
     label = benchTechLabel(ctx.tag);
+  } else if (!ctx.player) {
+    // A foul from + Play with no number: the team's, worded like any team play (`Away Foul`).
+    label = playLabel(type, who(null, ctx.tag));
   } else {
     const { p, fouls, techs } = ctx.player;
     const named = `#${p.number} ${p.name}`.trim() + ` (${ctx.tag})`;
@@ -219,3 +222,8 @@ export function outReason(line: { fouls: number; techs: number } | undefined): s
 
 export const OUT_WARNING = 'Are you sure? This player is supposed to be out.';
 export const OUT_ANYWAY = 'Enter a play anyway';
+
+/** The + Play prompt after the play: a number credits a player (added to the roster if new). */
+export const WHOSE_NUMBER = 'Whose number?';
+export const NO_NUMBER = 'No number';
+export const STOP_ASKING = 'Stop asking this game';

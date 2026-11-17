@@ -23,7 +23,7 @@ export function sideName(g: Game, side: Side): 'Home' | 'Away' {
 /** Adds a player to one side's roster; throws if that side already has the jersey number. */
 export function addPlayer(g: Game, side: Side, p: Player, now: Date): Game {
   const n = p.number.trim();
-  if (rosterOf(g, side).some((q) => q.number.trim() === n)) throw new Error(`Duplicate number: #${n}`);
+  if (rosterOf(g, side).some((q) => q.number.trim() === n)) throw new Error(`Duplicate number: #${n}.`);
   const key = side === 'them' ? 'oppRoster' : 'roster';
   return { ...g, [key]: [...rosterOf(g, side), p], updatedAt: now.toISOString() };
 }

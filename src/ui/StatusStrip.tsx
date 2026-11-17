@@ -22,7 +22,7 @@ export function StatusStrip({ home, away, period, ended, shooters }: Props) {
     <header class="sticky top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-slate-700 bg-slate-950 px-2 py-1">
       <div class="flex justify-start">{shooters.home && badge('Home')}</div>
       <div class="flex items-baseline gap-2">
-        <div class="text-3xl font-bold tabular-nums" aria-label={`Score ${home} to ${away}`}>
+        <div class="text-3xl font-bold tabular-nums" aria-label={`Score Home ${home}, Away ${away}`}>
           {home}–{away}
         </div>
         <div class="text-xl font-bold">{stripPeriodText(period, ended)}</div>

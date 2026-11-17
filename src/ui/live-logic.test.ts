@@ -90,6 +90,12 @@ describe('status and toast wording', () => {
   it('adds "— bonus" on the 5th team foul only', () => {
     expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 4, tag: 'Home' })).toBe('Home bench tech — bonus');
     expect(foulLabel('BENCH_TECH', { player: null, teamFouls: 5, tag: 'Away' })).toBe('Away bench tech');
+    expect(foulLabel('FOUL', { player: null, teamFouls: 4, tag: 'Away' })).toBe('Away Foul — bonus');
+  });
+  it('words a foul with no number as the team play, like playLabel', () => {
+    expect(foulLabel('FOUL', { player: null, teamFouls: 1, tag: 'Away' })).toBe('Away Foul');
+    expect(foulLabel('TECH', { player: null, teamFouls: 2, tag: 'Home' })).toBe('Home Tech foul');
+    expect(foulLabel('TECH', { player: null, teamFouls: 4, tag: 'Home' })).toBe('Home Tech foul — bonus');
     expect(foulLabel('FOUL', { player: { p, fouls: 4, techs: 0 }, teamFouls: 4, tag: 'Home' })).toBe('#22 Player One (Home) foul — 5th, out — bonus');
   });
   it('pluralizes card counts', () => {

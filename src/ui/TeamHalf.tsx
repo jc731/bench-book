@@ -119,7 +119,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, period, onPick, onTea
         </div>
         {/* The controls sit at the foot of the half, in the same place whatever the roster size. */}
         <div class="mt-auto flex flex-col gap-1.5">
-          {/* A play for the team with no player picked. Task 8 adds the Whose number? prompt after the play. */}
+          {/* A play for the team with no player picked; Whose number? follows the play unless Stop asking is set. */}
           <button
             type="button"
             class={`min-h-8 rounded-lg border-2 border-dashed border-slate-500 px-2 text-sm font-bold ${t.dashed}`}
