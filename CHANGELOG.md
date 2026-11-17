@@ -9,6 +9,7 @@ All notable changes to Bench Book are listed here, in the
 - Saving a quarter check whose score still doesn't match the book says so: "Saved Q1 check — app still 2 short" (or "1 over"), in the compare panel's words. A match still reads "Saved Q1 check".
 - When our score matches but their typed score is off, the compare panel is amber and reads "Ours matches · theirs 1 off", not the green "✓ Matches". The quarter's status still follows our score alone; with their box blank, or none of their points recorded, the panel is as before.
 - "Who went out?" and "Who came in?" say how many to pick under the title, "Home · 8 on · pick 3", and the count updates with each tap, so it is clear the sheet closes on the last pick.
+- Book CSV: a team's plays with no number now have a row of their own, "No number" (NO. blank), after that team's player rows and inside TEAM TOTALS, with its fouls, techs, marks by quarter, 2's, 3's, FTA, FTM and TP. The rows now add up to the team's TP, and the fouls column to its team fouls less bench techs. A team with no such plays is unchanged.
 
 ## [0.9.0] - 2026-11-17
 

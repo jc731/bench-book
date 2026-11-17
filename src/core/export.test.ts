@@ -337,6 +337,87 @@ describe('both teams in the exports', () => {
   });
 });
 
+describe('Book CSV: plays with no number get their own row', () => {
+  const oppRoster: Player[] = [{ id: 't14', number: '14', name: 'Rival Fourteen', pos: 'G' }];
+  const them = (): Game => newGame(info, roster, now, oppRoster);
+  const H = ['POS', 'PLAYER', 'NO.', 'FOULS', 'TECHS', 'Q1', 'Q2', 'Q3', 'Q4', "2'S", "3'S", 'FTA', 'FTM', 'TP'];
+  const col = (r: string[], name: string) => Number(r[H.indexOf(name)]);
+  /** One team's rows between its header and TEAM TOTALS, the totals row, and its team-foul and bench-tech rows. */
+  function block(rows: string[][], title: string | null) {
+    const from = title === null ? 0 : rows.findIndex((r) => r[0] === title);
+    const head = rows.findIndex((r, i) => i >= from && r[0] === 'POS');
+    const totals = rows.findIndex((r, i) => i > head && r[0] === 'TEAM TOTALS');
+    const end = rows.findIndex((r, i) => i > totals && r[0] === 'Bench technicals');
+    return {
+      lines: rows.slice(head + 1, totals),
+      totals: rows[totals],
+      teamFouls: rows.slice(totals, end).filter((r) => r[0] === 'Team fouls').reduce((n, r) => n + Number(r[2]), 0),
+      benchTechs: Number(rows[end][1]),
+    };
+  }
+  const sum = (lines: string[][], name: string) => lines.reduce((n, r) => n + col(r, name), 0);
+
+  // Theirs: #14 a +2 and a foul; no number: a +3, an FT made, an FT missed, a +2 in Q2, two fouls, a tech;
+  // one bench tech. Ours: #4 a +2 and a no-number +2 and foul.
+  function mixed(): Game {
+    let g = add(them(), 1,
+      { type: 'FG2', playerId: 't14', side: 'them' }, { type: 'FOUL', playerId: 't14', side: 'them' },
+      { type: 'FG3', side: 'them' }, { type: 'FTM', side: 'them' }, { type: 'FTX', side: 'them' },
+      { type: 'FOUL', side: 'them' }, { type: 'TECH', side: 'them' }, { type: 'BENCH_TECH', side: 'them' },
+      { type: 'FG2', playerId: 'p4' }, { type: 'FG2' }, { type: 'FOUL' });
+    g = { ...g, currentPeriod: 2 };
+    g = add(g, 2, { type: 'FG2', side: 'them' }, { type: 'FOUL', side: 'them' });
+    return g;
+  }
+
+  test("their TP is the sum of their rows, and so are 2'S, 3'S, FTA and FTM", () => {
+    const rows = parse(bookCsv(mixed()));
+    const t = block(rows, "St. Mary's (Away)");
+    expect(derive(mixed()).opp.total).toBe(8);
+    expect(sum(t.lines, 'TP')).toBe(8);
+    expect(col(t.totals, 'TP')).toBe(8);
+    for (const c of ["2'S", "3'S", 'FTA', 'FTM'] as const) expect(col(t.totals, c)).toBe(sum(t.lines, c));
+    expect([col(t.totals, "2'S"), col(t.totals, "3'S"), col(t.totals, 'FTA'), col(t.totals, 'FTM')]).toEqual([2, 1, 2, 1]);
+  });
+
+  test('their foul column equals team fouls minus bench techs, and TEAM TOTALS includes the row', () => {
+    const t = block(parse(bookCsv(mixed())), "St. Mary's (Away)");
+    expect(t.teamFouls).toBe(5);
+    expect(t.benchTechs).toBe(1);
+    expect(sum(t.lines, 'FOULS')).toBe(t.teamFouls - t.benchTechs);
+    expect(col(t.totals, 'FOULS')).toBe(4);
+    expect(col(t.totals, 'TECHS')).toBe(1);
+  });
+
+  test('the row reads "No number" with NO. blank, after the player rows and before TEAM TOTALS', () => {
+    const t = block(parse(bookCsv(mixed())), "St. Mary's (Away)");
+    expect(t.lines.map((r) => r[1])).toEqual(['Rival Fourteen', 'No number']);
+    const nn = t.lines[1];
+    expect(nn).toEqual(['', 'No number', '', '3', '1', '3 FT 0', '2', '', '', '1', '1', '2', '1', '6']);
+  });
+
+  test('our team gets the row too', () => {
+    const us = block(parse(bookCsv(mixed())), null);
+    expect(us.lines.map((r) => r[1])).toEqual(['Player Zero', 'Player Double', 'Player Four', 'No number']);
+    expect(sum(us.lines, 'TP')).toBe(4);
+    expect(col(us.totals, 'TP')).toBe(4);
+    expect(sum(us.lines, 'FOULS')).toBe(us.teamFouls - us.benchTechs);
+  });
+
+  test('a team with no no-number play has no such row', () => {
+    const g = add(them(), 1, { type: 'FG2', playerId: 't14', side: 'them' }, { type: 'FG2', playerId: 'p4' }, { type: 'BENCH_TECH' });
+    const rows = parse(bookCsv(g));
+    expect(rows.some((r) => r[1] === 'No number')).toBe(false);
+  });
+
+  test("legacy opponent points, with their plays, count in the row's TP so the rows still add up", () => {
+    const g = add(them(), 1, { type: 'FG2', playerId: 't14', side: 'them' }, { type: 'OPP_PTS', oppPoints: 3 });
+    const t = block(parse(bookCsv(g)), "St. Mary's (Away)");
+    expect(sum(t.lines, 'TP')).toBe(5);
+    expect(col(t.totals, 'TP')).toBe(5);
+  });
+});
+
 describe('opp-record predicates', () => {
   const r: Player[] = [{ id: 't1', number: '1', name: 'Rival One', pos: 'G' }];
   test('hasOppRecord', () => {

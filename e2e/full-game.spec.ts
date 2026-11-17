@@ -376,6 +376,18 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     expect([totals[col('FOULS')], totals[col('TECHS')], totals[col("2'S")], totals[col("3'S")],
       totals[col('FTA')], totals[col('FTM')], totals[col('TP')]]).toEqual(['14', '2', '7', '4', '8', '6', '32']);
 
+    // Their block: every play of theirs went in with no number, so one "No number" row holds it all and
+    // its TP is their 31; their fouls column is their team fouls less bench techs.
+    const theirs = rows.slice(rows.findIndex((r) => /\((Home|Away)\)$/.test(r[0])));
+    const theirLines = theirs.slice(theirs.findIndex((r) => r[0] === 'POS') + 1, theirs.findIndex((r) => r[0] === 'TEAM TOTALS'));
+    const noNumber = theirLines.find((r) => r[1] === 'No number')!;
+    expect(noNumber.slice(0, 3)).toEqual(['', 'No number', '']);
+    expect(theirLines[theirLines.length - 1]).toBe(noNumber);
+    expect(theirLines.reduce((n, r) => n + Number(r[col('TP')]), 0)).toBe(31);
+    const theirFouls = theirs.filter((r) => r[0] === 'Team fouls').reduce((n, r) => n + Number(r[2]), 0);
+    const theirBench = Number(theirs.find((r) => r[0] === 'Bench technicals')![1]);
+    expect(theirLines.reduce((n, r) => n + Number(r[col('FOULS')]), 0)).toBe(theirFouls - theirBench);
+
     // Marks show where the edit, the added play and the move landed.
     const marks = (name: string) => ['Q1', 'Q2', 'Q3', 'Q4', 'OT1'].map((p) => line(name)[col(p)]);
     expect(marks('Player One')).toEqual(['2', '', '', '', 'FT FT']);

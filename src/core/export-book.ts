@@ -72,10 +72,12 @@ function pushTeamBlock(rows: Cell[][], played: number[], labels: string[], roste
   const byId = new Map(roster.map((p) => [p.id, p]));
   rows.push(['POS', 'PLAYER', 'NO.', 'FOULS', 'TECHS', ...labels, "2'S", "3'S", 'FTA', 'FTM', 'TP']);
   const tot = { fouls: 0, techs: 0, fg2: 0, fg3: 0, fta: 0, ftm: 0 };
-  for (const l of t.players) {
-    const p = byId.get(l.playerId)!;
+  // The no-number line last, so the rows add up to TEAM TOTALS' TP and to team fouls less bench techs.
+  const lines = t.noNumber ? [...t.players, t.noNumber] : t.players;
+  for (const l of lines) {
+    const p = l === t.noNumber ? null : byId.get(l.playerId)!;
     rows.push([
-      p.pos, p.name, `#${p.number}`, l.fouls, l.techs,
+      p?.pos ?? '', p?.name ?? 'No number', p ? `#${p.number}` : '', l.fouls, l.techs,
       ...played.map((q) => (l.marksByPeriod[q] ?? []).join(' ')),
       l.fg2, l.fg3, l.fta, l.ftm, l.points,
     ]);

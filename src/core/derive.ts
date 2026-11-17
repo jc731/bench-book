@@ -24,6 +24,11 @@ export interface TimeoutState {
 
 export interface TeamDerived {
   players: PlayerLine[]; // roster order
+  /**
+   * The team's plays credited to no player (+ Play's No number, legacy opponent points), as one line so a
+   * box score's rows add up to the team's total and fouls; null when there are none. `playerId` is ''.
+   */
+  noNumber: PlayerLine | null;
   byPeriod: Record<number, number>;
   total: number;
   teamFoulsByPeriod: Record<number, number>;
@@ -60,12 +65,13 @@ function bump(map: Record<number, number>, key: number, by: number): void {
 function deriveTeam(g: Game, side: Side): TeamDerived {
   const lines = new Map<string, PlayerLine>();
   const roster = rosterOf(g, side);
-  for (const p of roster) {
-    lines.set(p.id, {
-      playerId: p.id, fg2: 0, fg3: 0, fta: 0, ftm: 0, points: 0, fouls: 0, techs: 0,
-      pointsByPeriod: {}, marksByPeriod: {}, foulState: 'ok',
-    });
-  }
+  const blank = (playerId: string): PlayerLine => ({
+    playerId, fg2: 0, fg3: 0, fta: 0, ftm: 0, points: 0, fouls: 0, techs: 0,
+    pointsByPeriod: {}, marksByPeriod: {}, foulState: 'ok',
+  });
+  for (const p of roster) lines.set(p.id, blank(p.id));
+  let noNumber: PlayerLine | null = null;
+  const noNumberLine = () => (noNumber ??= blank(''));
   const byPeriod: Record<number, number> = {};
   const teamFoulsByPeriod: Record<number, number> = {};
   let total = 0;
@@ -78,11 +84,17 @@ function deriveTeam(g: Game, side: Side): TeamDerived {
       if (side === 'them') {
         total += e.oppPoints ?? 0;
         bump(byPeriod, e.period, e.oppPoints ?? 0);
+        // Points only: a legacy tap never said 2 or 3.
+        const nn = noNumberLine();
+        nn.points += e.oppPoints ?? 0;
+        bump(nn.pointsByPeriod, e.period, e.oppPoints ?? 0);
       }
       continue;
     }
     if (sideOf(e) !== side) continue;
-    const line = e.playerId ? lines.get(e.playerId) : undefined;
+    const playerLine = e.playerId ? lines.get(e.playerId) : undefined;
+    // A play or foul with no player goes on the team's no-number line; bench techs and timeouts are the team's own.
+    const line = playerLine ?? (e.type === 'BENCH_TECH' || e.type === 'TIMEOUT' ? undefined : noNumberLine());
     switch (e.type) {
       case 'FG2':
       case 'FG3':
@@ -132,6 +144,7 @@ function deriveTeam(g: Game, side: Side): TeamDerived {
 
   return {
     players: roster.map((p) => lines.get(p.id)!),
+    noNumber,
     byPeriod, total, teamFoulsByPeriod, teamFoulsForBonus, benchTechs,
     timeouts: {
       full: { used: used.full, total: 3 },
