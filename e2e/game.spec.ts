@@ -700,17 +700,27 @@ test("each half records for its own team: + Play, their cards, Bench and timeout
   await dialog.getByRole('button', { name: 'No number', exact: true }).click();
   await expect(dialog).toHaveAccessibleName('Away');
   await expect(dialog.getByTestId('sheet-status')).toHaveText('Away FT made');
+  // The second shot of the pair records at once for the team: no second Whose number?.
+  await dialog.getByRole('button', { name: 'FT made', exact: true }).click();
+  await expect(dialog).toHaveAccessibleName('Away');
+  await expect(page.getByLabel('Score Home 0, Away 2')).toBeVisible();
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
-  await expect(page.getByLabel('Score Home 0, Away 1')).toBeVisible();
+  // A fresh + Play asks again: the pair ended with the sheet.
+  await away.getByRole('button', { name: '+ Play', exact: true }).click();
+  await dialog.getByRole('button', { name: 'FT missed', exact: true }).click();
+  await expect(dialog).toHaveAccessibleName('Whose number?');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByLabel('Score Home 0, Away 2')).toBeVisible();
   await tap(page, home.getByRole('button', { name: '+ Play', exact: true }), '+3', 'No number');
   await expect(toast).toHaveText('Home +3');
-  await expect(page.getByLabel('Score Home 3, Away 1')).toBeVisible();
+  await expect(page.getByLabel('Score Home 3, Away 2')).toBeVisible();
 
   // Their player's card takes the same sheet and credits them.
   await tap(page, away.getByRole('button', { name: /^#50,/ }), '+2');
   await expect(toast).toHaveText('#50 (Away) +2');
   await expect(away.getByRole('button', { name: /^#50,/ })).toHaveAccessibleName('#50, 2 points, 0 fouls');
-  await expect(page.getByLabel('Score Home 3, Away 3')).toBeVisible();
+  await expect(page.getByLabel('Score Home 3, Away 4')).toBeVisible();
 
   // Their bench tech counts to their team fouls, not ours.
   await app.benchTech('Away');
@@ -969,6 +979,7 @@ test('a timeout at zero is guarded: grayed, a warning, Cancel records nothing, T
   await dialog.getByRole('button', { name: 'Take one anyway', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId('feedback-text')).toHaveText('Away timeout (Full)');
+  await expect(zero).toBeVisible(); // still Full: 0, never below
   expect(await logged()).toBe(4);
   // Home's are untouched and still take one tap.
   await app.timeout('Full', 'Home');

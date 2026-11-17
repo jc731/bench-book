@@ -27,8 +27,12 @@ const endTone = {
 } as const;
 
 type SheetKind = 'endPeriod' | 'menu' | 'bench' | 'timeoutGuard' | null;
-/** Whose play sheet is open: a player's card (`p`), or a team's + Play card (`p` null, no number). */
-type Picked = { side: Side; p: Player | null };
+/**
+ * Whose play sheet is open: a player's card (`p`), or a team's + Play card (`p` null, no number).
+ * `pair` is set after a free throw answered No number, so the second shot records without asking
+ * again; the sheet closing (or any other play, which closes it) ends the pair.
+ */
+type Picked = { side: Side; p: Player | null; pair?: boolean };
 const isFt = (t: PlayType) => t === 'FTM' || t === 'FTX';
 
 export function Live({ store }: { store: GameStore }) {
@@ -78,7 +82,7 @@ export function Live({ store }: { store: GameStore }) {
     if (!picked) return;
     const { side, p } = picked;
     // A team's + Play asks whose number, unless the scorer chose Stop asking for that team.
-    if (!p && !game.noNumbers?.[side]) {
+    if (!p && !game.noNumbers?.[side] && !picked.pair) {
       setAsking(type);
       return;
     }
@@ -89,7 +93,7 @@ export function Live({ store }: { store: GameStore }) {
   const recordNoNumber = (stopAsking: boolean) => {
     if (!picked || !asking) return;
     record(picked.side, null, asking, { stopAsking });
-    if (!isFt(asking)) setPicked(null);
+    setPicked(isFt(asking) ? { ...picked, pair: true } : null);
     setAsking(null);
   };
   /** A number typed at Whose number?: credits that player, adding them to the team first if new. */
