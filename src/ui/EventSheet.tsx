@@ -43,9 +43,11 @@ interface Props {
   out?: string | null;
   /** The sub row at the foot (`#22 checks in` / `#10 comes out`), only for a team whose lineup is tracked. */
   subRow?: { text: string; onSub: () => void } | null;
+  /** Keep the sub row's space, hidden, when there is no row: the live screen's sheets, so their plays sit at one height. */
+  reserveSubRow?: boolean;
 }
 
-export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClose, out = null, subRow = null }: Props) {
+export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClose, out = null, subRow = null, reserveSubRow = false }: Props) {
   const [confirmed, setConfirmed] = useState(false);
   const locked = out !== null && !confirmed;
   const btn = (t: PlayType) => (
@@ -98,19 +100,22 @@ export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClo
           </button>
         </div>
       </div>
-      {/* Below everything else and apart from it. Gray: an ordinary button. Its space is kept, hidden, when there
-          is no row (an untracked team, an out player, + Play), so the plays sit at one height on every sheet. */}
-      <div class={`mt-3 border-t border-slate-600 pt-3 ${subRow ? '' : 'invisible'}`} aria-hidden={subRow ? undefined : true}>
-        <button
-          type="button"
-          class="block min-h-11 w-full rounded-lg border border-slate-400 font-semibold text-slate-200 active:bg-slate-700"
-          disabled={!subRow}
-          tabIndex={subRow ? undefined : -1}
-          onClick={subRow?.onSub}
-        >
-          {subRow?.text ?? ''}
-        </button>
-      </div>
+      {/* Below everything else and apart from it. Gray: an ordinary button. On the live screen its space is kept,
+          hidden, when there is no row (an untracked team, an out player, + Play), so the plays sit at one height on
+          every sheet there; the check's Add play has no sub row and no blank footer. */}
+      {(subRow || reserveSubRow) && (
+        <div class={`mt-3 border-t border-slate-600 pt-3 ${subRow ? '' : 'invisible'}`} aria-hidden={subRow ? undefined : true}>
+          <button
+            type="button"
+            class="block min-h-11 w-full rounded-lg border border-slate-400 font-semibold text-slate-200 active:bg-slate-700"
+            disabled={!subRow}
+            tabIndex={subRow ? undefined : -1}
+            onClick={subRow?.onSub}
+          >
+            {subRow?.text ?? ''}
+          </button>
+        </div>
+      )}
     </Sheet>
   );
 }

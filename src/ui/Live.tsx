@@ -270,6 +270,7 @@ export function Live({ store }: { store: GameStore }) {
           onRedo={redo}
           onClose={() => setPicked(null)}
           subRow={subRowFor(picked)}
+          reserveSubRow
         />
       )}
       {subbing && (

@@ -1001,7 +1001,7 @@ test('"Who\'s on the floor?": Done with 4 on records the 4; Done with no change 
   await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
 });
 
-test('the sub row: only on a tracked team\'s player who is not out, and the plays sit at one height on every play sheet', async ({ page }) => {
+test('the sub row: only on a tracked team\'s player who is not out, and the plays sit at one height on every live play sheet; the check\'s Add play has no blank footer', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 3 });
   const app = ui(page);
   const sheet = page.getByRole('dialog');
@@ -1031,6 +1031,23 @@ test('the sub row: only on a tracked team\'s player who is not out, and the play
   await expect(sheet.getByTestId('out-warning')).toBeVisible();
   await expect(subRows).toHaveCount(0);
   await close();
+  // The space below Done: the live screen keeps the row's room (a 44px button and its rule), the check's Add play does not.
+  const below = async () => {
+    const d = (await sheet.boundingBox())!;
+    const done = (await sheet.getByRole('button', { name: 'Done', exact: true }).boundingBox())!;
+    return d.y + d.height - (done.y + done.height);
+  };
+  await homeCard(page, 11).click();
+  expect(await below(), 'live sheet').toBeGreaterThan(60);
+  await close();
+  await page.getByRole('navigation').getByRole('button', { name: 'End Q1', exact: true }).click();
+  await app.checkQuarter('Q1', 0, 0);
+  await app.fixRegion().getByRole('button', { name: 'Add play to Q1', exact: true }).click();
+  await sheet.getByRole('button', { name: /^#11( |$)/ }).click();
+  await expect(sheet.getByRole('button', { name: '+2', exact: true })).toBeVisible();
+  await expect(subRows).toHaveCount(0);
+  // Only the sheet's own 24px padding: no blank footer.
+  expect(await below(), "check's Add play").toBeLessThanOrEqual(25);
 });
 
 test('Undo after a sub restores the previous floor', async ({ page }) => {
