@@ -27,9 +27,9 @@ with the book page after the game.
    until the next entry, with a chip at its right for a quarter still to check.
 3. **Subs (optional).** Solid cards are the five on the floor; the bench is ghosted, with a gray
    **bench** tag. Each team's first five start (the **Starters** button, beside + Play, changes
-   them before that team's first play). A bench player who makes a play goes on the floor by
-   herself, so nothing is lost by skipping a sub, and a foul-out takes the player off. For a sub,
-   tap the player checking in, then **#22 checks in** on her sheet, then who went out. The **Sub**
+   them before that team's first play). A bench player who makes a play goes on the floor on
+   their own, so nothing is lost by skipping a sub, and a foul-out takes the player off. For a sub,
+   tap the player checking in, then **#22 checks in** on their sheet, then who went out. The **Sub**
    button (amber `Sub · 6 on` when the floor isn't five) asks **Who went out?** (with a "likely"
    guess), **Who came in?** or, for a line change, **Who's on the floor?**. Subs change no score
    or count and are in neither CSV.

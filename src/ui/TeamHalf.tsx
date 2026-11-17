@@ -167,7 +167,7 @@ export function TeamHalf({ side, tone, isUs, roster, team, lineup, period, onPic
           <>
             {/* The floor as the layout was frozen (the starters, or the floor at the last sub, 5 or not) stays in view. */}
             <div class="shrink-0">{grid(ordered.slice(0, lineup.layoutFloor))}</div>
-            {/* A promoted player stays where she is in here until the next sub regroups the half. */}
+            {/* A promoted player stays where they are in here until the next sub regroups the half. */}
             <div class="min-h-0 flex-1 overflow-y-auto" data-testid="bench-region">
               {grid(ordered.slice(lineup.layoutFloor))}
             </div>

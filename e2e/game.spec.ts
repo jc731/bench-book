@@ -573,7 +573,7 @@ test("the check's player fouls are labeled as whole-game totals, apart from the 
   await tap(page, card(page, '4', 'Player One'), 'Foul');
   await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
   await page.getByRole('region', { name: 'Q1', exact: true }).getByRole('button', { name: 'Not checked', exact: true }).click();
-  // Q1 had one of her two fouls: the quarter's count and her game total sit under separate labels.
+  // Q1 had one of their two fouls: the quarter's count and their game total sit under separate labels.
   await expect(page.getByText(/^Team fouls in Q1:/)).toHaveText('Team fouls in Q1: 1');
   await expect(page.getByRole('list', { name: 'Player fouls, whole game' }).getByRole('listitem')).toHaveText(['#4 Player One2']);
 });
@@ -733,7 +733,7 @@ test('the floor: first five solid, the rest ghosted with "bench"', async ({ page
   }
 });
 
-test('a bench player\'s +2 turns her card solid in place, and the Sub button reads "Sub · 6 on" in amber, then gray after that team\'s next play', async ({ page }) => {
+test('a bench player\'s +2 turns their card solid in place, and the Sub button reads "Sub · 6 on" in amber, then gray after that team\'s next play', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   for (const [side, first] of [['Home', 10], ['Away', 50]] as const) {
@@ -899,7 +899,7 @@ test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" wit
   await subRow(page, 11).click();
   await expect(sheet).toHaveCount(0);
   expect(await app.floorOf('Home')).toEqual(['10', '12', '13', '14', '15']);
-  // The toast names the swap: #15 came in by playing, #11 is who she replaced. The stored sub is only #11 out.
+  // The toast names the swap: #15 came in by playing, #11 is who they replaced. The stored sub is only #11 out.
   await app.expectToastUndo('#15 (Home) in for #11');
   await expect(app.subButton('Home')).toHaveText('Sub');
 });
@@ -948,7 +948,7 @@ test('foul-out: Sub · 4 on → "Who came in?" → #15 closes it', async ({ page
   await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
   await app.subButton('Home').click();
   await expect(sheet).toHaveAccessibleName('Who came in?');
-  // The bench: the out player grayed with her reason, and not selectable.
+  // The bench: the out player grayed with their reason, and not selectable.
   expect(await sheet.getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))).toEqual([
     '#10 Player 1, 5 fouls', '#15 Player 6', '#16 Player 7',
   ]);
@@ -972,7 +972,7 @@ test('Starters: before the first play the button reads Starters; changing two st
   await tap(page, homeCard(page, 12), '+2');
   await expect(app.subButton('Home')).toHaveText('Sub');
   expect(await app.floorOf('Home')).toEqual(['12', '13', '14', '15', '16']);
-  // Away ignores its Starters: the first five start, and a non-starter's play promotes her to a sixth.
+  // Away ignores its Starters: the first five start, and a non-starter's play promotes them to a sixth.
   expect(await app.floorOf('Away')).toEqual(nums(50, 5));
   await tap(page, awayCard(page, 55), '+2');
   expect(await app.floorOf('Away')).toEqual(nums(50, 6));
@@ -1119,7 +1119,7 @@ test("a bench card's contrast: the bench tag and the ghost border are readable o
   }
 });
 
-test('a benched player in foul trouble: her ghost card keeps a readable amber border and dots on both tones', async ({ page }) => {
+test('a benched player in foul trouble: their ghost card keeps a readable amber border and dots on both tones', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   for (const n of ['10', '50']) {

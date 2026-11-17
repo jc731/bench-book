@@ -29,8 +29,8 @@
 
 ## Review Focus
 
-1. **A Log correction around a sub:** a +2 credited to bench #3 (promoting her), then a sub, then the +2 moved to #33 in the Log. Expected: #3 is no longer promoted; the sub re-applies to the corrected floor, and parts that no longer apply are skipped. Pinned in Task 1.
-2. **A bench player's free-throw pair.** Expected: the first shot promotes her, the second changes nothing, and the toast says "now on the floor" once. Pinned in Tasks 1 and 3.
+1. **A Log correction around a sub:** a +2 credited to bench #3 (promoting them), then a sub, then the +2 moved to #33 in the Log. Expected: #3 is no longer promoted; the sub re-applies to the corrected floor, and parts that no longer apply are skipped. Pinned in Task 1.
+2. **A bench player's free-throw pair.** Expected: the first shot promotes them, the second changes nothing, and the toast says "now on the floor" once. Pinned in Tasks 1 and 3.
 3. **A tech on a bench player, or a play entered anyway for an out player.** Expected: no promotion. Pinned in Task 1.
 4. **Mid-play card stability.** Expected: a promotion or foul-out changes a card's style in place, nothing reorders until a sub is recorded. Pinned in Task 4.
 5. **Demo mode with a real game in progress on the phone.** Expected: `?demo` neither reads nor writes the real keys, and the real game is intact without `?demo`. Pinned in Task 6.
@@ -63,8 +63,8 @@ Algorithm (the one part tests don't determine):
 1. Starters are the first five ids of `rosterOf(g, side)`. A roster of 5 or fewer: all floor, `tracked = false`.
 2. Merge this side's plays and its `subs`, sorted by `order`. On a tie, the sub comes first.
 3. Walk them, keeping running fouls and techs per player:
-   - a promoting play by a bench player adds her to the floor;
-   - a play that takes her to 5 fouls or 2 techs removes her (`outIds`);
+   - a promoting play by a bench player adds them to the floor;
+   - a play that takes them to 5 fouls or 2 techs removes them (`outIds`);
    - a sub removes `outs` that are on the floor and adds `ins` that are off it, skipping ids not on the roster or already out;
    - `layout` is rebuilt at each sub: floor in its current order, then bench in roster order.
 4. `layout` before any sub: starters, then the rest in roster order. Promoted players keep their bench position until the next sub.
@@ -73,14 +73,14 @@ Algorithm (the one part tests don't determine):
   - **Starters:** floor = the first five; bench = #22, #31; `playedYet` false.
   - **Promotion:** a #22 FG2 makes the floor 6; `justIn` is the #22 id; `layout` is unchanged; `changedUnseen` is true, and false after another Home play.
   - **No promotion:** a TECH on #22; a play on an out player; a no-number play.
-  - **Foul-out:** #10's 5th foul removes her from the floor, `outIds` includes her, and the floor is 4.
+  - **Foul-out:** #10's 5th foul removes them from the floor, `outIds` includes them, and the floor is 4.
   - **Sub:** `{ins:[#22], outs:[#10]}` swaps them; `layout` is regrouped floor-first.
   - **Skipped parts:** a sub whose out is already off and whose in is already on changes nothing.
   - **Free-throw pair:** a #22 FTX then FTM promotes once.
   - **Review Focus 1:** a #22 FG2, then the sub `{ins:[], outs:[#4]}`, then the FG2's `playerId` changed to #31. Expected floor: #5, #7, #10, #12, #31 (#22 is not promoted; the out of #4 still applies).
   - **Small rosters:** roster ≤ 5 gives `tracked` false and everyone on the floor; an empty roster gives empty lists.
-  - **Suggestion:** an out player first, else the player longest since her last play, ties to the earliest in `layout`.
-  - **Growth past five (D2a):** a roster that grows from 3 to 6 mid-game. The first five are floor; the sixth is on the bench until she plays.
+  - **Suggestion:** an out player first, else the player longest since their last play, ties to the earliest in `layout`.
+  - **Growth past five (D2a):** a roster that grows from 3 to 6 mid-game. The first five are floor; the sixth is on the bench until they play.
 - [ ] **Step 2: Run `pnpm vitest run src/core/lineup.test.ts`.** Expected: FAIL.
 - [ ] **Step 3: Implement** the types and `lineup` as above.
 - [ ] **Step 4: Run the test, then `pnpm check`.** Expected: PASS.
@@ -148,7 +148,7 @@ Algorithm (the one part tests don't determine):
 
 - [ ] **Step 1: Write the failing e2e tests.**
   - `the floor: first five solid, the rest ghosted with "bench"`.
-  - `a bench player's +2 turns her card solid in place, and the Sub button reads "Sub · 6 on" in amber, then gray after that team's next play`.
+  - `a bench player's +2 turns their card solid in place, and the Sub button reads "Sub · 6 on" in amber, then gray after that team's next play`.
   - `10 + 10 players fit each half with no scroll on iPhone 13`, keeping the 0.8 fit test.
   - `12 players: the floor stays in view while the bench scrolls` (Review Focus 4: the card order is unchanged after a promotion and after a foul-out).
   - `a bench card's contrast`: the `bench` tag text is ≥ 4.5:1 on both tones, and the ghost border ≥ 3:1. Reuse the 0.8 contrast helper.

@@ -92,7 +92,7 @@ export function ui(page: Page, ours: Side = 'Home') {
     /** A half's Sub button, beside + Play; it reads `Starters`, `Sub` or `Sub · N on`. Absent with five players or fewer. */
     subButton: (side: Side) => half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }),
     /**
-     * A deliberate sub from the play sheet, 3 taps: the in player's card, her `#N checks in` row, then
+     * A deliberate sub from the play sheet, 3 taps: the in player's card, their `#N checks in` row, then
      * the out player in "Who went out?". Players are fixture names or bare numbers (`'55'`).
      */
     async subIn(side: Side, inName: string, outName: string) {

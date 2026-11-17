@@ -20,7 +20,7 @@ export interface Lineup {
   layoutFloor: number;
   /** Players out on fouls (5 fouls, techs counting, or 2 techs), in roster order. */
   outIds: string[];
-  /** The last player promoted by a play since the last sub; null once she fouls out. */
+  /** The last player promoted by a play since the last sub; null once they foul out. */
   justIn: string | null;
   /** The floor player marked "likely" in "Who went out?" (decision 10). Only a label. */
   suggestion: string | null;

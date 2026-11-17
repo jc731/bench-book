@@ -123,7 +123,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.expectToast('#4 (Away) +3');
     await expect(app.card('Player One')).toHaveAccessibleName('#4 Player One, 2 points, 0 fouls');
     await expect(theirCard(page, '4')).toHaveAccessibleName('#4 Rival One, 3 points, 0 fouls');
-    // A forgotten sub: #44 scores from the bench. She goes on, nobody comes off, and the Sub button says so.
+    // A forgotten sub: #44 scores from the bench. They go on, nobody comes off, and the Sub button says so.
     await app.score('Player Seven', '+2');
     await app.expectToast('#44 (Home) +2 · now on the floor');
     await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
@@ -136,7 +136,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.timeout('Full', 'Away');
     await app.expectToast('Away timeout (Full)');
     await expect(theirs(page).getByRole('button', exact('Full: 2'))).toBeVisible();
-    // During the timeout, the forgotten sub: still 6 on, gray since our next play. #00 has made no play, so she is
+    // During the timeout, the forgotten sub: still 6 on, gray since our next play. #00 has made no play, so they are
     // the likely one; one tap closes the sheet at five.
     await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
     await expect(app.subButton('Home')).not.toHaveClass(/amber/);
@@ -183,7 +183,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     }
     await dialog.getByRole('button', exact('Done')).click();
     await expect(dialog).toHaveCount(0);
-    // The foul-out's sub: #21 checks in. Who came in? lists the bench, #24 grayed with her reason.
+    // The foul-out's sub: #21 checks in. Who came in? lists the bench, #24 grayed with their reason.
     await app.subButton('Away').click();
     await expect(dialog).toHaveAccessibleName('Who came in?');
     await expect(dialog.getByRole('button', { name: /^#24 / })).toBeDisabled();
@@ -203,7 +203,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.expectToast('Away timeout (Full)');
     await expect(zero).toBeVisible(); // never below 0
     await app.foul('Player Five');
-    // Another deliberate sub: #31 checks in for #23, so her three is no promotion.
+    // Another deliberate sub: #31 checks in for #23, so their three is no promotion.
     await app.subIn('Home', 'Player Six', 'Player Five');
     await app.expectToastUndo('#31 (Home) in for #23');
     await app.score('Player Six', '+3');
@@ -250,7 +250,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem').filter({ hasText: '#31 Player Six' })).toHaveText('#31 Player Six1');
     await app.saveCheck();
     await expect(app.banner('Q2')).toHaveCount(0);
-    // The foul added from the check was #31's while she was on: the floor is as the last sub left it.
+    // The foul added from the check was #31's while they were on: the floor is as the last sub left it.
     expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '00', '31']);
   });
 
@@ -271,11 +271,11 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(theirCard(page, '33')).toHaveCount(0);
     await theirPlusPlay(page, '+3', '33');
     await expect(dialog).toHaveCount(0);
-    // Their seventh player: she joins on the bench, and her play puts her on.
+    // Their seventh player: they join on the bench, and their play puts them on.
     await app.expectToast('#33 (Away) +3 · now on the floor');
     await expect(theirCard(page, '33')).toHaveCount(1);
     await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 3 points, 0 fouls');
-    // Nobody tells the app who she replaced, and nothing asks: the Sub button just counts.
+    // Nobody tells the app who they replaced, and nothing asks: the Sub button just counts.
     await expect(app.subButton('Away')).toHaveText('Sub · 6 on');
     await app.score('Player One', '+2');
     await app.score('Player Seven', '+3');

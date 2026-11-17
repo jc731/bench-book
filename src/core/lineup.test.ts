@@ -51,8 +51,8 @@ describe('starters', () => {
 });
 
 describe('promotion', () => {
-  test('a bench FG2 puts her on the floor without moving her card; amber until the next play', () => {
-    // #31, the last bench card: a regrouped layout would put her ahead of #22.
+  test('a bench FG2 puts them on the floor without moving their card; amber until the next play', () => {
+    // #31, the last bench card: a regrouped layout would put them ahead of #22.
     const g = add(game(), { type: 'FG2', playerId: 'h31' });
     const l = lineup(g, 'us');
     expect(l.floor).toEqual([...STARTERS, 'h31']);
@@ -102,14 +102,14 @@ describe('promotion', () => {
 });
 
 describe('no promotion', () => {
-  test('a TECH on a bench player leaves her on the bench', () => {
+  test('a TECH on a bench player leaves them on the bench', () => {
     const l = lineup(add(game(), { type: 'TECH', playerId: 'h22' }), 'us');
     expect(l.floor).toEqual(STARTERS);
     expect(l.justIn).toBeNull();
     expect(l.changedUnseen).toBe(false);
   });
 
-  test('a play entered for an out player does not bring her back', () => {
+  test('a play entered for an out player does not bring them back', () => {
     let g = add(game(), { type: 'TECH', playerId: 'h22' }, { type: 'TECH', playerId: 'h22' });
     g = add(g, { type: 'FG2', playerId: 'h22' });
     const l = lineup(g, 'us');
@@ -135,7 +135,7 @@ describe('no promotion', () => {
 });
 
 describe('foul-out', () => {
-  test("#10's fifth foul takes her off the floor", () => {
+  test("#10's fifth foul takes them off the floor", () => {
     let g = game();
     for (let i = 0; i < 4; i++) g = add(g, { type: 'FOUL', playerId: 'h10' });
     expect(lineup(g, 'us').floor).toContain('h10');
@@ -145,12 +145,12 @@ describe('foul-out', () => {
     expect(l.outIds).toEqual(['h10']);
     expect(l.bench).toEqual(['h10', 'h22', 'h31']);
     expect(l.changedUnseen).toBe(true);
-    // Her card turns out in place: no regroup until a sub.
+    // Their card turns out in place: no regroup until a sub.
     expect(l.layout).toEqual(home.map((p) => p.id));
   });
 
-  test('a promoting foul that is also her fifth clears justIn', () => {
-    // #31 picks up four fouls (the first brings her on), is subbed off, then a fifth from the bench.
+  test('a promoting foul that is also their fifth clears justIn', () => {
+    // #31 picks up four fouls (the first brings them on), is subbed off, then a fifth from the bench.
     let g = game();
     for (let i = 0; i < 4; i++) g = add(g, { type: 'FOUL', playerId: 'h31' });
     g = sub(g, [], ['h31']);
@@ -241,7 +241,7 @@ describe('subs', () => {
   });
 
   test('on a tie in order, the sub comes before the play', () => {
-    // The play at order 0 is by #4; a sub at the same order takes #4 off first, so her play puts her back.
+    // The play at order 0 is by #4; a sub at the same order takes #4 off first, so their play puts them back.
     const g = sub(add(game(), { type: 'FG2', playerId: 'h4' }), [], ['h4'], 'us', 0);
     expect(lineup(g, 'us').floor).toEqual(['h5', 'h7', 'h10', 'h12', 'h4']);
   });
@@ -272,7 +272,7 @@ describe('small rosters', () => {
     expect(l).toMatchObject({ floor: [], bench: [], layout: [], outIds: [], justIn: null, suggestion: null, tracked: false });
   });
 
-  test('growth past five: the first five are floor, the sixth is bench until she plays', () => {
+  test('growth past five: the first five are floor, the sixth is bench until they play', () => {
     let g = game(home.slice(0, 3));
     g = add(g, { type: 'FG2', playerId: 'h4' });
     for (const p of home.slice(3, 6)) g = addPlayer(g, 'us', p, now);
@@ -288,7 +288,7 @@ describe('small rosters', () => {
 });
 
 describe('suggestion', () => {
-  test('the floor player longest since her last play', () => {
+  test('the floor player longest since their last play', () => {
     // Everyone on the floor plays except #7, who never does; #22 comes in.
     const g = add(game(),
       { type: 'FG2', playerId: 'h4' }, { type: 'FG2', playerId: 'h5' }, { type: 'FG2', playerId: 'h10' },
@@ -310,7 +310,7 @@ describe('suggestion', () => {
     expect(lineup(g, 'us').suggestion).toBe('h5');
   });
 
-  test('suggestFrom: an out player first, else the longest since her last play, ties by layout', () => {
+  test('suggestFrom: an out player first, else the longest since their last play, ties by layout', () => {
     const layout = ['a', 'b', 'c', 'd'];
     expect(suggestFrom(['b', 'c', 'd'], ['d'], new Map([['b', 1]]), layout)).toBe('d');
     expect(suggestFrom(['b', 'c', 'd'], [], new Map([['b', 3], ['c', 1], ['d', 2]]), layout)).toBe('c');

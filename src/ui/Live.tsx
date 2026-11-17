@@ -121,7 +121,7 @@ export function Live({ store }: { store: GameStore }) {
   /**
    * One Sub per completed sub sheet; its toast is worded from the game the sub is applied to. A forgotten
    * sub (6 on, one taken off) stores only the out, but its toast names the player who came in by playing:
-   * the label only, so a Log fix to her play still takes her off the floor.
+   * the label only, so a Log fix to their play still takes them off the floor.
    */
   const recordSubs = (side: Side, ins: string[], outs: string[]) => {
     update((g, now) => {

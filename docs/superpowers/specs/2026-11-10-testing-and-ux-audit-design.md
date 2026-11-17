@@ -163,7 +163,7 @@ These are binding. The audit is worthless without them.
   It sees only what a user sees: the rendered screens. Screenshots and the accessibility
   tree are both allowed. It gets no list of button names.
 - **It gets the game as plain events, not instructions.** For example: "Your #4 makes a
-  layup", "The ref calls a foul on #12; the scorer's table says that's his fourth",
+  layup", "The ref calls a foul on #12; the scorer's table says that's the fourth",
   "Timeout, your coach, full", "The quarter ends; your book says 14–9", "You realize you
   missed a basket by #7 two plays ago". It is never told which button to press.
 - **It narrates as it goes:** what it expected, what it tried, what happened, and whether

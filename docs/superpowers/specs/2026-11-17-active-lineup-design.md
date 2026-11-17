@@ -52,7 +52,7 @@ It fails, even if it works, if:
 
 ## Approaches considered
 
-1. **Guess and correct (the owner's first idea, "v1").** A bench player's play moves her to the floor
+1. **Guess and correct (the owner's first idea, "v1").** A bench player's play moves them to the floor
    and drops the floor player with the longest time since a play; the toast offers "Wrong one?".
    Rejected: the guess is mostly wrong in junior-high ball, a wrong drop seeds the next wrong guess, and
    it asks "was that right?" mid-play.
@@ -68,7 +68,7 @@ separate per-team swap screen alone was rejected (two models); long-press/drag r
 Lineup data: stored floor state (rejected: goes stale on every Log correction) vs. **derived by
 replaying the plays, with deliberate subs stored as in/out lists** (chosen). Subs as absolute floor
 sets were considered (idempotent) and rejected: after a Log correction removes a wrongly credited
-player's promotion, a stored set would keep her on the floor; in/out lists are re-applied to the
+player's promotion, a stored set would keep them on the floor; in/out lists are re-applied to the
 corrected floor and skipped where they no longer apply.
 
 Starters: a long-tap in Setup (rejected: undiscoverable); a Setup "Starter" tick per row (backlog);
@@ -92,17 +92,17 @@ with a `dev:demo` script that opens it** (chosen).
     players start on the bench and come on by playing (decision 3). A team built mid-game therefore
     shows "Sub · 6 on" (amber) when its sixth player first plays — true, and it turns gray after that
     team's next play. *Builder-check answer; Claude's call.*
-3. **Promotion.** A play by a bench player — +2, +3, FT made, FT missed, Foul — puts her on the floor.
+3. **Promotion.** A play by a bench player — +2, +3, FT made, FT missed, Foul — puts them on the floor.
    **Nobody leaves.** The floor can show 6 or more. These never promote: a Tech foul (bench players
    get techs), a play entered anyway for an out player, a play with no number. A player added mid-game
-   through + Play → Whose number? made a play, so she is promoted by the same rule.
+   through + Play → Whose number? made a play, so they are promoted by the same rule.
 4. **Foul-out.** A player who reaches 5 fouls or 2 techs leaves the floor at that play (certain by
-   rule). Toast: **"#12 (Home) out, 5 fouls. Tell the official."** (or "2 techs"). Her card shows as
+   rule). Toast: **"#12 (Home) out, 5 fouls. Tell the official."** (or "2 techs"). Their card shows as
    out, on the bench side.
 5. **The floor is derived** by replaying the game for each team: starters (or the Starters sub), then
    every play and sub in order — promotions, foul-outs, subs. So Undo, Redo, Log fixes, deletes, moves
    to another team or quarter, and plays added from the check all recompute it. A play added from the
-   check or the Log that is by a bench player promotes her too (if she played, she was in).
+   check or the Log that is by a bench player promotes them too (if they played, they were in).
 
 ### Subs
 
@@ -121,16 +121,16 @@ with a `dev:demo` script that opens it** (chosen).
    showing the count. It opens the sub sheet in the mode the floor needs.
 9. **The sub sheet**, titled for its mode, for one team:
    - **"Who went out?"** (floor above 5): lists the floor, with the player who just came in marked
-     **"just in"** and the suggestion marked **"likely"**. Tapping a player takes her off; the sheet
+     **"just in"** and the suggestion marked **"likely"**. Tapping a player takes them off; the sheet
      closes when the floor reaches 5 (more taps if it was 7+).
-   - **"Who came in?"** (floor below 5): lists the bench; tapping a player puts her on; closes at 5.
+   - **"Who came in?"** (floor below 5): lists the bench; tapping a player puts them on; closes at 5.
    - **"Who's on the floor?"** (floor is 5, or Starters): every player as a large toggle, on = on the
      floor, grouped "On the floor" / "On the bench", a live count **"5 on the floor"** (green at 5,
      neutral otherwise), and **Done**. Done never requires exactly 5.
    - Out players show grayed with their reason and can't be put on (no override in 0.9).
    - Cancel or the backdrop records nothing.
 10. **The suggestion ("likely").** The player who came out of the floor least recently active: an out
-    player first, then the longest since her last play, ties to the lowest card. It is only a label; it
+    player first, then the longest since their last play, ties to the lowest card. It is only a label; it
     never acts.
 
 ### On screen
@@ -138,10 +138,10 @@ with a `dev:demo` script that opens it** (chosen).
 11a. **With 11–15 players the floor stays in view and only the bench scrolls** (the owner-approved
     1.0 checklist wording). The floor cards sit in a fixed block at the top of the half; the bench
     scrolls in its own region below; + Play / Sub, Bench and the timeouts stay put. A promoted bench
-    player stays where she is in the bench region (she was just tapped, so she is in view) until the
+    player stays where they are in the bench region (they were just tapped, so they are in view) until the
     next sub regroups the half. *Builder-check answer; Claude's call, following the checklist.*
 
-11. **Cards don't jump mid-play.** A promoted player turns solid where she is; a foul-out turns out in
+11. **Cards don't jump mid-play.** A promoted player turns solid where they are; a foul-out turns out in
     place. The half regroups (floor first, then bench) only when a sub is recorded, which is a moment
     the scorer chose, thumb off the grid. Between subs, card order is the order at the last sub (or the
     start).
