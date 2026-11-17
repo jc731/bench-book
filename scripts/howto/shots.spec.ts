@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { OPPONENT, TEAM, ui } from '../../e2e/fixture';
 
 /*
- * `pnpm howto:shots`, run by `pnpm release`: the three How-to screenshots, from the full-game
- * fixture's invented roster. It writes only these three files, so an image the owner made by
+ * `pnpm howto:shots`, run by `pnpm release`: the four How-to screenshots, from the full-game
+ * fixture's invented roster. It writes only these four files, so an image the owner made by
  * hand (under a new filename, referenced from src/ui/howto-content.ts) is never overwritten.
  */
 
@@ -65,4 +65,13 @@ test('How-to screenshots', async ({ page }) => {
   await app.checkQuarter('Q1', 8, 5);
   await app.expectMatches();
   await shot('end-of-quarter');
+  await app.saveCheck();
+
+  // Subs: #44 scores from the bench, so six are on, and the Sub button asks who went out.
+  await app.score('Player Seven', '+2');
+  await app.subButton('Home').click();
+  await expect(dialog()).toHaveAccessibleName('Who went out?');
+  await expect(dialog().getByText('likely', { exact: true })).toBeVisible();
+  await expect(dialog().getByText('just in', { exact: true })).toBeVisible();
+  await shot('subs');
 });

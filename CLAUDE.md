@@ -22,10 +22,10 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
 
 - [x] Opponent team stats on the live screen: their fouls (and our bonus), their timeouts, their
       points by player number. (0.8)
-- [ ] Active lineup with substitutions (0.9): the five on the floor sit at the top of their half,
+- [x] Active lineup with substitutions: the five on the floor sit at the top of their half,
       the bench below; a sub moves players between floor and bench, and nothing is ever hidden, so
       subbing is optional. A fouled-out player prompts a sub. Reworded 2026-11-16 (owner): the
-      old wording, "shows only the players on the floor", is dropped.
+      old wording, "shows only the players on the floor", is dropped. (0.9)
 - [x] Both teams in the Book CSV, and the quarter check compares both scores. (0.8)
 - [ ] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
       both-team game with nothing blocking (not yet run; the scenario was rewritten in 0.8).
@@ -63,7 +63,7 @@ runs as `/ux-audit`.
 - `pnpm howto:shots`: refreshes the How-to screenshots, `public/howto/*.png`, from the
   full-game fixture. `pnpm release` runs it and commits the images, so they stay current.
   An image made by hand gets a new filename and is referenced from `src/ui/howto-content.ts`;
-  the script writes only its own three filenames, so a release never overwrites it. A
+  the script writes only its own four filenames, so a release never overwrites it. A
   hand-made image also needs the screenshot map in `src/ui/howto-content.test.ts` updated.
 
 ## Style

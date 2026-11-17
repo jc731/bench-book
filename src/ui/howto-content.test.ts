@@ -10,9 +10,9 @@ const byTitle = (t: string) => HOWTO_SECTIONS.find((s) => s.title === t)!;
 const text = (t: string) => byTitle(t).body.join(' ');
 
 describe('how-to content', () => {
-  it('has the twelve sections in order', () =>
+  it('has the thirteen sections in order', () =>
     expect(HOWTO_SECTIONS.map((s) => s.title)).toEqual([
-      'What this is', 'Before tip-off', 'Record a play', 'Free throws', 'A player with no card',
+      'What this is', 'Before tip-off', 'Record a play', 'Free throws', 'A player with no card', 'Subs',
       'Timeouts and bench techs', 'Mistakes', 'End of quarter', 'Overtime and end of game', 'Export',
       'Reading the screen', "If something's wrong",
     ]));
@@ -33,6 +33,16 @@ describe('how-to content', () => {
   it('explains + Play and Whose number?', () => {
     const t = text('A player with no card');
     for (const words of ['+ Play', 'Whose number?', 'No number', 'Stop asking this game', 'joins that team']) expect(t).toContain(words);
+  });
+  it('covers the floor and bench, Starters, the sub row and the three questions', () => {
+    const t = text('Subs');
+    expect(t).toMatch(/Solid cards are the five on the floor; the bench is ghosted/);
+    expect(t).toMatch(/Starters/);
+    expect(t).toMatch(/Subbing is optional: a bench player who makes a play goes on the floor/);
+    expect(t).toMatch(/tap #22, then #22 checks in/);
+    for (const q of ['Who went out?', 'Who came in?', "Who's on the floor?"]) expect(t).toContain(q);
+    expect(t).toMatch(/likely marks a guess/);
+    expect(t).toMatch(/Subs change no score or count/);
   });
   it('makes both rosters optional and keeps only ours', () => {
     expect(text('Before tip-off')).toMatch(/their roster.*Both are optional/);
@@ -73,8 +83,9 @@ describe('how-to content', () => {
     expect(text("If something's wrong")).toMatch(/Not saving/);
     expect(text("If something's wrong")).toMatch(/reload keeps your plays but clears Undo/);
   });
-  it('shows the three screenshots the release script writes, and no others', () => {
+  it('shows the four screenshots the release script writes, and no others', () => {
     const IMAGES: Record<string, string> = {
+      Subs: '/howto/subs.png',
       'Reading the screen': '/howto/reading-the-screen.png',
       Mistakes: '/howto/mistakes.png',
       'End of quarter': '/howto/end-of-quarter.png',
