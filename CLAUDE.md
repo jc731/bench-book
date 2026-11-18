@@ -27,6 +27,10 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
       subbing is optional. A fouled-out player prompts a sub. Reworded 2026-11-16 (owner): the
       old wording, "shows only the players on the floor", is dropped. (0.9)
 - [x] Both teams in the Book CSV, and the quarter check compares both scores. (0.8)
+- [ ] A player stats page: each player's points and fouls by quarter, for both teams, where a
+      play can be added or fixed for a given quarter, mid-game or at the quarter's end. Added
+      2026-11-18 (owner), after the first real game on 0.9. Later stats (rebounds, assists) would
+      live here, but they stay out of scope for 1.0.
 - [ ] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
       both-team game with nothing blocking (not yet run; the scenario was rewritten in 0.8).
 - [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,

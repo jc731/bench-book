@@ -126,6 +126,17 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   60 px cards so 10 players a half still fit an iPhone 13, and with 11 or more the floor stays in
   view while only the bench scrolls. Design:
   `docs/superpowers/specs/2026-11-17-active-lineup-design.md`.
+- **1.0: a player stats page** (on the checklist, 2026-11-18): each player's points and fouls by
+  quarter, for both teams, and a quick way to add or fix a play for a given quarter, mid-game or at
+  the quarter's end. Design first (options, critique, mockups), as for 0.9. Later stats (rebounds,
+  assists) would live here.
+- **Before 1.0: back toward neutral cards** (owner, 2026-11-18, after the first real game on 0.9).
+  Stop adding floor/bench emphasis: drop or soften the ghosted bench and the "bench" tag, and keep
+  the five most active at the top. Some light difference between the top five and the rest may
+  still help; whether it's worth anything is for a couple of design critique passes, then mockups
+  reviewed by the same group. With less emphasis on who is in, an easy way to set starters or
+  rearrange the lineup matters more: a Starters toggle in team Setup, or similar. Design the
+  cards with room for 1.1's one-tap buttons, so the cards aren't redone twice.
 - **0.9.x: a line-change view** for several subs at once, including several missed ones: move or
   swap multiple players between floor and bench in one place (drag and drop, or a tap-to-swap).
   Design note: the 0.9 critics rejected drag for single subs (hard to discover, and it fights the
@@ -147,30 +158,30 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
     read wrong to a screen reader; 40 px timeout buttons; larger phone text pushes timeouts
     below the fold.
 
-- **Recorded, not planned: a bigger floor/bench layout change.** 0.9.2 gave floor cards the
-  stronger gray outline. The five floor cards still end mid-row beside a bench card. Explored on
-  2026-11-17: full-width floor rows with the bench as three-across chips. It fits 10 a side, but it
-  drops bench names, and a promoted bench player stays a chip, so "wide = floor" is wrong exactly
-  when the lineup is. Any one-tap point button must work on bench cards too (forgotten subs), so
-  that question belongs to the taps-per-play work. Trigger: a scorer enters a play for the wrong
-  player because they misread who was on the floor.
-- **Explore: fewer taps per play.** Today a player's play is 2 taps (card, then play). Goal to
-  test: an average of 1.25–1.5 taps per play across a real game (the owner's arbitrary target,
-  open to critique). Steps:
-  1. Research: gather 30–40 real play-by-play logs, ideally high school or junior high (college if
-     nothing else), or post-game box scores to backfill from.
-  2. Measure: the mix of play types (2s, 3s, FT made/missed pairs, fouls, techs, timeouts, subs),
-     per team and per quarter, as a chart of where the bulk of a scorer's taps go.
-  3. Design: only then, ideas that cut taps for the common plays, judged against that data and
-     against mis-taps (a 1-tap play is also a 1-tap mistake).
-  Trigger: the owner wants to start it; nothing measured says 2 taps is too slow yet.
-
 **After 1.0 (1.x):**
+
+- **1.1: efficiency (UI refinement).** Measure taps and fixes per play, then cut them. Direction
+  (owner, 2026-11-18): one tap on a card for +2, +3 and Foul; free throws stay a popup.
+  - First real game on 0.9 (2026-11-17, both teams, OT, a foul-out, no techs or bonus; the CSV
+    stays out of the repo because it has real names): 68 entries, of which 19 2's, 18 fouls,
+    13 FT made, 9 FT missed, 6 3's and 3 timeouts. About 1.96 taps per entry today; with one-tap
+    2/3/Foul and FTs unchanged, about 1.3 (43 of 68 become one tap).
+  - Target: the owner's 1.25–1.5 is an arbitrary number. Track two numbers together: taps per
+    entry on a real game's mix, and fixes per game (undos, Log edits, late catch-up entries), so a
+    faster card that causes more mis-taps doesn't count as a win.
+  - Data points from that game, not bugs: free throws come when subs are busiest, so a pair often
+    gets broken up (close the sheet, record the sub, come back), and one pair landed on two
+    players; missed free throws were caught up in a burst later. The owner's attention fades late in
+    each half (a 5th foul for one player is missing from the log, likely in Q2 or Q4). The player
+    stats page and the quarter check are where these get caught.
+  - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
+    play mix, so the design isn't fitted to one game.
+- **Maybe: nudges when something happens**, e.g. a foul while the other team is in the bonus
+  suggests free throws for the fouled team. Only as a way to make things better, not a rule engine.
 
 - Cross-scorer check at halftime and end of game: compare what you recorded with the other
   team's scorer and talk through any difference.
 - Tablet-size release test.
-- Tick starters in Setup (a Setup option; today the Starters sheet does it).
 - Notifications: alerts for timeouts remaining, a player in foul trouble or fouled out, the team
   fouls reaching the bonus, and so on. Open question for the design: on-device alerts for the
   scorer, or push notifications to other people's phones (a coach, a parent), which would need

@@ -239,6 +239,14 @@ describe('both teams', () => {
   const th14: Player = { id: 't14', number: '14', name: 'Rival Fourteen', pos: 'F' };
   const two = (): Game => newGame(info, [us4], now, [th4, th14]);
 
+  test('their player with 2 fouls in Q3 and 2 in OT1 is at 4 (warn); a 5th in OT1 puts them out', () => {
+    let g = two();
+    for (const period of [3, 3, 5, 5]) g = add(g, period, { type: 'FOUL', playerId: 't14', side: 'them' });
+    expect(derive(g).opp.players.find((p) => p.playerId === 't14')).toMatchObject({ fouls: 4, foulState: 'warn' });
+    g = add(g, 5, { type: 'FOUL', playerId: 't14', side: 'them' });
+    expect(derive(g).opp.players.find((p) => p.playerId === 't14')).toMatchObject({ fouls: 5, foulState: 'out' });
+  });
+
   test('their FG2 scores for them only', () => {
     const d = derive(add(two(), 1, { type: 'FG2', playerId: 't14', side: 'them' }));
     expect(d.opp.total).toBe(2);
