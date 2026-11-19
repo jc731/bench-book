@@ -66,3 +66,11 @@ describe('setupRosterErrors', () => {
     expect(setupRosterErrors(dup, dup)).toEqual(['Duplicate number: #4.', 'Their roster: Duplicate number: #4.']);
   });
 });
+
+describe('Edit teams uses Setup validation (Review Focus 2)', () => {
+  it('accepts a Whose number? roster: numbers with empty names, kept empty by the cleaning', () => {
+    const theirs: Player[] = ['2', '3', '11'].map((n) => ({ id: `t${n}`, number: n, name: '', pos: '' }));
+    expect(setupRosterErrors(many(7), theirs)).toEqual([]);
+    expect(cleanOppRoster(theirs).map((p) => p.name)).toEqual(['', '', '']);
+  });
+});

@@ -1,12 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { derive, type TeamDerived } from './derive';
-import { applyTeams, lockedPlayerIds, teamsDraftOf, type TeamsDraft } from './edit-teams';
+import { applyTeams, floorPlayerIds, lockReasons, lockedPlayerIds, teamsDraftOf, type TeamsDraft } from './edit-teams';
 import { appendEvent, newGame, recordSub } from './events';
 import { bookCsv } from './export-book';
 import { playsCsv } from './export-plays';
 import { lineup } from './lineup';
 import type { Game, GameInfo, Player, Side } from './types';
-import { cleanOppRoster, setupRosterErrors } from '../ui/roster';
 
 // Invented names only (the repo is public).
 const info: GameInfo = {
@@ -220,14 +219,46 @@ describe('lockedPlayerIds (D14)', () => {
   });
 });
 
-describe('Setup validation on an Edit teams draft (Review Focus 2)', () => {
-  test('numbers with empty names save with no error, and a default MM-DD opponent stays', () => {
-    const g = { ...played(), info: { ...info, opponent: '11-19' } };
+describe('floor lock (D14 floor lock, fix round 1; anti-goal: a save never changes who is on the floor)', () => {
+  test('floorPlayerIds holds both floors, including players with no plays and no sub', () => {
+    const floor = floorPlayerIds(played());
+    // Ours after #22 in for #10: h4 h5 h7 h12 h22. Theirs after #24 in for #20: t2 t3 t11 t14 t24.
+    expect([...floor].sort()).toEqual(['h12', 'h22', 'h4', 'h5', 'h7', 't11', 't14', 't2', 't24', 't3']);
+  });
+
+  test('before the first sub, removing a starter with no plays throws', () => {
+    const g = newGame(info, ours, now, theirs);
     const d = teamsDraftOf(g);
-    // Setup's validation, as EditTeams calls it (D11: same validation as Setup).
-    expect(setupRosterErrors(d.roster, d.oppRoster)).toEqual([]);
-    const after = applyTeams(g, { ...d, oppRoster: cleanOppRoster(d.oppRoster) }, later);
-    expect(after.oppRoster.every((p) => p.name === '')).toBe(true);
-    expect(after.info.opponent).toBe('11-19');
+    expect(() => applyTeams(g, { ...d, roster: d.roster.filter((p) => p.id !== 'h7') }, later)).toThrow();
+    expect(() => applyTeams(g, { ...d, oppRoster: d.oppRoster.filter((p) => p.id !== 't11') }, later)).toThrow();
+  });
+
+  test('after a sub, removing a floor player with no plays throws', () => {
+    const g = played();
+    const d = teamsDraftOf(g);
+    expect(lockedPlayerIds(g)).not.toContain('h7'); // no play, no sub: only the floor locks them
+    expect(() => applyTeams(g, { ...d, roster: d.roster.filter((p) => p.id !== 'h7') }, later)).toThrow();
+  });
+
+  test('a bench player with no plays and no sub can still be removed, and the floor stays', () => {
+    const g = played();
+    const d = teamsDraftOf(g);
+    const after = applyTeams(g, { ...d, roster: d.roster.filter((p) => p.id !== 'h31') }, later);
+    expect(lineup(after, 'us').floor).toEqual(lineup(g, 'us').floor);
+  });
+
+  test('lockReasons: "has plays" for plays or a sub, "on the floor" otherwise; both reads "has plays"', () => {
+    const r = lockReasons(played());
+    expect(r.get('h4')).toBe('has plays'); // a play, and on the floor
+    expect(r.get('h10')).toBe('has plays'); // only in a sub, now on the bench
+    expect(r.get('h7')).toBe('on the floor');
+    expect(r.has('h31')).toBe(false);
+  });
+
+  test('accepted exception (owner ruling, fix round 1): on a side with fewer than five, an added player joins the floor', () => {
+    const g = newGame(info, ours, now, theirs.slice(0, 2)); // their roster: #2, #3, no sub yet
+    const d = teamsDraftOf(g);
+    const after = applyTeams(g, { ...d, oppRoster: [...d.oppRoster, { id: 'tnew', number: '33', name: '', pos: '' }] }, later);
+    expect(lineup(after, 'them').floor).toEqual(['t2', 't3', 'tnew']);
   });
 });

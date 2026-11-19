@@ -1,3 +1,4 @@
+import { lineup } from './lineup';
 import { opponentOrDefault } from './opponent';
 import type { Game, Player } from './types';
 
@@ -27,8 +28,25 @@ export function lockedPlayerIds(g: Game): Set<string> {
 }
 
 /**
+ * D14 (floor lock, fix round 1): players on either team's floor now can't be removed either, or a save
+ * would change who is on the floor (the anti-goal): a starter removed slides the sixth player into the
+ * first five, and after a sub the floor ends short. A no-show starter is subbed out first.
+ */
+export function floorPlayerIds(g: Game): Set<string> {
+  return new Set([...lineup(g, 'us').floor, ...lineup(g, 'them').floor]);
+}
+
+/** Why each unremovable player can't be removed, as their row says it: "has plays" wins over "on the floor". */
+export function lockReasons(g: Game): Map<string, 'has plays' | 'on the floor'> {
+  const reasons = new Map<string, 'has plays' | 'on the floor'>();
+  for (const id of floorPlayerIds(g)) reasons.set(id, 'on the floor');
+  for (const id of lockedPlayerIds(g)) reasons.set(id, 'has plays');
+  return reasons;
+}
+
+/**
  * D12/D13: existing players stay in their old order with their id and the draft's number and name; a
- * removed one is dropped (a locked one throws, D14); new players are appended in the draft's order.
+ * removed one is dropped (a locked or floor one throws, D14); new players are appended in the draft's order.
  */
 function mergeRoster(old: Player[], draft: Player[], locked: Set<string>): Player[] {
   const byId = new Map(draft.map((p) => [p.id, p]));
@@ -37,7 +55,7 @@ function mergeRoster(old: Player[], draft: Player[], locked: Set<string>): Playe
   for (const p of old) {
     const d = byId.get(p.id);
     if (!d) {
-      if (locked.has(p.id)) throw new Error(`Player #${p.number} has plays and can't be removed.`);
+      if (locked.has(p.id)) throw new Error(`Player #${p.number} has plays or is on the floor and can't be removed.`);
       continue;
     }
     kept.push({ ...p, number: d.number, name: d.name });
@@ -48,11 +66,12 @@ function mergeRoster(old: Player[], draft: Player[], locked: Set<string>): Playe
 /**
  * Saves an Edit teams draft. Plays and subs are untouched (I1), so scores, counts and the floor are too;
  * the opponent falls back to the MM-DD default (D11). The caller validates the draft as Setup does and
- * saves through `update`, which drops the export marks (I6); they are dropped here as well. A draft
+ * saves through `update`. The export marks are dropped here (I6), so the game says so on its own;
+ * `update` drops them again, harmlessly. A draft
  * that changes nothing returns `g` itself.
  */
 export function applyTeams(g: Game, d: TeamsDraft, now: Date): Game {
-  const locked = lockedPlayerIds(g);
+  const locked = new Set(lockReasons(g).keys());
   const info = { ...g.info, team: d.team.trim(), opponent: opponentOrDefault(d.opponent, g.info.date) };
   const roster = mergeRoster(g.roster, d.roster, locked);
   const oppRoster = mergeRoster(g.oppRoster, d.oppRoster, locked);

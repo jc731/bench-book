@@ -11,7 +11,8 @@ export function blankPlayer(): Player {
 
 /**
  * Roster rows, "Add <prefix> player" and remove. Field labels are `${idPrefix} ${n} number` / `name`.
- * `locked` (Edit teams, D14): those rows can't be removed; their × is disabled and they say "has plays".
+ * `locked` (Edit teams, D14): id → why the row can't be removed ("has plays" or "on the floor"); its
+ * × is disabled and the row says the reason in gray.
  */
 export function RosterEditor({
   label,
@@ -24,7 +25,7 @@ export function RosterEditor({
   players: Player[];
   onChange: (p: Player[]) => void;
   idPrefix: string;
-  locked?: Set<string>;
+  locked?: Map<string, string>;
 }) {
   const set = (id: string, k: keyof Player, v: string) =>
     onChange(players.map((p) => (p.id === id ? { ...p, [k]: v } : p)));
@@ -37,7 +38,8 @@ export function RosterEditor({
       </h2>
       <div class="flex flex-col gap-2">
         {players.map((p, i) => {
-          const isLocked = locked?.has(p.id) ?? false;
+          const reason = locked?.get(p.id);
+          const isLocked = reason !== undefined;
           return (
             <div class="flex flex-col gap-1" key={p.id}>
               <div class="flex items-center gap-2">
@@ -69,7 +71,7 @@ export function RosterEditor({
               </div>
               {isLocked && (
                 <span id={`locked-${p.id}`} class="pl-1 text-sm text-slate-400">
-                  has plays
+                  {reason}
                 </span>
               )}
             </div>

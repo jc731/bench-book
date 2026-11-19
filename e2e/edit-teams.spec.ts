@@ -30,10 +30,15 @@ test('Edit teams: rename a player with plays, add #33 to theirs, Save; Undo rest
   const app = await startScoredGame(page);
   await openEditTeams(page);
 
-  // D14: the scored player (row 1, Player One) can't be removed and says why; an unscored one can.
+  // D14: the scored player (row 1, Player One) can't be removed and says why.
   await expect(page.getByRole('button', exact('Remove player 1'))).toBeDisabled();
-  await expect(page.getByText('has plays')).toHaveCount(1);
-  await expect(page.getByRole('button', exact('Remove player 2'))).toBeEnabled();
+  await expect(page.getByText('has plays', { exact: true })).toHaveCount(1);
+  // D14 floor lock (fix round 1): a starter with no plays (row 2) is locked too, "on the floor": our
+  // other four starters and both of theirs (#2, #3, a roster under five). A bench player (row 6) is not.
+  await expect(page.getByRole('button', exact('Remove player 2'))).toBeDisabled();
+  await expect(page.getByRole('button', exact('Remove player 2'))).toHaveAccessibleDescription('on the floor');
+  await expect(page.getByText('on the floor', { exact: true })).toHaveCount(6);
+  await expect(page.getByRole('button', exact('Remove player 6'))).toBeEnabled();
 
   await page.getByLabel('Player 1 name', { exact: true }).fill('Player Uno');
   await page.getByRole('button', exact('Add their player')).click();

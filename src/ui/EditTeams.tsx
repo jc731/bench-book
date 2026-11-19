@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { applyTeams, lockedPlayerIds, teamsDraftOf, type TeamsDraft } from '../core/edit-teams';
+import { applyTeams, lockReasons, teamsDraftOf, type TeamsDraft } from '../core/edit-teams';
 import type { Player } from '../core/types';
 import { cleanOppRoster, defaultOpponent, setupRosterErrors } from './roster';
 import { RosterEditor } from './RosterEditor';
@@ -20,18 +20,18 @@ export function EditTeams({ store }: { store: GameStore }) {
   const [draft, setDraft] = useState<TeamsDraft | null>(() => (game ? teamsDraftOf(game) : null));
   const [tried, setTried] = useState(false);
   if (!game || !draft) return null;
-  const locked = lockedPlayerIds(game);
+  const locked = lockReasons(game);
   const set = (k: keyof TeamsDraft, v: string | Player[]) => setDraft({ ...draft, [k]: v });
 
-  // D11: Setup's validation. A row blanked out entirely is dropped by the cleaning, so a player with
-  // plays emptied that way is caught here rather than thrown by applyTeams.
+  // D11: Setup's validation. A row blanked out entirely is dropped by the cleaning, so a locked player
+  // (plays, a sub, or on the floor) emptied that way is caught here rather than thrown by applyTeams.
   const roster = cleanOppRoster(draft.roster);
   const oppRoster = cleanOppRoster(draft.oppRoster);
   const kept = new Set([...roster, ...oppRoster].map((p) => p.id));
   const lost = [...game.roster, ...game.oppRoster].filter((p) => locked.has(p.id) && !kept.has(p.id));
   const errors = [
     ...setupRosterErrors(draft.roster, draft.oppRoster),
-    ...(lost.length ? [`A player with plays needs a number: ${lost.map((p) => `#${p.number}`).join(', ')}.`] : []),
+    ...(lost.length ? [`A player with plays or on the floor needs a number: ${lost.map((p) => `#${p.number}`).join(', ')}.`] : []),
   ];
 
   const onSave = () => {

@@ -51,7 +51,9 @@ the 1.0 checklist. The owner can make that call; it is recorded here and in the 
 ## Anti-goals
 
 It fails, even if it works, if:
-- an Edit teams save changes any score, foul, timeout count or who is on the floor;
+- an Edit teams save changes any score, foul, timeout count, or who is on the floor for a side with five
+  or more players (with fewer than five before that side's first sub, the floor was never known, so a
+  player added there joins it: owner ruling 2026-11-19);
 - the clock writes to the game (a save, an undo step, a lost export mark);
 - the clock covers the cards or the Sub button during a timeout;
 - anything new appears for a scorer who never turns the experiment on.
@@ -121,6 +123,10 @@ It fails, even if it works, if:
     first sub, so moving players would change who started.
 14. **× only for a player with no plays and in no sub.** Otherwise the button is disabled and the row
     says "has plays".
+    **Floor lock (owner ruling 2026-11-19, Task 5 review):** a player on either team's floor now can't be
+    removed either: the × is disabled and the row says "on the floor" ("has plays" wins when both apply).
+    Removing a starter would slide the sixth player into the first five, or after a sub leave the floor
+    short. A no-show starter is subbed out first, then removed.
 
 ### Experiments and the timeout clock
 
@@ -154,7 +160,8 @@ It fails, even if it works, if:
 1. An Edit teams save leaves `events` and `subs` deep-equal.
 2. It leaves every score, team foul, timeout count and player line's numbers unchanged.
 3. After it, every play's `playerId` is still on its team's roster.
-4. Renumbering, renaming or adding a player leaves the floor unchanged.
+4. Renumbering, renaming or adding a player leaves the floor unchanged, for a side with five or more
+   players (the under-five add is the accepted exception in the anti-goals).
 5. The Book CSV changes only in names and numbers; the Plays CSV only in its number and player columns.
 6. Undo after an Edit teams save restores the game deep-equal; the save clears `exported`.
 7. The clock never writes to the game: no save, no undo step, `exported` kept.
