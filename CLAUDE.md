@@ -24,13 +24,20 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
       points by player number. (0.8)
 - [x] Active lineup with substitutions: the five on the floor sit at the top of their half,
       the bench below; a sub moves players between floor and bench, and nothing is ever hidden, so
-      subbing is optional. A fouled-out player prompts a sub. Reworded 2026-11-16 (owner): the
-      old wording, "shows only the players on the floor", is dropped. (0.9)
+      subbing is optional. A foul-out takes the player off the floor and tells the scorer to tell
+      the official. Reworded 2026-11-16 (owner): the old wording, "shows only the players on the
+      floor", is dropped. Reworded 2026-11-19: "prompts a sub" became the foul-out line, since 0.10's
+      neutral cards drop the amber Sub prompt. (0.9)
 - [x] Both teams in the Book CSV, and the quarter check compares both scores. (0.8)
 - [ ] A player stats page: each player's points and fouls by quarter, for both teams, where a
       play can be added or fixed for a given quarter, mid-game or at the quarter's end. Added
       2026-11-18 (owner), after the first real game on 0.9. Later stats (rebounds, assists) would
       live here, but they stay out of scope for 1.0.
+- [ ] Edit teams mid-game from the More menu: names and both rosters, without recording a play.
+      Added 2026-11-19 (owner), after a game where the rosters were built through Whose number?.
+- [ ] A usage counter (taps and fixes per game, a Usage CSV) and neutral cards. Added 2026-11-19
+      (owner).
+- [ ] An Experiments page with an opt-in timeout clock (off by default). Added 2026-11-19 (owner).
 - [ ] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
       both-team game with nothing blocking (not yet run; the scenario was rewritten in 0.8).
 - [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,
