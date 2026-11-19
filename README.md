@@ -25,12 +25,12 @@ with the book page after the game.
    showing what is left; one at zero asks first. **Undo**, **Log**, **End Q** and **⋯** are on
    the bottom bar. One line above the bar shows what was just entered, naming the team, and stays
    until the next entry, with a chip at its right for a quarter still to check.
-3. **Subs (optional).** Solid cards are the five on the floor; the bench is ghosted, with a gray
-   **bench** tag. Each team's first five start (the **Starters** button, beside + Play, changes
+3. **Subs (optional).** Every card looks the same; the five on the floor lead, and the cards after
+   them are a shade lighter (Home) or darker (Away). Each team's first five start (the **Starters** button, beside + Play, changes
    them before that team's first play). A bench player who makes a play goes on the floor on
    their own, so nothing is lost by skipping a sub, and a foul-out takes the player off. For a sub,
    tap the player checking in, then **#22 checks in** on their sheet, then who went out. The **Sub**
-   button (amber `Sub · 6 on` when the floor isn't five) asks **Who went out?** (with a quiet
+   button (always gray) asks **Who went out?** (with a quiet
    "longest without a play" hint), **Who came in?** or, for a line change, **Who's on the floor?**. Subs change no score
    or count and are in neither CSV.
 4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Log** and
@@ -86,12 +86,12 @@ when adding to the interface:
 
 | Color | Means | Examples |
 |---|---|---|
-| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving, the Sub button while the floor isn't five (`Sub · 6 on`) until that team's next play |
+| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving |
 | **Red** | Out, or ends something for good | an out player, End Q4 / OT (can end the game), Discard when the game is not exported |
 | **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
-| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (floor outlines stronger than the bench's: slate-600 on Home, slate-400 on Away), ghosted bench cards and their "bench" tag, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
+| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step lighter on Home, slate-100 on white, and darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
 
 Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
 each kept at 3:1 or better for borders and dots and 4.5:1 for text:

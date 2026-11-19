@@ -736,32 +736,25 @@ const fillAlpha = (l: Locator) =>
 const cardOrder = (page: Page, side: Side) =>
   ui(page).half(side).getByRole('button', { name: /^#/ }).evaluateAll((els) => els.map((el) => /^#([^\s,]+)/.exec(el.getAttribute('aria-label')!)![1]));
 const nums = (from: number, n: number) => Array.from({ length: n }, (_, i) => String(from + i));
-/** The Sub button's caution state: amber border and text (amber-600/800 on the light half, 400/300 on the dark). */
-const amber = (side: Side) => (side === 'Home' ? /border-amber-600.*text-amber-800|text-amber-800.*border-amber-600/ : /border-amber-400.*text-amber-300|text-amber-300.*border-amber-400/);
 
-test('the floor: first five solid, the rest ghosted with "bench"', async ({ page }) => {
+test('the floor: cards are one style, the top five lead, the rest take a fill step (D1, D2)', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   for (const [side, first] of [['Home', 10], ['Away', 50]] as const) {
     expect(await app.floorOf(side)).toEqual(nums(first, 5));
-    // Only the two bench cards carry the tag.
-    await expect(app.half(side).getByText('bench', { exact: true })).toHaveCount(2);
-    for (const n of nums(first + 5, 2)) {
-      const c = app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
-      await expect(c.getByText('bench', { exact: true })).toBeVisible();
-      // The tag fits beside the five dots, inside the card's padding.
-      expect(await c.evaluate((el) => {
-        const tag = [...el.querySelectorAll('span')].find((x) => x.textContent === 'bench')!.getBoundingClientRect();
-        const box = el.getBoundingClientRect();
-        const { borderRightWidth, paddingRight } = getComputedStyle(el);
-        return box.right - parseFloat(borderRightWidth) - parseFloat(paddingRight) - tag.right;
-      })).toBeGreaterThanOrEqual(0);
-    }
-    // A bench card says so to screen readers too, and is ghosted: no fill of its own. A floor card is solid.
+    // D1: no "bench" tag on the screen; screen readers still hear ", bench".
+    await expect(app.half(side).getByText('bench', { exact: true })).toHaveCount(0);
     const benchCard = app.half(side).getByRole('button', { name: new RegExp(`^#${first + 5}(,| )`) });
     await expect(benchCard).toHaveAccessibleName(new RegExp(`^#${first + 5}.*, 0 points, 0 fouls, bench$`));
-    expect(await fillAlpha(benchCard)).toBe(0);
-    expect(await fillAlpha(app.half(side).getByRole('button', { name: new RegExp(`^#${first}(,| )`) }))).toBe(255);
+    // D1: every card is solid, with the same 2px border.
+    const top = app.half(side).getByRole('button', { name: new RegExp(`^#${first}(,| )`) });
+    expect(await fillAlpha(benchCard)).toBe(255);
+    expect(await fillAlpha(top)).toBe(255);
+    expect(await benchCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('2px');
+    // D2: the card after the top five has a different fill; the top five share one.
+    const fill = (l: Locator) => l.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(await fill(benchCard)).not.toBe(await fill(top));
+    expect(await fill(app.half(side).getByRole('button', { name: new RegExp(`^#${first + 4}(,| )`) }))).toBe(await fill(top));
     // Before the team's first play its Sub button reads Starters, in gray.
     await expect(app.subButton(side)).toHaveText('Starters');
     await expect(app.subButton(side)).not.toHaveClass(/amber/);
@@ -772,7 +765,7 @@ test('the floor: first five solid, the rest ghosted with "bench"', async ({ page
   await expect(app.subButton('Away')).toHaveText('Starters');
   expect(await app.floorOf('Home')).toEqual(nums(10, 5));
   await page.evaluate(() => localStorage.clear());
-  // Five players or fewer: all on the floor, no tag and no Sub button.
+  // Five players or fewer: all on the floor and no Sub button.
   await twoTeamGame(page, { ours: 5, theirs: 2 });
   expect(await app.floorOf('Home')).toEqual(nums(10, 5));
   for (const side of ['Home', 'Away'] as const) {
@@ -781,7 +774,7 @@ test('the floor: first five solid, the rest ghosted with "bench"', async ({ page
   }
 });
 
-test('a bench player\'s +2 turns their card solid in place, and the Sub button reads "Sub · 6 on" in amber, then gray after that team\'s next play', async ({ page }) => {
+test('a bench player\'s +2 puts them on the floor in place, and the Sub button stays a gray "Sub" (D3)', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   for (const [side, first] of [['Home', 10], ['Away', 50]] as const) {
@@ -790,21 +783,17 @@ test('a bench player\'s +2 turns their card solid in place, and the Sub button r
     const box = (await sixth.boundingBox())!;
     await tap(page, sixth, '+2');
     expect(await app.floorOf(side)).toEqual(nums(first, 6));
-    await expect(sixth.getByText('bench', { exact: true })).toHaveCount(0);
+    await expect(sixth).not.toHaveAccessibleName(/, bench$/);
     // In place: same order, same box.
     expect(await cardOrder(page, side)).toEqual(order);
     expect(await sixth.boundingBox()).toEqual(box);
-    await expect(app.subButton(side)).toHaveText('Sub · 6 on');
-    await expect(app.subButton(side)).toHaveClass(amber(side));
+    await expect(app.subButton(side)).toHaveText('Sub');
+    await expect(app.subButton(side)).not.toHaveClass(/amber/);
   }
-  // The other team's play leaves Home amber; Home's own next play turns it gray, still counting.
+  // Other plays change nothing about the label or its color.
   await tap(page, app.half('Away').getByRole('button', { name: /^#50(,| )/ }), '+2');
-  await expect(app.subButton('Home')).toHaveClass(amber('Home'));
-  await expect(app.subButton('Away')).not.toHaveClass(/amber/);
-  await expect(app.subButton('Away')).toHaveText('Sub · 6 on');
-  await tap(page, app.half('Home').getByRole('button', { name: /^#10 / }), 'Foul');
-  await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
   await expect(app.subButton('Home')).not.toHaveClass(/amber/);
+  await expect(app.subButton('Away')).toHaveText('Sub');
 });
 
 test('10 + 10 players fit each half with no scroll on iPhone 13', async ({ page }) => {
@@ -925,13 +914,13 @@ test('deliberate sub: #15 checks in for #10 in 3 taps; the toast names both and 
   await expect(app.subButton('Home')).toHaveText('Sub');
 });
 
-test('forgotten sub: #15 scores from the bench, Sub · 6 on, "Who went out?" with #15 "just in" and a quiet "longest without a play" hint; one tap on that player closes it at 5', async ({ page }) => {
+test('forgotten sub: #15 scores from the bench, Sub, "Who went out?" with #15 "just in" and a quiet "longest without a play" hint; one tap on that player closes it at 5', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   const sheet = page.getByRole('dialog');
   await tap(page, homeCard(page, 10), '+2');
   await tap(page, homeCard(page, 15), '+2');
-  await expect(app.subButton('Home')).toHaveText('Sub · 6 on');
+  await expect(app.subButton('Home')).toHaveText('Sub');
   await app.subButton('Home').click();
   await expect(sheet).toHaveAccessibleName('Who went out?');
   // The floor, all six, and nobody from the bench.
@@ -1022,12 +1011,12 @@ test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way
   expect(await cardOrder(page, 'Home')).toEqual(['14', '15', '16', '17', '18', '10', '11', '12', '13']);
 });
 
-test('foul-out: Sub · 4 on → "Who came in?" → #15 closes it', async ({ page }) => {
+test('foul-out: Sub → "Who came in?" → #15 closes it', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   const sheet = page.getByRole('dialog');
   for (let i = 0; i < 5; i++) await tap(page, homeCard(page, 10), 'Foul');
-  await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
+  await expect(app.subButton('Home')).toHaveText('Sub');
   await app.subButton('Home').click();
   await expect(sheet).toHaveAccessibleName('Who came in?');
   await expect(sheet.getByTestId('sub-pick')).toHaveText('4 on · pick 1');
@@ -1059,7 +1048,7 @@ test('Starters: before the first play the button reads Starters; changing two st
   expect(await app.floorOf('Away')).toEqual(nums(50, 5));
   await tap(page, awayCard(page, 55), '+2');
   expect(await app.floorOf('Away')).toEqual(nums(50, 6));
-  await expect(app.subButton('Away')).toHaveText('Sub · 6 on');
+  await expect(app.subButton('Away')).toHaveText('Sub');
 });
 
 test('"Who\'s on the floor?": Done with 4 on records the 4; Done with no change records nothing', async ({ page }) => {
@@ -1081,7 +1070,7 @@ test('"Who\'s on the floor?": Done with 4 on records the 4; Done with no change 
   await expect(sheet).toHaveCount(0);
   expect(await app.floorOf('Home')).toEqual(nums(11, 4));
   await app.expectToastUndo('Home floor updated');
-  await expect(app.subButton('Home')).toHaveText('Sub · 4 on');
+  await expect(app.subButton('Home')).toHaveText('Sub');
 });
 
 test('the sub row: only on a tracked team\'s player who is not out, and the plays sit at one height on every live play sheet; the check\'s Add play has no blank footer', async ({ page }) => {
@@ -1185,24 +1174,23 @@ test("the other team's sub works the same (Away)", async ({ page }) => {
   expect(await app.floorOf('Away')).toEqual(['52', '53', '54', '55', '56']);
 });
 
-test("a bench card's contrast: the bench tag and the ghost border are readable on both tones", async ({ page }) => {
+test("a card after the top five: its border and text stay readable on its lighter or darker fill, and Sub too (D1-D3)", async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   for (const [side, n] of [['Home', '16'], ['Away', '56']] as const) {
     const c = ui(page).half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
-    expect(await colorContrast(c, 'borderTopColor'), `${side} ghost border`).toBeGreaterThanOrEqual(3);
-    expect(await contrast(c.getByText('bench', { exact: true })), `${side} bench tag`).toBeGreaterThanOrEqual(4.5);
+    expect(await colorContrast(c, 'borderTopColor'), `${side} rest border`).toBeGreaterThanOrEqual(3);
     // Text at full strength: the number reads as on a solid card.
     expect(await contrast(c.getByText(n, { exact: true })), `${side} number`).toBeGreaterThanOrEqual(4.5);
-    // The amber Sub button is readable too.
+    // The gray Sub button is readable too.
     await tap(page, ui(page).half(side).getByRole('button', { name: new RegExp(`^#${Number(n) - 1}(,| )`) }), '+2');
     const sub = ui(page).subButton(side);
-    await expect(sub).toHaveClass(amber(side));
-    expect(await colorContrast(sub, 'borderTopColor'), `${side} amber Sub border`).toBeGreaterThanOrEqual(3);
-    expect(await contrast(sub), `${side} amber Sub text`).toBeGreaterThanOrEqual(4.5);
+    await expect(sub).not.toHaveClass(/amber/);
+    expect(await colorContrast(sub, 'borderTopColor'), `${side} Sub border`).toBeGreaterThanOrEqual(3);
+    expect(await contrast(sub), `${side} Sub text`).toBeGreaterThanOrEqual(4.5);
   }
 });
 
-test('a benched player in foul trouble: their ghost card keeps a readable amber border and dots on both tones', async ({ page }) => {
+test('a benched player in foul trouble: their rest-fill card keeps a readable amber border and dots on both tones', async ({ page }) => {
   await twoTeamGame(page, { ours: 7, theirs: 7 });
   const app = ui(page);
   for (const n of ['10', '50']) {
@@ -1213,11 +1201,11 @@ test('a benched player in foul trouble: their ghost card keeps a readable amber 
   await seedSubs(page, [{ side: 'us', ins: [5], outs: [0] }, { side: 'them', ins: [5], outs: [0] }]);
   for (const [side, n] of [['Home', '10'], ['Away', '50']] as const) {
     const c = app.half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) });
-    await expect(c.getByText('bench', { exact: true })).toBeVisible();
+    await expect(c).toHaveAccessibleName(/, bench$/);
     expect(await app.floorOf(side)).not.toContain(n);
     await expect(c).toHaveClass(/border-amber-/);
-    expect(await colorContrast(c, 'borderTopColor'), `${side} ghost warn border`).toBeGreaterThanOrEqual(3);
-    expect(await colorContrast(c.locator('span.rounded-full').first(), 'backgroundColor', 'parent'), `${side} ghost warn dots`).toBeGreaterThanOrEqual(3);
+    expect(await colorContrast(c, 'borderTopColor'), `${side} rest warn border`).toBeGreaterThanOrEqual(3);
+    expect(await colorContrast(c.locator('span.rounded-full').first(), 'backgroundColor', 'parent'), `${side} rest warn dots`).toBeGreaterThanOrEqual(3);
   }
 });
 

@@ -5,8 +5,8 @@ import type { EventDraft, Game } from '../core/types';
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
-  TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, foulOutLabel, lineupSuffix, playToast, subLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
-  END_GUARD_MS, endTapAllowed, stripPeriodText, subButtonAmber, subButtonText, undoAriaLabel,
+  TAKE_ANYWAY, namedWho, UNDO_CLEARED_LABEL, benchTechLabel, bonusText, timeoutButtonText, timeoutsLeft, who, zeroTimeoutWarning, countText, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, foulOutLabel, playToast, subLabel, teamFoulsWarn, mayEndGame, oppLabel, playLabel, reconcileBanner, timeoutLabel,
+  END_GUARD_MS, endTapAllowed, stripPeriodText, subButtonText, undoAriaLabel,
 } from './live-logic';
 import type { Lineup } from '../core/lineup';
 import { outReason } from './live-logic';
@@ -226,24 +226,7 @@ describe('lineup toasts', () => {
     expect(foulOutLabel('#12 Ada (Home)', '5 fouls')).toBe('#12 Ada (Home) out, 5 fouls. Tell the official.');
     expect(foulOutLabel('#12 Ada (Home)', '2 techs', true)).toBe('#12 Ada (Home) out, 2 techs — bonus. Tell the official.');
   });
-  it('says now on the floor only when this play brought a bench player on', () => {
-    const [b, a] = beforeAfter(base, { type: 'FG2', playerId: 'h22' });
-    expect(lineupSuffix(b, a, 'h22')).toBe(' · now on the floor');
-    expect(lineupSuffix(b, a, 'h4')).toBe('');
-    expect(lineupSuffix(b, a, undefined)).toBe('');
-  });
-  it('gives the second free throw of a pair no suffix', () => {
-    const [, a1, h1] = beforeAfter(base, { type: 'FTM', playerId: 'h22' });
-    const [b2, a2] = beforeAfter(h1, { type: 'FTM', playerId: 'h22' });
-    expect(lineupSuffix(b2, a2, 'h22')).toBe('');
-    expect(a1.floor).toContain('h22');
-  });
-  it('never shows the suffix when the roster is untracked, even if the player moves bench to floor', () => {
-    const l = (floor: string[], tracked: boolean) => ({ ...lineup(base, 'us'), floor, tracked });
-    expect(lineupSuffix(l(['h4'], true), l(['h4', 'h22'], true), 'h22')).toBe(' · now on the floor');
-    expect(lineupSuffix(l(['h4'], false), l(['h4', 'h22'], false), 'h22')).toBe('');
-  });
-  it('a bench player\'s 5th foul is the foul-out sentence with no floor suffix', () => {
+  it('a bench player\'s 5th foul is the foul-out sentence', () => {
     let g = base;
     for (let i = 0; i < 4; i++) g = appendEvent(g, { period: 1, type: 'FOUL', playerId: 'h22' }, t0);
     g = recordSub(g, 'us', ['h4'], ['h22'], t0); // back to the bench with 4 fouls
@@ -253,7 +236,7 @@ describe('lineup toasts', () => {
     const p = roster[5];
     expect(playToast(g, h, 'us', p, 'FOUL')).toBe('#22 Player 22 (Home) out, 5 fouls — bonus. Tell the official.');
   });
-  it('words a play from the game it is applied to: two taps with no render between give one suffix', () => {
+  it('words a play from the game it is applied to: two taps with no render between each get the plain toast (D4: no floor suffix)', () => {
     const play = (g: Game) => {
       const next = appendEvent(g, { period: 1, type: 'FG2', playerId: 'h22' }, t0);
       return { game: next, label: playToast(g, next, 'us', roster[5], 'FG2') };
@@ -262,7 +245,7 @@ describe('lineup toasts', () => {
     const first = applyLabeled(s, play, '', t0);
     s = first.state;
     const second = applyLabeled(s, play, '', t0);
-    expect(first.label).toBe('#22 (Home) +2 · now on the floor');
+    expect(first.label).toBe('#22 (Home) +2');
     expect(second.label).toBe('#22 (Home) +2');
     expect(second.state.stack.at(-1)?.label).toBe('#22 (Home) +2');
   });
@@ -282,18 +265,11 @@ describe('the Sub button', () => {
   it('is absent when the roster has five or fewer', () => {
     expect(subButtonText({ ...base, tracked: false, bench: [] })).toBeNull();
     expect(subButtonText({ ...base, tracked: false, floor: ['a', 'b', 'c', 'd'], changedUnseen: true })).toBeNull();
-    expect(subButtonAmber({ ...base, tracked: false, floor: ['a', 'b', 'c', 'd'], changedUnseen: true })).toBe(false);
   });
-  it('reads Starters before the team has played, else Sub, or the count when the floor is not five', () => {
+  it('reads Starters before the team has played, else Sub whatever the floor count (D3)', () => {
     expect(subButtonText({ ...base, playedYet: false })).toBe('Starters');
     expect(subButtonText(base)).toBe('Sub');
-    expect(subButtonText({ ...base, floor: six })).toBe('Sub · 6 on');
-    expect(subButtonText({ ...base, floor: ['a', 'b', 'c', 'd'] })).toBe('Sub · 4 on');
-  });
-  it('is amber only while the changed count is unseen', () => {
-    expect(subButtonAmber({ ...base, floor: six, changedUnseen: true })).toBe(true);
-    expect(subButtonAmber({ ...base, floor: six, changedUnseen: false })).toBe(false);
-    // Back to five (a foul-out after a promotion): the count changed, but there is nothing to fix.
-    expect(subButtonAmber({ ...base, changedUnseen: true })).toBe(false);
+    expect(subButtonText({ ...base, floor: six, changedUnseen: true })).toBe('Sub');
+    expect(subButtonText({ ...base, floor: ['a', 'b', 'c', 'd'], changedUnseen: true })).toBe('Sub');
   });
 });

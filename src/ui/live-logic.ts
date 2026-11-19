@@ -28,18 +28,12 @@ export const BENCH_CARD_TEXT = 'Bench / coach tech';
 const TIMEOUT_TEXT: Record<TimeoutKind, string> = { full: 'Full', thirty: '30s', ot: 'OT' };
 
 /**
- * The team's Sub button label (decision 8): `Starters` before its first play, `Sub · N on` when the floor
- * isn't 5, else `Sub`. Null when there is no bench to track (five players or fewer): no button.
+ * The team's Sub button label (D3): `Starters` before its first play, else `Sub`. Null when there is no
+ * bench to track (five players or fewer): no button.
  */
 export function subButtonText(l: Lineup): string | null {
   if (!l.tracked) return null;
-  if (!l.playedYet) return 'Starters';
-  return l.floor.length === 5 ? 'Sub' : `Sub · ${l.floor.length} on`;
-}
-
-/** Amber from the play that took the floor off 5 until that team's next play; gray after, still counting. */
-export function subButtonAmber(l: Lineup): boolean {
-  return l.tracked && l.changedUnseen && l.floor.length !== 5;
+  return l.playedYet ? 'Sub' : 'Starters';
 }
 
 /** Who a play belongs to: `#4 (Home)`, `#14 (Away)`, or just `Away` with no player. */
@@ -190,12 +184,6 @@ export function foulOutLabel(namedWhoText: string, reason: string, bonus = false
   return `${namedWhoText} out, ${reason}${bonus ? ' — bonus' : ''}. Tell the official.`;
 }
 
-/** Appended to a play's toast when it moved a bench player onto the floor (only when a bench is tracked). */
-export function lineupSuffix(before: Lineup, after: Lineup, playerId: string | undefined): string {
-  if (!playerId || !after.tracked) return '';
-  return !before.floor.includes(playerId) && after.floor.includes(playerId) ? ' · now on the floor' : '';
-}
-
 /** The sub toast: `#22 (Home) in for #10` one for one, else `Home floor updated`. */
 export function subLabel(g: Game, side: Side, ins: string[], outs: string[]): string {
   const tag = sideName(g, side);
@@ -292,7 +280,7 @@ export const STOP_ASKING = 'Stop asking this game';
 /**
  * The toast for one play, worded from the game the play was applied to (`before`) and the result (`after`),
  * so the label and the applied game always share one input. A foul reads through foulToast (out and
- * bonus); anything else reads `#14 (Away) +2`, plus ` · now on the floor` when it moved a bench player on.
+ * bonus); anything else reads `#14 (Away) +2`.
  */
 export function playToast(before: Game, after: Game, side: Side, p: Player | null, type: PlayType): string {
   const tag = sideName(before, side);
@@ -308,5 +296,5 @@ export function playToast(before: Game, after: Game, side: Side, p: Player | nul
   } else {
     text = playLabel(type, who(p, tag));
   }
-  return text + lineupSuffix(lineup(before, side), lineup(after, side), p?.id);
+  return text;
 }

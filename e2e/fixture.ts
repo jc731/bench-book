@@ -89,7 +89,7 @@ export function ui(page: Page, ours: Side = 'Home') {
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
     tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
     half,
-    /** A half's Sub button, beside + Play; it reads `Starters`, `Sub` or `Sub · N on`. Absent with five players or fewer. */
+    /** A half's Sub button, beside + Play; it reads `Starters` or `Sub`. Absent with five players or fewer. */
     subButton: (side: Side) => half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }),
     /**
      * A deliberate sub from the play sheet, 3 taps: the in player's card, their `#N checks in` row, then
