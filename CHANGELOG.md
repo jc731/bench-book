@@ -5,7 +5,7 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
-- Cards look the same whether a player is on the floor or the bench: the bench tag, the amber Sub · 6 on and "now on the floor" are gone. Cards after the top five are a shade lighter (Home) or darker (Away).
+- Cards look the same whether a player is on the floor or the bench: the bench tag, the amber Sub · 6 on and "now on the floor" are gone. Cards after the top five are a shade grayer (Home) or darker (Away).
 
 ## [0.9.2] - 2026-11-17
 

@@ -26,7 +26,7 @@ with the book page after the game.
    the bottom bar. One line above the bar shows what was just entered, naming the team, and stays
    until the next entry, with a chip at its right for a quarter still to check.
 3. **Subs (optional).** Every card looks the same; the five on the floor lead, and the cards after
-   them are a shade lighter (Home) or darker (Away). Each team's first five start (the **Starters** button, beside + Play, changes
+   them are a shade grayer (Home) or darker (Away). Each team's first five start (the **Starters** button, beside + Play, changes
    them before that team's first play). A bench player who makes a play goes on the floor on
    their own, so nothing is lost by skipping a sub, and a foul-out takes the player off. For a sub,
    tap the player checking in, then **#22 checks in** on their sheet, then who went out. The **Sub**
@@ -91,7 +91,7 @@ when adding to the interface:
 | **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
-| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step lighter on Home, slate-100 on white, and darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
+| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step closer to the half's background: grayer on Home (slate-100 on white), darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
 
 Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
 each kept at 3:1 or better for borders and dots and 4.5:1 for text:

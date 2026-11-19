@@ -75,7 +75,7 @@ It fails, even if it works, if:
 1. **One card style.** Every card is solid with the same 2 px border. The ghosted bench look and the
    "bench" tag go. Screen readers still hear ", bench".
 2. **Fill step.** Cards after the first `layoutFloor` (five at the start) get a fill one step toward
-   the half's background: Home `slate-100` on white, Away about halfway between slate-800 and
+   the half's background: Home `slate-100` on white (grayer), Away about halfway between slate-800 and
    slate-900. Border and text unchanged. This is the light differentiation. A gray, so no new color
    job; README § Colors updated.
 3. **The Sub button is always gray.** It reads **Starters** before the team's first play (Setup ticks

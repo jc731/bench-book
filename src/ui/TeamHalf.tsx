@@ -82,7 +82,7 @@ const SPLIT_AT = 11;
 
 /**
  * One team's half of the live screen: a header (team, US tag, team fouls), its player cards in two
- * columns in the lineup's order (the top five, then the rest a fill step lighter or darker, out as out), then + Play beside the Sub
+ * columns in the lineup's order (the top five, then the rest a fill step grayer or darker, out as out), then + Play beside the Sub
  * button, the half-height Bench card and the team's timeout buttons. Ten players fit an iPhone 13 with
  * no scroll; with 11 or more the first five cards stay in view and the rest scroll in their own region.
  */
