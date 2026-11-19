@@ -1,4 +1,5 @@
 import { isDemo, storageKeys } from '../core/keys';
+import { pruneUsage } from '../core/usage';
 import type { Player } from '../core/types';
 
 /** True when this page was opened with `?demo`. */
@@ -33,7 +34,7 @@ export const DEMO_SETUP: { team: string; opponent: string; ours: Player[]; their
   ],
 };
 
-/** Clears the demo game, roster and prefs only; the real keys are never named here. */
+/** Clears the demo game, roster, prefs and usage records only; the real keys are never named here. */
 export function resetDemo(s: Storage): void {
   const k = storageKeys(true);
   for (const key of [k.game, k.roster, k.prefs]) {
@@ -43,4 +44,5 @@ export function resetDemo(s: Storage): void {
       /* storage unavailable: nothing to clear */
     }
   }
+  pruneUsage(s, k, null);
 }

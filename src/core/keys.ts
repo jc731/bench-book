@@ -7,6 +7,8 @@ export interface StorageKeys {
   game: string;
   roster: string;
   prefs: string;
+  /** Per-game usage records live at `usagePrefix + gameId` (D7). */
+  usagePrefix: string;
 }
 
 /**
@@ -16,5 +18,5 @@ export interface StorageKeys {
  */
 export function storageKeys(demo: boolean): StorageKeys {
   const p = demo ? 'benchbook-demo' : 'benchbook';
-  return { game: `${p}:game`, roster: `${p}:roster`, prefs: `${p}:prefs` };
+  return { game: `${p}:game`, roster: `${p}:roster`, prefs: `${p}:prefs`, usagePrefix: `${p}:usage:` };
 }

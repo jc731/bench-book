@@ -26,7 +26,7 @@ describe('demo', () => {
   });
   it('uses keys that differ from the real ones, all three', () => {
     const r = storageKeys(false), d = storageKeys(true);
-    expect(r).toEqual({ game: 'benchbook:game', roster: 'benchbook:roster', prefs: 'benchbook:prefs' });
+    expect(r).toEqual({ game: 'benchbook:game', roster: 'benchbook:roster', prefs: 'benchbook:prefs', usagePrefix: 'benchbook:usage:' });
     expect(d.game).not.toBe(r.game);
     expect(d.roster).not.toBe(r.roster);
     expect(d.prefs).not.toBe(r.prefs);

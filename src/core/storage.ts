@@ -10,7 +10,7 @@ export const GAME_TTL_MS = 72 * 60 * 60 * 1000;
 
 const HOUR_MS = 60 * 60 * 1000;
 
-function safeRemove(s: Storage, key: string): void {
+export function safeRemove(s: Storage, key: string): void {
   try {
     s.removeItem(key);
   } catch {
@@ -18,7 +18,7 @@ function safeRemove(s: Storage, key: string): void {
   }
 }
 
-function safeRead(s: Storage, key: string): string | null {
+export function safeRead(s: Storage, key: string): string | null {
   try {
     return s.getItem(key);
   } catch {
@@ -26,7 +26,7 @@ function safeRead(s: Storage, key: string): string | null {
   }
 }
 
-function safeWrite(s: Storage, key: string, value: unknown): boolean {
+export function safeWrite(s: Storage, key: string, value: unknown): boolean {
   try {
     s.setItem(key, JSON.stringify(value));
     return true;
