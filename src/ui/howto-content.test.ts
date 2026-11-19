@@ -51,6 +51,8 @@ describe('how-to content', () => {
     expect(text('Before tip-off')).toMatch(/their roster.*Both are optional/);
     expect(text('Before tip-off')).toMatch(/Theirs is not saved/);
   });
+  it('points to Edit teams for fixing rosters mid-game (Task 5 brief, Step 8)', () =>
+    expect(text('Before tip-off')).toContain('Fix a number, add a name or add a player mid-game: ⋯ → Edit teams.'));
   it('says Add play stays on the check and their score only warns', () => {
     expect(text('End of quarter')).toMatch(/Add play \(pick the team first[^)]*\); it stays there after the score matches/);
     expect(text('End of quarter')).toMatch(/Their score only warns/);
@@ -59,8 +61,9 @@ describe('how-to content', () => {
     expect(text('Reading the screen')).toMatch(/in overtime the count includes Q4/);
   });
   it('drops the controls 0.8 removed', () => {
+    // "Add a player" is the removed control's label, so case-sensitive: Edit teams' "add a player mid-game" is prose.
     const all = HOWTO_SECTIONS.map((s) => `${s.title} ${s.body.join(' ')} ${s.image?.alt ?? ''}`).join(' ');
-    for (const gone of [/Opp \+/, /keep(ing)? their (score|points)/i, /Add a player/i, /Timeout opens/, /timeouts left at the top/])
+    for (const gone of [/Opp \+/, /keep(ing)? their (score|points)/i, /Add a player/, /Timeout opens/, /timeouts left at the top/])
       expect(all).not.toMatch(gone);
   });
   it('carries the iPhone home-screen tip and names Game details', () => {

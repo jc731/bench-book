@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { demoActive } from './demo';
+import { EditTeams } from './EditTeams';
 import { EndGame } from './EndGame';
 import { HowTo } from './HowTo';
 import { Live } from './Live';
@@ -57,6 +58,7 @@ export function App() {
       {view === 'end' && <EndGame store={store} />}
       {view === 'howto' && <HowTo store={store} />}
       {view === 'running' && <RunningScore store={store} />}
+      {view === 'teams' && <EditTeams store={store} />}
     </div>
   );
 }

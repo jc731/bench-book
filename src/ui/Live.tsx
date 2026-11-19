@@ -364,6 +364,7 @@ export function Live({ store }: { store: GameStore }) {
         <Sheet title="More" onClose={() => setSheet(null)}>
           <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); openHowto('live'); }}>How to use</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
+          <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('teams'); }}>Edit teams</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>Final / export</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('setup'); }}>New game</button>
           {demoActive() && (

@@ -9,17 +9,22 @@ export function blankPlayer(): Player {
   return { id: crypto.randomUUID(), number: '', name: '', pos: '' };
 }
 
-/** Roster rows, "Add <prefix> player" and remove. Field labels are `${idPrefix} ${n} number` / `name`. */
+/**
+ * Roster rows, "Add <prefix> player" and remove. Field labels are `${idPrefix} ${n} number` / `name`.
+ * `locked` (Edit teams, D14): those rows can't be removed; their × is disabled and they say "has plays".
+ */
 export function RosterEditor({
   label,
   players,
   onChange,
   idPrefix,
+  locked,
 }: {
   label: string;
   players: Player[];
   onChange: (p: Player[]) => void;
   idPrefix: string;
+  locked?: Set<string>;
 }) {
   const set = (id: string, k: keyof Player, v: string) =>
     onChange(players.map((p) => (p.id === id ? { ...p, [k]: v } : p)));
@@ -31,33 +36,45 @@ export function RosterEditor({
         {label} <span class="text-sm font-normal text-slate-300">({players.length}/{MAX_PLAYERS})</span>
       </h2>
       <div class="flex flex-col gap-2">
-        {players.map((p, i) => (
-          <div class="flex items-center gap-2" key={p.id}>
-            <input
-              class={`${input} w-[4.5rem]! min-w-0 shrink-0`}
-              aria-label={`${idPrefix} ${i + 1} number`}
-              placeholder="#"
-              inputMode="numeric"
-              value={p.number}
-              onInput={(e) => set(p.id, 'number', e.currentTarget.value)}
-            />
-            <input
-              class={`${input} min-w-0 flex-1`}
-              aria-label={`${idPrefix} ${i + 1} name`}
-              placeholder="Name"
-              value={p.name}
-              onInput={(e) => set(p.id, 'name', e.currentTarget.value)}
-            />
-            <button
-              type="button"
-              class="h-11 w-11 shrink-0 rounded-lg border border-slate-500 bg-slate-800 text-xl text-white"
-              aria-label={`Remove ${lower} ${i + 1}`}
-              onClick={() => onChange(players.filter((x) => x.id !== p.id))}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+        {players.map((p, i) => {
+          const isLocked = locked?.has(p.id) ?? false;
+          return (
+            <div class="flex flex-col gap-1" key={p.id}>
+              <div class="flex items-center gap-2">
+                <input
+                  class={`${input} w-[4.5rem]! min-w-0 shrink-0`}
+                  aria-label={`${idPrefix} ${i + 1} number`}
+                  placeholder="#"
+                  inputMode="numeric"
+                  value={p.number}
+                  onInput={(e) => set(p.id, 'number', e.currentTarget.value)}
+                />
+                <input
+                  class={`${input} min-w-0 flex-1`}
+                  aria-label={`${idPrefix} ${i + 1} name`}
+                  placeholder="Name"
+                  value={p.name}
+                  onInput={(e) => set(p.id, 'name', e.currentTarget.value)}
+                />
+                <button
+                  type="button"
+                  class="h-11 w-11 shrink-0 rounded-lg border border-slate-500 bg-slate-800 text-xl text-white disabled:opacity-40"
+                  aria-label={`Remove ${lower} ${i + 1}`}
+                  aria-describedby={isLocked ? `locked-${p.id}` : undefined}
+                  disabled={isLocked}
+                  onClick={() => onChange(players.filter((x) => x.id !== p.id))}
+                >
+                  ×
+                </button>
+              </div>
+              {isLocked && (
+                <span id={`locked-${p.id}`} class="pl-1 text-sm text-slate-400">
+                  has plays
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
       <div class="mt-3">
         <button

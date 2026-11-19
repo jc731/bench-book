@@ -17,7 +17,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'tip-off',
     title: 'Before tip-off',
     body: [
-      'Pick Home or Away, enter your roster (number and name) and, if you keep the other team too, their roster under it: numbers, names if you have them. Both are optional. Tap Start game. The opponent, date, team and coach are under Game details; left blank, the opponent is the date, for example 11-13.',
+      'Pick Home or Away, enter your roster (number and name) and, if you keep the other team too, their roster under it: numbers, names if you have them. Both are optional. Tap Start game. The opponent, date, team and coach are under Game details; left blank, the opponent is the date, for example 11-13. Fix a number, add a name or add a player mid-game: ⋯ → Edit teams.',
       'On iPhone, tap Share, then Add to Home Screen: it keeps your roster saved between games. Theirs is not saved, since the opponent changes.',
     ],
   },

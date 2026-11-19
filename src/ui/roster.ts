@@ -39,12 +39,5 @@ export function cleanRoster(players: Player[]): Player[] {
   return players.map((p) => ({ ...p, number: p.number.trim(), name: (p.name ?? '').trim(), pos: '' }));
 }
 
-/** The opponent a game gets when none is typed: the game date as MM-DD (`2026-11-13` → `11-13`). */
-export function defaultOpponent(date: string): string {
-  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(date);
-  return m ? `${m[1]}-${m[2]}` : 'Opponent';
-}
-
-export function opponentOrDefault(opponent: string, date: string): string {
-  return opponent.trim() || defaultOpponent(date);
-}
+// Moved to core so Edit teams' save (src/core/edit-teams.ts) can use them; re-exported for the UI.
+export { defaultOpponent, opponentOrDefault } from '../core/opponent';

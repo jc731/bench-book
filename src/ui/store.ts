@@ -8,7 +8,7 @@ import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
 import { bumpUsage, pruneUsage, type UsageKind } from '../core/usage';
 
-export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end' | 'howto';
+export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end' | 'howto' | 'teams';
 export type { Toast } from './live-logic';
 
 function memoryStorage(): Storage {
