@@ -36,8 +36,9 @@ describe('how-to content', () => {
   });
   it('covers the floor and bench, Starters, the sub row and the three questions', () => {
     const t = text('Subs');
-    expect(t).toMatch(/Solid cards are the five on the floor; the bench is ghosted/);
+    expect(t).toMatch(/Every card looks the same: the five on the floor come first, and the cards after them are a shade lighter \(Home\) or darker \(Away\)/);
     expect(t).toMatch(/Starters/);
+    expect(t).toMatch(/until that team's first play[^.]*, then Sub\./);
     expect(t).toMatch(/Subbing is optional: a bench player who makes a play goes on the floor/);
     expect(t).toMatch(/tap #22, then #22 checks in/);
     for (const q of ['Who went out?', 'Who came in?', "Who's on the floor?"]) expect(t).toContain(q);

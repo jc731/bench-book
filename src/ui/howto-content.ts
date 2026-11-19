@@ -46,7 +46,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'subs',
     title: 'Subs',
     body: [
-      "Solid cards are the five on the floor; the bench is ghosted, with a gray bench tag. The first five on the roster start, and the Sub button beside + Play reads Starters until that team's first play if you want to change them. Subbing is optional: a bench player who makes a play goes on the floor on their own, and nothing waits on you.",
+      "Every card looks the same: the five on the floor come first, and the cards after them are a shade lighter (Home) or darker (Away). The first five on the roster start, and the Sub button beside + Play reads Starters until that team's first play if you want to change them, then Sub. Subbing is optional: a bench player who makes a play goes on the floor on their own, and nothing waits on you.",
       "When #22 checks in at the table, tap #22, then #22 checks in at the foot of their sheet, then who went out. The Sub button opens the same sheet: Who went out? when more than five are on (longest without a play marks the player who has gone longest without one: only a hint, never acted on), Who came in? when fewer, as after a foul-out, and Who's on the floor? for a line change, ended with Done. Subs change no score or count, and Undo takes one back.",
     ],
     image: { src: '/howto/subs.png', alt: 'Who went out? for Home after #44 scored from the bench: six on the floor, #44 marked just in and #0, whose last play is the oldest, with the hint longest without a play; Cancel below.' },
@@ -97,7 +97,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
       "Each half's header shows that team's fouls for the quarter, amber from 4 (in overtime the count includes Q4). In the bonus, a badge in the strip at the top names the team that shoots, for example Home shoots, over its half. Foul dots turn amber at 4 and red at OUT, and an out player's card is grayed: tapping it asks first.",
       `Running score, under ⋯, shows your team only. ${MARK_LEGEND}`,
     ],
-    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1 with both rosters: Home, marked US, on the left with team fouls 5, #12 at four amber foul dots, and #31 and #44 ghosted on the bench; Away on the right with its own numbered cards, points and fouls; Away shoots; under each half, + Play beside the Sub button, the Bench card and the timeout buttons.' },
+    image: { src: '/howto/reading-the-screen.png', alt: 'The live screen in Q1 with both rosters: Home, marked US, on the left with team fouls 5, #12 at four amber foul dots, and #31 and #44 in the lighter cards after the top five; Away on the right with its own numbered cards, points and fouls; Away shoots; under each half, + Play beside the Sub button, the Bench card and the timeout buttons.' },
   },
   {
     id: 'wrong',
