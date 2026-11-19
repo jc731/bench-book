@@ -115,6 +115,7 @@ export function Reconcile({ store }: { store: GameStore }) {
     return true;
   };
   const addPlay = (type: PlayType) => {
+    store.bump('lateAdds');
     update(
       (g, now) => appendEvent(g, { type, ...(addPlayer ? { playerId: addPlayer.id } : {}), ...(addSide === 'them' ? { side: 'them' as const } : {}), period }, now),
       addedLabel(type, who(addPlayer, sideName(game, addSide)), period),

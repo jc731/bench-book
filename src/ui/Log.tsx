@@ -52,11 +52,15 @@ export function Log({ store, period, fromPeriod, order = 'newest', onClose, head
 
   const doDelete = (e: GameEvent) => {
     update((g, now) => deleteEvent(g, e.id, now), `Deleted ${eventLabel(game, e)}`);
+    store.bump('deletes');
     done();
   };
   const doSave = (e: GameEvent, d: EditDraft) => {
     const save = editSave(game, e, d, alsoMove);
-    if (save) update(save.apply, save.label);
+    if (save) {
+      update(save.apply, save.label);
+      store.bump('edits');
+    }
     done();
   };
 

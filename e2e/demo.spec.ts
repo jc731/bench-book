@@ -64,7 +64,8 @@ test('?demo opens Setup with both demo rosters, shows the Demo marker on every s
 
   expect(await read(page)).toEqual(real);
   const demoKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('benchbook-demo:')).sort());
-  expect(demoKeys).toEqual(['benchbook-demo:game', 'benchbook-demo:roster']);
+  // Task 3/D7: a demo game also keeps its own usage record, under the demo prefix, never a real key.
+  expect(demoKeys.map((k) => k.replace(/^(benchbook-demo:usage:).+/, '$1<id>'))).toEqual(['benchbook-demo:game', 'benchbook-demo:roster', 'benchbook-demo:usage:<id>']);
 
   // Without ?demo the real game is still there, with no marker.
   await page.goto('/');

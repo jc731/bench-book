@@ -5,10 +5,13 @@ import { bookCsv } from '../core/export-book';
 import { periodLabel } from '../core/periods';
 import { checkPeriod, endGame, markExported, openIssues, oppTotal, reopenGame, saveReconcile } from '../core/reconcile';
 import type { ExportKind } from '../core/types';
+import { loadUsage, usageCsv, usageFilename } from '../core/usage';
 import { download } from './download';
 import { Sheet } from './EventSheet';
 import { EXPORT_DESCRIPTION, EXPORT_NAME, exportStateText, issueAction, statusChipText } from './reconcile-logic';
-import type { GameStore } from './store';
+import { getStorage, type GameStore } from './store';
+import { storageKeys } from '../core/keys';
+import { demoActive } from './demo';
 
 const btn = 'min-h-12 w-full rounded-xl px-4 text-lg font-bold';
 
@@ -37,6 +40,9 @@ export function EndGame({ store }: { store: GameStore }) {
     download(exportFilename(game, kind), kind === 'book' ? bookCsv(game) : playsCsv(game));
     // A saved file is a fact, not an edit: no undo step.
     update((g, now) => markExported(g, kind, now), `Exported ${EXPORT_NAME[kind]}`, { undoable: false });
+  };
+  const exportUsage = () => {
+    download(usageFilename(game), usageCsv(game, loadUsage(getStorage().storage, storageKeys(demoActive()), game.id), __APP_VERSION__));
   };
   const endNow = () => {
     update((g, now) => endGame(g, now), 'End game');
@@ -83,6 +89,11 @@ export function EndGame({ store }: { store: GameStore }) {
             </p>
           </div>
         ))}
+        {/* Not part of exporting the game (D9): no saved-state line, and it never calls markExported. */}
+        <div class="space-y-1">
+          <button type="button" class={`${btn} border border-slate-500`} aria-describedby="export-usage" onClick={exportUsage}>Usage CSV</button>
+          <p id="export-usage" class="text-sm text-slate-300">Taps and fixes for this game, no names.</p>
+        </div>
       </section>
 
       {periods.length > 0 && (

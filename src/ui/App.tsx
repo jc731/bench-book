@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'preact/hooks';
 import { demoActive } from './demo';
 import { EndGame } from './EndGame';
 import { HowTo } from './HowTo';
@@ -15,6 +16,18 @@ registerUpdates();
 export function App() {
   const store = useGameStore();
   const { saving, view } = store;
+  // D8: a tap is any button click while a game is open and the view is not Setup. One capturing
+  // listener, added once; a ref-like closure over the latest store keeps it current.
+  const latest = useRef(store);
+  latest.current = store;
+  useEffect(() => {
+    const onClick = (e: Event) => {
+      const s = latest.current;
+      if (s.game && s.view !== 'setup' && (e.target as Element | null)?.closest?.('button')) s.bump('taps');
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
   // The screen stays on through a live game on every view (Live, Log, a quarter check), not on Setup.
   useWakeLock(Boolean(store.game && !store.game.endedAt && view !== 'setup'));
 

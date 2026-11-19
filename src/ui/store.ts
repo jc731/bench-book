@@ -6,6 +6,7 @@ import { demoActive } from './demo';
 import { applyLabeled, applyRedo, applyUndo, applyUpdate, type GameState, type Updater } from './game-state';
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
+import { bumpUsage, pruneUsage, type UsageKind } from '../core/usage';
 
 export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end' | 'howto';
 export type { Toast } from './live-logic';
@@ -43,6 +44,12 @@ export function useGameStore() {
   // Read once: demo mode comes from the page URL, and a new keys object each render would rebuild `commit`.
   const [keys] = useState(() => storageKeys(demoActive()));
   const state = useRef<GameState>({ game: loadGame(storage, new Date(), keys), stack: [] });
+  // D7: on open, drop every usage record but the saved game's.
+  const pruned = useRef(false);
+  if (!pruned.current) {
+    pruned.current = true;
+    pruneUsage(storage, keys, state.current.game?.id ?? null);
+  }
   const [game, setGame] = useState<Game | null>(state.current.game);
   const [saving, setSaving] = useState(persistent);
   const [view, setView] = useState<View>(() => (state.current.game ? 'live' : 'setup'));
@@ -89,26 +96,38 @@ export function useGameStore() {
     [commit],
   );
 
+  /** D8: counts one use against the open game; a no-op with no game. */
+  const bump = useCallback(
+    (kind: UsageKind) => {
+      const g = state.current.game;
+      if (g) bumpUsage(storage, keys, g.id, kind);
+    },
+    [storage, keys],
+  );
+
   const undo = useCallback((): string | null => {
     const r = applyUndo(state.current);
     if (r.label === null) return null;
     commit(r.state);
+    bump('undos');
     setToast({ text: 'Undid ' + r.label, canUndo: false, canRedo: true });
     return r.label;
-  }, [commit]);
+  }, [commit, bump]);
 
   /** Steps forward over the last Undo. Offered only on the line an Undo just left, until the next edit. */
   const redo = useCallback((): string | null => {
     const r = applyRedo(state.current);
     if (r.label === null) return null;
     commit(r.state);
+    bump('redos');
     setToast({ text: 'Redid ' + r.label, canUndo: true, canRedo: (r.state.redo?.length ?? 0) > 0 });
     return r.label;
-  }, [commit]);
+  }, [commit, bump]);
 
   const start = useCallback(
     (g: Game) => {
       commit({ game: g, stack: [] });
+      pruneUsage(storage, keys, g.id);
       setToast(null);
       setView('live');
       if (!persistAsked.current) {
@@ -120,11 +139,12 @@ export function useGameStore() {
         }
       }
     },
-    [commit],
+    [commit, storage, keys],
   );
 
   const discard = useCallback(() => {
     clearGame(storage, keys);
+    pruneUsage(storage, keys, null);
     state.current = { game: null, stack: [] };
     setGame(null);
     setToast(null);
@@ -148,7 +168,7 @@ export function useGameStore() {
   const canUndo = state.current.stack.length > 0;
 
   return {
-    game, saving, view, setView, update, quiet, undo, redo, canUndo, toast, start, discard,
+    game, saving, view, setView, update, quiet, bump, undo, redo, canUndo, toast, start, discard,
     reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile, howtoReturn, openHowto,
   };
 }

@@ -83,19 +83,24 @@ export function Live({ store }: { store: GameStore }) {
   const period = game.currentPeriod;
   const banner = reconcileBanner(openIssues(game));
 
-  const add = (draft: EventDraft, label: string) => update((g, now) => appendEvent(g, draft, now), label);
+  const add = (draft: EventDraft, label: string) => {
+    update((g, now) => appendEvent(g, draft, now), label);
+    store.bump('plays');
+  };
   const teamOf = (side: Side) => (side === 'us' ? d.us : d.opp);
   // Absent means ours, so only their events carry a side.
   const sided = (side: Side): Pick<EventDraft, 'side'> => (side === 'them' ? { side: 'them' } : {});
   const lineOf = (pk: Picked) => (pk.p ? teamOf(pk.side).players.find((l) => l.playerId === pk.p!.id) : undefined);
   /** Records one play; a new player joins the roster and Stop asking is set in the same entry, so one Undo takes it all back. The toast is worded from the game the play is applied to. */
-  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) =>
+  const record = (side: Side, p: Player | null, type: PlayType, opts: { newPlayer?: boolean; stopAsking?: boolean } = {}) => {
+    store.bump('plays');
     update((g, now) => {
       let h = opts.newPlayer && p ? addPlayer(g, side, p, now) : g;
       if (opts.stopAsking) h = { ...h, noNumbers: { ...h.noNumbers, [side]: true } };
       const next = appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
       return { game: next, label: playToast(g, next, side, p, type) };
     }, '');
+  };
   const play = (type: PlayType) => {
     if (!picked) return;
     const { side, p } = picked;
@@ -143,6 +148,7 @@ export function Live({ store }: { store: GameStore }) {
    * the label only, so a Log fix to their play still takes them off the floor.
    */
   const recordSubs = (side: Side, ins: string[], outs: string[]) => {
+    store.bump('subs');
     update((g, now) => {
       const l = lineup(g, side);
       const shown = ins.length === 0 && outs.length === 1 && l.floor.length === 6 && l.justIn && l.justIn !== outs[0] ? [l.justIn] : ins;
