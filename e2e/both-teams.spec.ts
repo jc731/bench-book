@@ -251,7 +251,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.saveCheck();
     await expect(app.banner('Q2')).toHaveCount(0);
     // The foul added from the check was #31's while they were on: the floor is as the last sub left it.
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '00', '31']);
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '31', '00']);
   });
 
   await test.step('halftime: a line change on "Who\'s on the floor?"; it changes no count', async () => {
@@ -263,7 +263,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await dialog.getByRole('button', exact('Done')).click();
     await expect(dialog).toHaveCount(0);
     await app.expectToastUndo('Home floor updated');
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '00', '23', '44']);
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '23', '44', '00']);
     await strip(12, 11, 'Q3', 0);
   });
 
@@ -299,7 +299,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.score('Player Two', '+3');
     await strip(22, 18, 'Q4', 0);
     // Every Q3 and Q4 scorer of ours was in the halftime five: no promotion. Theirs is still 6 on.
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '00', '23', '44']);
+    expect(await app.floorOf('Home')).toEqual(['4', '0', '23', '44', '00']);
     expect(await app.floorOf('Away')).toEqual(['4', '10', '15', '5', '21', '33']);
     await expect(app.subButton('Home')).toHaveText('Sub');
     await app.endPeriodThen('Q4', 'End game (no overtime)');

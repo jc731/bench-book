@@ -908,9 +908,9 @@ test('deliberate sub: #15 checks in for #10 in 3 taps; the toast names both and 
   await subRow(page, 10).click();
   await expect(sheet).toHaveCount(0);
   await app.expectToastUndo('#15 (Home) in for #10');
-  expect(await app.floorOf('Home')).toEqual(['11', '12', '13', '14', '15']);
-  // The half regroups: the floor first, then the bench.
-  expect(await cardOrder(page, 'Home')).toEqual(['11', '12', '13', '14', '15', '10', '16']);
+  // D5: #15 takes #10's slot and #10 takes #15's old one; nothing else moves.
+  expect(await app.floorOf('Home')).toEqual(['15', '11', '12', '13', '14']);
+  expect(await cardOrder(page, 'Home')).toEqual(['15', '11', '12', '13', '14', '10', '16']);
   await expect(app.subButton('Home')).toHaveText('Sub');
 });
 
@@ -1007,8 +1007,9 @@ test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way
   await sheet.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(sheet).toHaveCount(0);
   await app.expectToastUndo('Home floor updated');
-  expect(await app.floorOf('Home')).toEqual(['14', '15', '16', '17', '18']);
-  expect(await cardOrder(page, 'Home')).toEqual(['14', '15', '16', '17', '18', '10', '11', '12', '13']);
+  // D5: ins and outs pair in order, so #15..#17 take the slots of #10..#12, and #18 (unpaired) closes the floor block.
+  expect(await app.floorOf('Home')).toEqual(['15', '16', '17', '18', '14']);
+  expect(await cardOrder(page, 'Home')).toEqual(['15', '16', '17', '18', '14', '10', '11', '12', '13']);
 });
 
 test('foul-out: Sub → "Who came in?" → #15 closes it', async ({ page }) => {
@@ -1038,12 +1039,12 @@ test('Starters: before the first play the button reads Starters; changing two st
   const app = ui(page);
   await expect(app.subButton('Home')).toHaveText('Starters');
   await app.setFloor('Home', ['12', '13', '14', '15', '16']);
-  expect(await app.floorOf('Home')).toEqual(['12', '13', '14', '15', '16']);
+  expect(await app.floorOf('Home')).toEqual(['15', '16', '12', '13', '14']); // D5: slots swap
   await app.expectToastUndo('Home floor updated');
   // The first play keeps that floor: the Starters sub sits before it.
   await tap(page, homeCard(page, 12), '+2');
   await expect(app.subButton('Home')).toHaveText('Sub');
-  expect(await app.floorOf('Home')).toEqual(['12', '13', '14', '15', '16']);
+  expect(await app.floorOf('Home')).toEqual(['15', '16', '12', '13', '14']);
   // Away ignores its Starters: the first five start, and a non-starter's play promotes them to a sixth.
   expect(await app.floorOf('Away')).toEqual(nums(50, 5));
   await tap(page, awayCard(page, 55), '+2');
@@ -1127,7 +1128,7 @@ test('Undo after a sub restores the previous floor', async ({ page }) => {
   const app = ui(page);
   await tap(page, homeCard(page, 11), '+2');
   await app.subIn('Home', '15', '10');
-  expect(await app.floorOf('Home')).toEqual(['11', '12', '13', '14', '15']);
+  expect(await app.floorOf('Home')).toEqual(['15', '11', '12', '13', '14']); // D5
   await app.undo();
   expect(await app.floorOf('Home')).toEqual(nums(10, 5));
   expect(await cardOrder(page, 'Home')).toEqual(nums(10, 7));
@@ -1164,14 +1165,14 @@ test("the other team's sub works the same (Away)", async ({ page }) => {
   await tap(page, awayCard(page, 51), '+2');
   await app.subIn('Away', '55', '50');
   await app.expectToastUndo('#55 (Away) in for #50');
-  expect(await app.floorOf('Away')).toEqual(['51', '52', '53', '54', '55']);
+  expect(await app.floorOf('Away')).toEqual(['55', '51', '52', '53', '54']); // D5
   expect(await app.floorOf('Home')).toEqual(nums(10, 5));
   // Its foul-out asks "Who came in?" the same way.
   for (let i = 0; i < 5; i++) await tap(page, awayCard(page, 51), 'Foul');
   await app.subButton('Away').click();
   await expect(page.getByRole('dialog')).toHaveAccessibleName('Who came in?');
   await subRow(page, 56).click();
-  expect(await app.floorOf('Away')).toEqual(['52', '53', '54', '55', '56']);
+  expect(await app.floorOf('Away')).toEqual(['55', '52', '53', '54', '56']); // D5: #56 is unpaired, so it sits in layout order
 });
 
 test("a card after the top five: its border and text stay readable on its lighter or darker fill, and Sub too (D1-D3)", async ({ page }) => {

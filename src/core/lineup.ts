@@ -102,11 +102,33 @@ export function lineup(g: Game, side: Side): Lineup {
   steps.forEach((step, i) => {
     if (step.kind === 'sub') {
       const { ins, outs } = step.sub;
+      const wasOnFloor = new Set(floor);
       floor = floor.filter((id) => !outs.includes(id));
+      const applied = new Set<string>();
       for (const id of ins) {
-        if (onRoster.has(id) && !out.has(id) && !floor.includes(id)) floor.push(id);
+        if (onRoster.has(id) && !out.has(id) && !floor.includes(id)) {
+          floor.push(id);
+          applied.add(id);
+        }
       }
-      layout = [...floor, ...benchNow()];
+      // D5: an incoming player takes the outgoing player's card slot.
+      const prev = (layout ?? rosterIds).filter((id) => onRoster.has(id));
+      const slots = [...prev, ...rosterIds.filter((id) => !prev.includes(id))];
+      const swapped = new Set<string>();
+      for (let k = 0; k < Math.min(ins.length, outs.length); k++) {
+        const a = slots.indexOf(ins[k]);
+        const b = slots.indexOf(outs[k]);
+        if (a < 0 || b < 0 || !applied.has(ins[k]) || !wasOnFloor.has(outs[k])) continue;
+        [slots[a], slots[b]] = [slots[b], slots[a]];
+        swapped.add(outs[k]);
+      }
+      const unpairedOuts = outs.filter((id) => wasOnFloor.has(id) && !swapped.has(id) && slots.includes(id));
+      const rest = slots.filter((id) => !floor.includes(id));
+      layout = [
+        ...slots.filter((id) => floor.includes(id)),
+        ...unpairedOuts.filter((id) => rest.includes(id)),
+        ...rest.filter((id) => !unpairedOuts.includes(id)),
+      ];
       layoutFloorIds = [...floor];
       justIn = null;
       changedUnseen = false;

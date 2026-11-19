@@ -190,13 +190,42 @@ describe('foul-out', () => {
   });
 });
 
+describe('subs: slot swap (D5, I12)', () => {
+  const ten: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: `h${i + 1}`, number: String(i + 1), name: `P${i + 1}`, pos: '' }));
+  const ids = (...n: number[]) => n.map((x) => `h${x}`);
+  const diff = (a: string[], b: string[]) => a.filter((id, i) => id !== b[i]).length;
+
+  test('in takes the out slot; two positions differ (D5, I12); a second sub swaps again', () => {
+    const g0 = game(ten);
+    const g1 = sub(g0, ['h7'], ['h2']);
+    const l1 = lineup(g1, 'us');
+    expect(l1.layout).toEqual(ids(1, 7, 3, 4, 5, 6, 2, 8, 9, 10));
+    expect(l1.layoutFloor).toBe(5);
+    expect(diff(l1.layout, lineup(g0, 'us').layout)).toBe(2);
+    const l2 = lineup(sub(g1, ['h2'], ['h4']), 'us');
+    expect(l2.layout).toEqual(ids(1, 7, 3, 2, 5, 6, 4, 8, 9, 10));
+  });
+
+  test('an unpaired in goes to the end of the floor block; the paired out takes the in\'s old slot (D5)', () => {
+    const l = lineup(sub(game(ten), ['h8', 'h9'], ['h3']), 'us');
+    expect(l.layout).toEqual(ids(1, 2, 8, 4, 5, 9, 6, 7, 3, 10));
+    expect(l.layoutFloor).toBe(6);
+  });
+
+  test('an unpaired out goes first on the bench; layoutFloor is 4 (D5)', () => {
+    const l = lineup(sub(game(ten), [], ['h2']), 'us');
+    expect(l.layout).toEqual(ids(1, 3, 4, 5, 2, 6, 7, 8, 9, 10));
+    expect(l.layoutFloor).toBe(4);
+  });
+});
+
 describe('subs', () => {
-  test('{ins:[#22], outs:[#10]} swaps them and regroups the layout floor-first', () => {
+  test('{ins:[#22], outs:[#10]} swaps their card slots (D5, I12)', () => {
     const g = sub(game(), ['h22'], ['h10']);
     const l = lineup(g, 'us');
     expect(l.floor).toEqual(['h4', 'h5', 'h7', 'h12', 'h22']);
     expect(l.bench).toEqual(['h10', 'h31']);
-    expect(l.layout).toEqual(['h4', 'h5', 'h7', 'h12', 'h22', 'h10', 'h31']);
+    expect(l.layout).toEqual(['h4', 'h5', 'h7', 'h22', 'h12', 'h10', 'h31']); // D5: h22 takes h10's slot
     expect(l.changedUnseen).toBe(false);
   });
 
@@ -300,9 +329,9 @@ describe('suggestion', () => {
 
   test('ties go to the earliest in layout', () => {
     expect(lineup(add(game(), { type: 'FG2', playerId: 'h22' }), 'us').suggestion).toBe('h4');
-    // After a sub regroups the layout, the earliest card is the first on the floor.
+    // D5: after a sub the incoming player holds the outgoing slot, so h31 is the earliest card.
     const g = add(sub(game(), ['h31'], ['h4']), { type: 'FG2', playerId: 'h22' });
-    expect(lineup(g, 'us').suggestion).toBe('h5');
+    expect(lineup(g, 'us').suggestion).toBe('h31');
   });
 
   test('a tech counts as a play for recency', () => {
