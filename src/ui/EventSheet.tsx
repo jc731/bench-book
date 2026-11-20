@@ -28,6 +28,48 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
 const ROW1: PlayType[] = ['FG2', 'FG3', 'FTM'];
 const ROW2: PlayType[] = ['FTX', 'FOUL', 'TECH'];
 
+/**
+ * The six play buttons of a play sheet (+2, +3, FT made, FT missed, Foul, Tech foul), behind the out
+ * gate: for an out player (`out` is the reason, `5 fouls`) they are grayed under a warning until
+ * "Enter a play anyway". Shared by the live play sheet, the check's Add play and the Book cell sheet.
+ */
+export function PlayButtons({ out, onPlay }: { out: string | null; onPlay: (type: PlayType) => void }) {
+  const [confirmed, setConfirmed] = useState(false);
+  const locked = out !== null && !confirmed;
+  const btn = (t: PlayType) => (
+    <button
+      key={t}
+      type="button"
+      disabled={locked}
+      // Word labels (FT missed, Tech foul) drop to text-xl so they stay one line in a 117px button.
+      class={`min-h-14 rounded-xl bg-slate-600 font-bold active:bg-slate-500 disabled:opacity-30 ${t === 'FG2' || t === 'FG3' ? 'text-2xl' : 'text-xl'}`}
+      onClick={() => onPlay(t)}
+    >
+      {playButtonText(t)}
+    </button>
+  );
+  return (
+    <>
+      {locked && (
+        <div class="mb-3 rounded-lg border border-red-500 bg-slate-900 p-3" role="alert" data-testid="out-warning">
+          <p class="font-semibold text-red-300">Out: {out}. {OUT_WARNING}</p>
+          <button
+            type="button"
+            class="mt-2 min-h-11 w-full rounded-lg border border-red-400 font-semibold text-red-300"
+            onClick={() => setConfirmed(true)}
+          >
+            {OUT_ANYWAY}
+          </button>
+        </div>
+      )}
+      <div class="grid grid-cols-3 gap-2">
+        {ROW1.map(btn)}
+        {ROW2.map(btn)}
+      </div>
+    </>
+  );
+}
+
 interface Props {
   /** The picked player, or null for a team's + Play (then `title` names the team). */
   player: Player | null;
@@ -48,38 +90,9 @@ interface Props {
 }
 
 export function EventSheet({ player, title, toast, onPlay, onUndo, onRedo, onClose, out = null, subRow = null, reserveSubRow = false }: Props) {
-  const [confirmed, setConfirmed] = useState(false);
-  const locked = out !== null && !confirmed;
-  const btn = (t: PlayType) => (
-    <button
-      key={t}
-      type="button"
-      disabled={locked}
-      // Word labels (FT missed, Tech foul) drop to text-xl so they stay one line in a 117px button.
-      class={`min-h-14 rounded-xl bg-slate-600 font-bold active:bg-slate-500 disabled:opacity-30 ${t === 'FG2' || t === 'FG3' ? 'text-2xl' : 'text-xl'}`}
-      onClick={() => onPlay(t)}
-    >
-      {playButtonText(t)}
-    </button>
-  );
   return (
     <Sheet title={title ?? (player ? `#${player.number} ${player.name}`.trim() : '')} onClose={onClose}>
-      {locked && (
-        <div class="mb-3 rounded-lg border border-red-500 bg-slate-900 p-3" role="alert" data-testid="out-warning">
-          <p class="font-semibold text-red-300">Out: {out}. {OUT_WARNING}</p>
-          <button
-            type="button"
-            class="mt-2 min-h-11 w-full rounded-lg border border-red-400 font-semibold text-red-300"
-            onClick={() => setConfirmed(true)}
-          >
-            {OUT_ANYWAY}
-          </button>
-        </div>
-      )}
-      <div class="grid grid-cols-3 gap-2">
-        {ROW1.map(btn)}
-        {ROW2.map(btn)}
-      </div>
+      <PlayButtons out={out} onPlay={onPlay} />
       <div class="mt-3 flex min-h-11 items-center justify-between gap-2">
         <span class="truncate text-sm text-slate-300" aria-live="polite" data-testid="sheet-status">
           {toast ? toast.text : ''}

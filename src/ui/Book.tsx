@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { periodLabel } from '../core/periods';
 import type { Game, Side } from '../core/types';
+import { CellSheet, type CellRef } from './CellSheet';
 import { FeedbackLine } from './FeedbackLine';
 import { feedbackLine } from './live-logic';
 import { Log } from './Log';
@@ -22,6 +23,7 @@ export function Book({ store }: { store: GameStore }) {
   const { game, toast, undo, redo, setView } = store;
   const [tab, setTabState] = useState<BookTab>(keptTab);
   const [pickedSide, setSideState] = useState<Side | null>(keptSide);
+  const [cell, setCell] = useState<CellRef | null>(null);
   if (!game) return null;
   const setTab = (t: BookTab) => setTabState((keptTab = t));
   const setSide = (s: Side) => setSideState((keptSide = s));
@@ -69,7 +71,7 @@ export function Book({ store }: { store: GameStore }) {
                 </button>
               ))}
             </div>
-            <PlayersGrid game={game} side={side} tone={side === order[0] ? 'light' : 'dark'} />
+            <PlayersGrid game={game} side={side} tone={side === order[0] ? 'light' : 'dark'} onCell={(playerId, period) => setCell({ side, playerId, period })} />
           </>
         ) : (
           <Log
@@ -79,6 +81,8 @@ export function Book({ store }: { store: GameStore }) {
           />
         )}
       </div>
+
+      {cell && <CellSheet store={store} cell={cell} onClose={() => setCell(null)} />}
 
       {toast && (
         <FeedbackLine line={feedbackLine(null, null, toast)} class="fixed inset-x-0 bottom-0 z-10 border-t border-slate-600" onUndo={undo} onRedo={redo} />
@@ -128,7 +132,13 @@ const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 const cellName = (period: number, points: number, fouls: number) =>
   `${periodLabel(period)}: ${plural(points, 'point')}, ${plural(fouls, 'foul')}`;
 
-function PlayersGrid({ game, side, tone }: { game: Game; side: Side; tone: 'light' | 'dark' }) {
+function PlayersGrid({ game, side, tone, onCell }: {
+  game: Game;
+  side: Side;
+  tone: 'light' | 'dark';
+  /** Opens the cell sheet (D9); `playerId` null is the No number row. */
+  onCell: (playerId: string | null, period: number) => void;
+}) {
   const grid = statsGrid(game, side);
   const t = TONE[tone];
   const minWidth = grid.periods.length > FIT_PERIODS ? PLAYER_COL + TOTAL_COL + MIN_PERIOD_COL * grid.periods.length : undefined;
@@ -154,7 +164,7 @@ function PlayersGrid({ game, side, tone }: { game: Game; side: Side; tone: 'ligh
         </thead>
         <tbody>
           {grid.rows.map((r) => (
-            <PlayerRow key={r.key} r={r} periods={grid.periods} future={future} t={t} td={td} sticky={sticky} faintDot={faintDot} />
+            <PlayerRow key={r.key} r={r} periods={grid.periods} future={future} t={t} td={td} sticky={sticky} faintDot={faintDot} onCell={(p) => onCell(r.player ? r.player.id : null, p)} />
           ))}
         </tbody>
         <tfoot class={t.foot}>
@@ -192,7 +202,7 @@ function PlayersGrid({ game, side, tone }: { game: Game; side: Side; tone: 'ligh
   );
 }
 
-function PlayerRow({ r, periods, future, t, td, sticky, faintDot }: {
+function PlayerRow({ r, periods, future, t, td, sticky, faintDot, onCell }: {
   r: StatsRow;
   periods: number[];
   future: (p: number) => boolean;
@@ -200,6 +210,7 @@ function PlayerRow({ r, periods, future, t, td, sticky, faintDot }: {
   td: string;
   sticky: string;
   faintDot: preact.JSX.Element;
+  onCell: (period: number) => void;
 }) {
   const label = r.player ? `#${r.player.number}${r.player.name ? ` ${r.player.name}` : ''}` : 'No number';
   const total = totalText(r);
@@ -216,7 +227,7 @@ function PlayerRow({ r, periods, future, t, td, sticky, faintDot }: {
         )}
       </th>
       {r.cells.map((c, i) => (
-        <QuarterCell key={periods[i]} c={c} period={periods[i]} future={future(periods[i])} t={t} td={td} faintDot={faintDot} />
+        <QuarterCell key={periods[i]} c={c} period={periods[i]} future={future(periods[i])} t={t} td={td} faintDot={faintDot} onOpen={() => onCell(periods[i])} />
       ))}
       <td class={td} aria-label={`Total: ${plural(r.points, 'point')}, ${total.fouls === 'OUT' ? 'out' : plural(r.fouls, 'foul')}${total.tech ? `, ${plural(r.techs, 'tech')}` : ''}`}>
         <div class="leading-tight">
@@ -231,29 +242,37 @@ function PlayerRow({ r, periods, future, t, td, sticky, faintDot }: {
   );
 }
 
-/** D6: the quarter's points, large, over one dot per foul; a faint `·` with nothing. Task 4 hangs the cell sheet on `data-tappable`. */
-function QuarterCell({ c, period, future, t, td, faintDot }: {
+/** D6: the quarter's points, large, over one dot per foul; a faint `·` with nothing. A started quarter's cell opens the cell sheet (D9). */
+function QuarterCell({ c, period, future, t, td, faintDot, onOpen }: {
   c: StatsCell;
   period: number;
   future: boolean;
   t: (typeof TONE)[keyof typeof TONE];
   td: string;
   faintDot: preact.JSX.Element;
+  onOpen: () => void;
 }) {
+  const body = c.empty ? faintDot : (
+    <div class="flex flex-col items-center leading-none">
+      <span class="text-xl font-bold">{c.points}</span>
+      {/* The dot line is always there, so every cell's number sits at one height. */}
+      <span class="mt-1 flex min-h-1.5 flex-wrap justify-center gap-0.5" aria-hidden="true">
+        {Array.from({ length: c.fouls }, (_, i) => <span key={i} data-testid="foul-dot" class={`h-1.5 w-1.5 rounded-full ${t.dot}`} />)}
+      </span>
+    </div>
+  );
+  const name = c.empty ? `${periodLabel(period)}: no plays` : cellName(period, c.points, c.fouls);
   return (
     <td
       class={`${td} ${future ? t.future : ''}`}
       data-tappable={String(!future)}
-      aria-label={c.empty ? `${periodLabel(period)}: no plays` : cellName(period, c.points, c.fouls)}
+      aria-label={name}
     >
-      {c.empty ? faintDot : (
-        <div class="flex flex-col items-center leading-none">
-          <span class="text-xl font-bold">{c.points}</span>
-          {/* The dot line is always there, so every cell's number sits at one height. */}
-          <span class="mt-1 flex min-h-1.5 flex-wrap justify-center gap-0.5" aria-hidden="true">
-            {Array.from({ length: c.fouls }, (_, i) => <span key={i} data-testid="foul-dot" class={`h-1.5 w-1.5 rounded-full ${t.dot}`} />)}
-          </span>
-        </div>
+      {/* A quarter not yet started takes no adds (controller ruling); the footer and totals never do (D9). */}
+      {future ? body : (
+        <button type="button" class="flex h-11 w-full items-center justify-center active:opacity-60" aria-label={name} onClick={onOpen}>
+          {body}
+        </button>
       )}
     </td>
   );

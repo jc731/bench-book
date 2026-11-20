@@ -2,14 +2,14 @@ import { useRef, useState } from 'preact/hooks';
 import { derive, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
-import { appendEvent, homeSide, rosterOf, sideName } from '../core/events';
+import { homeSide, rosterOf, sideName } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
 import { isLateAdd } from '../core/late';
 import type { Player, Side } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
-import { addedLabel } from './log-logic';
-import { NO_NUMBER, feedbackLine, namedWho, who, type PlayType, type Toast } from './live-logic';
+import { NO_NUMBER, feedbackLine, namedWho, outReason, type PlayType, type Toast } from './live-logic';
+import { addFeedback, addToCell } from './stats-logic';
 import { Log } from './Log';
 import {
   MISMATCH_HINT, appHasText, comparePanel, isMismatch, savedCheckText, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
@@ -116,12 +116,12 @@ export function Reconcile({ store }: { store: GameStore }) {
     return true;
   };
   const addPlay = (type: PlayType) => {
-    const late = isLateAdd(game, period);
-    store.bump(late ? 'lateAdds' : 'plays');
-    update(
-      (g, now) => appendEvent(g, { type, ...(late ? { late: true as const } : {}), ...(addPlayer ? { playerId: addPlayer.id } : {}), ...(addSide === 'them' ? { side: 'them' as const } : {}), period }, now),
-      addedLabel(type, who(addPlayer, sideName(game, addSide)), period),
-    );
+    store.bump(isLateAdd(game, period) ? 'lateAdds' : 'plays');
+    // Worded from the game the add is applied to (plan critique 3, 4): a 5th foul says "Tell the official."
+    update((g, now) => {
+      const after = addToCell(g, addSide, addPlayer ? addPlayer.id : null, type, period, now);
+      return { game: after, label: addFeedback(g, after, addSide, addPlayer, type, period).text };
+    }, '');
     if (type !== 'FTM' && type !== 'FTX') closeAdd();
   };
   const closeAdd = () => { setAddStep('closed'); setAddPlayer(null); setAddSide('us'); };
@@ -268,6 +268,8 @@ export function Reconcile({ store }: { store: GameStore }) {
           player={addPlayer}
           title={namedWho(addPlayer, sideName(game, addSide))}
           toast={toast === addOpenedWith.current ? null : toast}
+          // The same out gate as the live play sheet (Review Focus 5, plan critique 3).
+          out={addPlayer ? outReason((addSide === 'us' ? d.us : d.opp).players.find((l) => l.playerId === addPlayer.id)) : null}
           onPlay={addPlay}
           onUndo={undo}
           onRedo={redo}
