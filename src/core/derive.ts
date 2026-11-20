@@ -12,6 +12,7 @@ export interface PlayerLine {
   fouls: number; // FOUL + TECH
   techs: number;
   pointsByPeriod: Record<number, number>;
+  foulsByPeriod: Record<number, number>; // FOUL + TECH per period, as `fouls`
   marksByPeriod: Record<number, string[]>; // '2', '3', 'FT', '0' in event order
   foulState: 'ok' | 'warn' | 'out'; // warn at 4 fouls; out at >= 5 fouls or >= 2 techs
 }
@@ -67,7 +68,7 @@ function deriveTeam(g: Game, side: Side): TeamDerived {
   const roster = rosterOf(g, side);
   const blank = (playerId: string): PlayerLine => ({
     playerId, fg2: 0, fg3: 0, fta: 0, ftm: 0, points: 0, fouls: 0, techs: 0,
-    pointsByPeriod: {}, marksByPeriod: {}, foulState: 'ok',
+    pointsByPeriod: {}, foulsByPeriod: {}, marksByPeriod: {}, foulState: 'ok',
   });
   for (const p of roster) lines.set(p.id, blank(p.id));
   let noNumber: PlayerLine | null = null;
@@ -118,6 +119,7 @@ function deriveTeam(g: Game, side: Side): TeamDerived {
         bump(teamFoulsByPeriod, e.period, 1);
         if (line) {
           line.fouls++;
+          bump(line.foulsByPeriod, e.period, 1);
           if (e.type === 'TECH') line.techs++;
         }
         break;

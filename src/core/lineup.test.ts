@@ -417,3 +417,45 @@ describe('moving a block of plays', () => {
     expect(lineup(moved, 'us').floor).toEqual(before);
   });
 });
+
+describe('late plays (D11, I5)', () => {
+  const ten: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: `h${i + 1}`, number: String(i + 1), name: `Pat ${i + 1}`, pos: '' }));
+  const inQ2 = (g: Game): Game => ({ ...g, currentPeriod: 2 });
+
+  test('a late play by a bench player does not put them on the floor; the same play unflagged does (D11)', () => {
+    const base = inQ2(game(ten));
+    const late = lineup(add(base, { type: 'FG2', playerId: 'h7', late: true }), 'us');
+    expect(late.floor).not.toContain('h7');
+    expect(late.justIn).toBeNull();
+    const plain = lineup(add(base, { type: 'FG2', playerId: 'h7' }), 'us');
+    expect(plain.floor).toContain('h7');
+    expect(plain.justIn).toBe('h7');
+  });
+
+  test('a late 5th foul still takes a floor player out (D11: late adds count toward fouls)', () => {
+    let g = inQ2(game(ten));
+    for (let i = 0; i < 5; i++) g = add(g, { type: 'FOUL', playerId: 'h3', late: true });
+    const l = lineup(g, 'us');
+    expect(l.outIds).toEqual(['h3']);
+    expect(l.floor).not.toContain('h3');
+  });
+
+  test('a late play never adds anyone to the floor (I5)', () => {
+    const base = inQ2(game(ten));
+    const before = lineup(base, 'us').floor;
+    const after = lineup(add(base,
+      { type: 'FG3', playerId: 'h8', late: true }, { type: 'FTM', playerId: 'h9', late: true },
+      { type: 'FOUL', playerId: 'h10', late: true }), 'us').floor;
+    expect(after.every((id) => before.includes(id))).toBe(true);
+  });
+
+  test('editEvent and moveFrom keep late, so the play still does not promote (critique 8)', () => {
+    let g = add(inQ2(game(ten)), { type: 'FG2', playerId: 'h7', late: true });
+    const id = g.events[0].id;
+    g = editEvent(g, id, { type: 'FG3' }, now);
+    expect(g.events[0].late).toBe(true);
+    g = moveFrom(g, id, 1, now);
+    expect(g.events[0].late).toBe(true);
+    expect(lineup(g, 'us').floor).not.toContain('h7');
+  });
+});

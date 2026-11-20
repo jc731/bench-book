@@ -191,6 +191,14 @@ describe('playsCsv', () => {
     expect(rows.map((r) => r[10]).slice(1)).toEqual(['no', 'yes', 'no', 'no', 'no']);
   });
 
+  test('a late flag does not change the Plays CSV (Global Constraints: the flag is not exported)', () => {
+    const plain = add(game(), 1, { type: 'FG2', playerId: 'p4' });
+    const flagged = add(game(), 1, { type: 'FG2', playerId: 'p4', late: true });
+    const strip = (g: Game) => parse(playsCsv(g)).map((r) => r.filter((_, i) => i !== 9)); // entered_at is the clock
+    expect(strip(flagged)).toEqual(strip(plain));
+    expect(playsCsv(flagged)).not.toContain('late');
+  });
+
   test('seq is the row number even when orders are fractional or negative', () => {
     let g = add(game(), 1, { type: 'FG2', playerId: 'p4' }, { type: 'FG2', playerId: 'p4' });
     const [a, b] = orderedEvents(g);

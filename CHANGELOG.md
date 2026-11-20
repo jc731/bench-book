@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- A play added to an earlier quarter from the check no longer moves that player onto the floor (audit 0.9.0 F1).
+
 ## [0.10.0] - 2026-11-19
 
 - Cards look the same whether a player is on the floor or the bench: the bench tag, the amber Sub · 6 on and "now on the floor" are gone. Cards after the top five are a shade grayer (Home) or darker (Away).

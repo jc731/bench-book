@@ -291,3 +291,26 @@ describe('both teams', () => {
     expect(d.oppByPeriod).toEqual({ 1: 5 });
   });
 });
+
+describe('foulsByPeriod (I7)', () => {
+  test('FOUL and TECH count per period and sum to fouls', () => {
+    let g = add(game(), 1, { type: 'FOUL', playerId: 'p1' });
+    g = add(g, 3, { type: 'FOUL', playerId: 'p1' }, { type: 'TECH', playerId: 'p1' });
+    const p = derive(g).players[0];
+    expect(p.foulsByPeriod).toEqual({ 1: 1, 3: 2 });
+    expect(Object.values(p.foulsByPeriod).reduce((a, b) => a + b, 0)).toBe(p.fouls);
+  });
+
+  test('the No number line gets foulsByPeriod too', () => {
+    const g = add(game(), 2, { type: 'FOUL' });
+    const nn = derive(g).us.noNumber;
+    expect(nn?.foulsByPeriod).toEqual({ 2: 1 });
+  });
+
+  test('a late flag changes nothing in derive (Review Focus 1)', () => {
+    const drafts: EventDraft[] = [{ type: 'FG2', playerId: 'p1' }, { type: 'FOUL', playerId: 'p2' }];
+    const plain = derive(add(game(), 1, ...drafts));
+    const flagged = derive(add(game(), 1, ...drafts.map((d) => ({ ...d, late: true as const }))));
+    expect(JSON.parse(JSON.stringify(flagged))).toEqual(JSON.parse(JSON.stringify(plain))); // closures compare by identity
+  });
+});

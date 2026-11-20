@@ -4,6 +4,7 @@ import { periodLabel, spanLabel } from '../core/periods';
 import { checkPeriod, saveReconcile, totalProblem } from '../core/reconcile';
 import { appendEvent, homeSide, rosterOf, sideName } from '../core/events';
 import { checkSeed, setCheckDraft } from '../core/drafts';
+import { isLateAdd } from '../core/late';
 import type { Player, Side } from '../core/types';
 import { EventSheet, Sheet } from './EventSheet';
 import { FeedbackLine } from './FeedbackLine';
@@ -115,9 +116,10 @@ export function Reconcile({ store }: { store: GameStore }) {
     return true;
   };
   const addPlay = (type: PlayType) => {
-    store.bump('lateAdds');
+    const late = isLateAdd(game, period);
+    store.bump(late ? 'lateAdds' : 'plays');
     update(
-      (g, now) => appendEvent(g, { type, ...(addPlayer ? { playerId: addPlayer.id } : {}), ...(addSide === 'them' ? { side: 'them' as const } : {}), period }, now),
+      (g, now) => appendEvent(g, { type, ...(late ? { late: true as const } : {}), ...(addPlayer ? { playerId: addPlayer.id } : {}), ...(addSide === 'them' ? { side: 'them' as const } : {}), period }, now),
       addedLabel(type, who(addPlayer, sideName(game, addSide)), period),
     );
     if (type !== 'FTM' && type !== 'FTX') closeAdd();

@@ -149,7 +149,7 @@ export function lineup(g: Game, side: Side): Lineup {
     const pid = e.playerId && onRoster.has(e.playerId) ? e.playerId : undefined;
     if (pid) {
       lastPlay.set(pid, i);
-      if (isPromotingPlay(e, out.has(pid)) && !floor.includes(pid)) {
+      if (!e.late && isPromotingPlay(e, out.has(pid)) && !floor.includes(pid)) {
         floor.push(pid);
         justIn = pid;
       }
