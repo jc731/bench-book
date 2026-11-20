@@ -35,7 +35,9 @@ with the book page after the game.
    or count and are in neither CSV.
 4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Book**, then
    **Plays** and tap a row: it opens the fix, where you change the play, the team, the player or the quarter,
-   or delete it.
+   or delete it. **Book → Players** shows each player's points and fouls by quarter, for either team,
+   like the book's rows; tap a quarter cell to list that player's plays there, fix one, or add a
+   missing play to that quarter (a 5th foul added late says Tell the official).
 5. **Check each quarter.** **End Q1** advances at once. When there is time, tap the check chip,
    enter the game score after the quarter from the book's running score, and the app checks the
    quarter's own points against its plays. Their score, if you type it, only warns when it is
@@ -126,7 +128,7 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   60 px cards so 10 players a half still fit an iPhone 13, and with 11 or more the floor stays in
   view while only the bench scrolls. Design:
   `docs/superpowers/specs/2026-11-17-active-lineup-design.md`.
-- **1.0: a player stats page** (on the checklist, 2026-11-18): each player's points and fouls by
+- ~~**1.0: a player stats page**~~ (done in 0.11; on the checklist, 2026-11-18): each player's points and fouls by
   quarter, for both teams, and a quick way to add or fix a play for a given quarter, mid-game or at
   the quarter's end. Design first (options, critique, mockups), as for 0.9. Later stats (rebounds,
   assists) would live here.

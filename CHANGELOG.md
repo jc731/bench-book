@@ -5,7 +5,7 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
-- The bottom bar's Log is now **Book**. Its Players tab shows each player's points and fouls by quarter, for Home or Away, with Team and Score rows; its Plays tab is the old Log. Book remembers the tab and the team until the app reloads. Tap a quarter cell to see that player's plays in that quarter (tap one to fix it) and add a missing play to that quarter in one tap; a 5th foul added late says "Tell the official." in red, as on the live screen.
+- Log is now **Book**, on the bottom bar. Its Players tab shows each player's points and fouls by quarter, for Home or Away, with Team and Score rows; its Plays tab is the old Log. Book remembers the tab and the team until the app reloads. Tap a quarter cell to see that player's plays in that quarter (tap one to fix it) and add a missing play to that quarter in one tap. A 5th foul added late says "Tell the official." in red, as on the live screen.
 - The check's Add play now says "Tell the official." when it puts a player out, and asks before adding a play for a player who is already out.
 - A play added to an earlier quarter from the check no longer moves that player onto the floor (audit 0.9.0 F1).
 

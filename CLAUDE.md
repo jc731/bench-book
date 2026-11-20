@@ -29,10 +29,10 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
       floor", is dropped. Reworded 2026-11-19: "prompts a sub" became the foul-out line, since 0.10's
       neutral cards drop the amber Sub prompt. (0.9)
 - [x] Both teams in the Book CSV, and the quarter check compares both scores. (0.8)
-- [ ] A player stats page: each player's points and fouls by quarter, for both teams, where a
+- [x] A player stats page: each player's points and fouls by quarter, for both teams, where a
       play can be added or fixed for a given quarter, mid-game or at the quarter's end. Added
       2026-11-18 (owner), after the first real game on 0.9. Later stats (rebounds, assists) would
-      live here, but they stay out of scope for 1.0.
+      live here, but they stay out of scope for 1.0. (0.11)
 - [x] Edit teams mid-game from the More menu: names and both rosters, without recording a play.
       Added 2026-11-19 (owner), after a game where the rosters were built through Whose number?. (0.10)
 - [x] A usage counter (taps and fixes per game, a Usage CSV) and neutral cards. Added 2026-11-19

@@ -62,7 +62,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
   {
     id: 'mistakes',
     title: 'Mistakes',
-    body: ['Tap Undo right away, or open Book, then Plays, and tap the line to fix or delete it. Fix can change the play, the team, the player or the quarter, and can move the plays after it too.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
+    body: ['Tap Undo right away, or open Book, then Plays, and tap the line to fix or delete it. Fix can change the play, the team, the player or the quarter, and can move the plays after it too. Book → Players shows each player\'s points and fouls by quarter, for either team, like the book\'s rows. Tap a quarter to see its plays, fix one, or add a missing one to that quarter.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
     image: { src: '/howto/mistakes.png', alt: 'The Plays tab in Book with one play tapped: its fix sheet offers another play, team or player, Delete, Cancel and Save.' },
   },
   {
