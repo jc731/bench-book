@@ -96,6 +96,29 @@ test('timeout clock: opt in, a 30 counts down across views, warns at halfway, Ti
   expect(await savedGame(page)).toBe(before); // I7: Start, Pause, Reset and × left the saved game as it was
 });
 
+test('an open clock belongs to its game: New game → discard → start shows no band; turning the setting off closes it (final review I-1, M-4)', async ({ page }) => {
+  await startGame(page);
+  await turnClockOn(page);
+  await ui(page).timeout('30s');
+  await expect(band(page)).toHaveCount(1);
+  await page.getByRole('navigation').getByRole('button', exact('More')).click();
+  await page.getByRole('button', exact('New game')).click();
+  await page.getByRole('button', exact('Discard and start new')).click();
+  await page.getByRole('button', exact('Start game')).click();
+  await expect(page.getByLabel('Score Home 0, Away 0')).toBeVisible();
+  await expect(band(page)).toHaveCount(0); // a fresh game opens with no clock
+
+  // The setting is still on in the new game; turning it off closes an open clock (M-4).
+  await ui(page).timeout('30s');
+  await expect(band(page)).toHaveCount(1);
+  await page.getByRole('navigation').getByRole('button', exact('More')).click();
+  await page.getByRole('dialog').getByRole('button', exact('Experiments')).click();
+  await page.getByRole('switch', exact('Timeout clock')).click();
+  await page.getByRole('button', exact('Back')).click();
+  await expect(page.getByTestId('feedback-text')).toHaveText('Home timeout (30s)');
+  await expect(band(page)).toHaveCount(0);
+});
+
 test('a full timeout opens a 60 s clock that warns at 30 s; the band fits one row on 10 a side (D16, D17, D19)', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-11-19T18:00:00') });
   await page.goto('/');

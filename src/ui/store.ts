@@ -132,6 +132,7 @@ export function useGameStore() {
     (g: Game) => {
       commit({ game: g, stack: [] });
       pruneUsage(storage, keys, g.id);
+      setClock(null); // a timeout clock belongs to the game it was opened in
       setToast(null);
       setView('live');
       if (!persistAsked.current) {
@@ -151,6 +152,7 @@ export function useGameStore() {
     pruneUsage(storage, keys, null);
     state.current = { game: null, stack: [] };
     setGame(null);
+    setClock(null);
     setToast(null);
     setReconcilePeriod(null);
     setView('setup');

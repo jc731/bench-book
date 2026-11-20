@@ -35,7 +35,7 @@ test('Usage CSV: counts follow D8, carries no names (I11), and does not mark an 
   const rows = await downloadCsv(page, page.getByRole('button', { name: 'Usage CSV', exact: true }));
   const [header, row] = rows;
   const v = (k: string) => Number(row[header.indexOf(k)]);
-  expect(v('plays')).toBe(2); // D8: +2 and Foul
+  expect(v('plays')).toBe(2); // D8: +2 and Foul; I10: the Undo and the Delete leave it at 2
   expect(v('undos')).toBe(1);
   expect(v('redos')).toBe(1);
   expect(v('deletes')).toBe(1);
@@ -43,9 +43,7 @@ test('Usage CSV: counts follow D8, carries no names (I11), and does not mark an 
   expect(v('late_adds')).toBe(0);
   expect(v('fixes')).toBe(2); // D8: undo + delete; the redo is not a fix
   const clicks = await page.evaluate(() => (window as unknown as { __clicks: number }).__clicks);
-  expect(v('taps')).toBeGreaterThanOrEqual(clicks - 1); // minus the Usage CSV click itself, made after this tally
-  expect(v('taps')).toBeGreaterThan(5);
-  expect(v('plays')).toBe(2); // I10: counts never fall after the Undo
+  expect(v('taps')).toBe(clicks); // D8: every button click after Start game, the Usage CSV click included
 
   // I11: no player, team or opponent name anywhere in the file.
   const text = rows.flat().join('|');

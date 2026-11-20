@@ -13,6 +13,7 @@ export function Experiments({ store }: { store: GameStore }) {
     const next = { ...prefs, timeoutClock: !prefs.timeoutClock };
     savePrefs(storage, next, keys);
     setPrefs(next);
+    if (!next.timeoutClock) store.setClock(null); // turning the experiment off closes an open clock
   };
   const on = prefs.timeoutClock;
   return (

@@ -6,7 +6,7 @@ const btn = 'min-h-11 min-w-11 shrink-0 rounded-lg px-2 font-semibold';
 /**
  * D17: the timeout clock, a band above the bottom bar in place of the feedback line, one row of at most
  * 56 px. It holds no time of its own (D18): every render reads the store's clock at `Date.now()`, and a
- * 250 ms tick re-renders it while it is on screen. D20: the time is white while running, amber in the
+ * 250 ms tick re-renders it while it is on screen. D19: the time is white while running, amber in the
  * last half with the note, and red Time at 0. Nothing here touches the game (I7).
  */
 export function ClockBand({ clock, setClock, class: cls = '' }: { clock: Clock; setClock: (c: Clock | null) => void; class?: string }) {

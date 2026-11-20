@@ -90,7 +90,7 @@ export function ui(page: Page, ours: Side = 'Home') {
     tech: (name: Name) => onPlayer(name, ['Tech foul'], false),
     half,
     /** A half's Sub button, beside + Play; it reads `Starters` or `Sub`. Absent with five players or fewer. */
-    subButton: (side: Side) => half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }),
+    subButton: (side: Side) => half(side).getByRole('button', { name: /^(Starters|Sub)$/ }),
     /**
      * A deliberate sub from the play sheet, 3 taps: the in player's card, their `#N checks in` row, then
      * the out player in "Who went out?". Players are fixture names or bare numbers (`'55'`).
@@ -105,7 +105,7 @@ export function ui(page: Page, ours: Side = 'Home') {
     },
     /** The team's Sub (or Starters) button, then "Who's on the floor?" toggled to exactly `names`, then Done. */
     async setFloor(side: Side, names: string[]) {
-      await half(side).getByRole('button', { name: /^(Starters|Sub)( · \d+ on)?$/ }).click();
+      await half(side).getByRole('button', { name: /^(Starters|Sub)$/ }).click();
       await expect(dialog()).toHaveAccessibleName("Who's on the floor?");
       const want = names.map(numOrName);
       const rows = await dialog().getByRole('button', { name: /^#/ }).evaluateAll((els) =>

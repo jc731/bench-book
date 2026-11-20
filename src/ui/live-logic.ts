@@ -5,7 +5,6 @@ import type { EventType, Game, Player, Side, TimeoutKind } from '../core/types';
 import type { Lineup } from '../core/lineup';
 import { rosterOf, sideName } from '../core/events';
 import { derive } from '../core/derive';
-import { lineup } from '../core/lineup';
 
 export type TeamTag = 'Home' | 'Away';
 
@@ -278,11 +277,11 @@ export const NO_NUMBER = 'No number';
 export const STOP_ASKING = 'Stop asking this game';
 
 /**
- * The toast for one play, worded from the game the play was applied to (`before`) and the result (`after`),
- * so the label and the applied game always share one input. A foul reads through foulToast (out and
+ * The toast for one play, worded from the game the play was applied to (`before`), so the label and the
+ * applied game always share one input. A foul reads through foulToast (out and
  * bonus); anything else reads `#14 (Away) +2`.
  */
-export function playToast(before: Game, after: Game, side: Side, p: Player | null, type: PlayType): string {
+export function playToast(before: Game, side: Side, p: Player | null, type: PlayType): string {
   const tag = sideName(before, side);
   let text: string;
   if (type === 'FOUL' || type === 'TECH') {

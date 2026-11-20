@@ -1,7 +1,7 @@
 import { applyLabeled, type GameState } from './game-state';
 import { appendEvent, newGame, recordSub } from '../core/events';
 import { lineup } from '../core/lineup';
-import type { EventDraft, Game } from '../core/types';
+import type { Game } from '../core/types';
 import { describe, expect, it } from 'vitest';
 import type { PeriodCheck } from '../core/reconcile';
 import {
@@ -218,10 +218,6 @@ describe('lineup toasts', () => {
   const roster = ['4', '5', '7', '10', '12', '22'].map((n) => ({ id: `h${n}`, number: n, name: `Player ${n}`, pos: '' }));
   const t0 = new Date('2026-11-17T10:00:00Z');
   const base = newGame(info, roster, t0);
-  const beforeAfter = (g: Game, d: EventDraft) => {
-    const h = appendEvent(g, { period: 1, ...d }, t0);
-    return [lineup(g, 'us'), lineup(h, 'us'), h] as const;
-  };
   it('words the foul-out toast, bonus before the instruction', () => {
     expect(foulOutLabel('#12 Ada (Home)', '5 fouls')).toBe('#12 Ada (Home) out, 5 fouls. Tell the official.');
     expect(foulOutLabel('#12 Ada (Home)', '2 techs', true)).toBe('#12 Ada (Home) out, 2 techs — bonus. Tell the official.');
@@ -234,12 +230,12 @@ describe('lineup toasts', () => {
     const h = appendEvent(g, { period: 1, type: 'FOUL', playerId: 'h22' }, t0);
     expect(lineup(h, 'us').floor).not.toContain('h22'); // lineup does not promote a player the play puts out
     const p = roster[5];
-    expect(playToast(g, h, 'us', p, 'FOUL')).toBe('#22 Player 22 (Home) out, 5 fouls — bonus. Tell the official.');
+    expect(playToast(g, 'us', p, 'FOUL')).toBe('#22 Player 22 (Home) out, 5 fouls — bonus. Tell the official.');
   });
   it('words a play from the game it is applied to: two taps with no render between each get the plain toast (D4: no floor suffix)', () => {
     const play = (g: Game) => {
       const next = appendEvent(g, { period: 1, type: 'FG2', playerId: 'h22' }, t0);
-      return { game: next, label: playToast(g, next, 'us', roster[5], 'FG2') };
+      return { game: next, label: playToast(g, 'us', roster[5], 'FG2') };
     };
     let s: GameState = { game: base, stack: [] };
     const first = applyLabeled(s, play, '', t0);

@@ -33,11 +33,11 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
       play can be added or fixed for a given quarter, mid-game or at the quarter's end. Added
       2026-11-18 (owner), after the first real game on 0.9. Later stats (rebounds, assists) would
       live here, but they stay out of scope for 1.0.
-- [ ] Edit teams mid-game from the More menu: names and both rosters, without recording a play.
-      Added 2026-11-19 (owner), after a game where the rosters were built through Whose number?.
-- [ ] A usage counter (taps and fixes per game, a Usage CSV) and neutral cards. Added 2026-11-19
-      (owner).
-- [ ] An Experiments page with an opt-in timeout clock (off by default). Added 2026-11-19 (owner).
+- [x] Edit teams mid-game from the More menu: names and both rosters, without recording a play.
+      Added 2026-11-19 (owner), after a game where the rosters were built through Whose number?. (0.10)
+- [x] A usage counter (taps and fixes per game, a Usage CSV) and neutral cards. Added 2026-11-19
+      (owner). (0.10)
+- [x] An Experiments page with an opt-in timeout clock (off by default). Added 2026-11-19 (owner). (0.10)
 - [ ] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
       both-team game with nothing blocking (not yet run; the scenario was rewritten in 0.8).
 - [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,

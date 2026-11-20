@@ -99,7 +99,7 @@ each kept at 3:1 or better for borders and dots and 4.5:1 for text:
 | Card | Warn border and dots (4 fouls; Bench card with techs) | Out | Warn text (team fouls near the bonus, tech count) |
 |---|---|---|---|
 | Dark (Away) | amber-400 | red-500 border and dots, red-400 OUT | amber-300 |
-| Light (Home) | amber-600 (Bench card amber-700) | red-600 border, dots and OUT | amber-800 |
+| Light (Home) | amber-600 (amber-700 on the cards after the top five and on the Bench card: amber-600 measured 2.92:1 on slate-100) | red-600 border, dots and OUT | amber-800 |
 
 A warned card's number, name and points keep the card's ordinary text color (slate-900 on a
 light card, white on a dark one); only its border and dots turn amber.
