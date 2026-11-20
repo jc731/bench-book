@@ -133,15 +133,19 @@ export function clearRoster(s: Storage, keys: StorageKeys = REAL): void {
 
 export interface Prefs {
   trackOpponentTaps: boolean;
+  /** D15: the Experiments page's Timeout clock, off by default. Prefs saved before 0.10 lack it and read off. */
+  timeoutClock: boolean;
 }
 
+/** Each field is read on its own, so a missing or wrong-typed one falls back without dropping the others. */
 export function loadPrefs(s: Storage, keys: StorageKeys = REAL): Prefs {
-  const fallback: Prefs = { trackOpponentTaps: false };
+  const fallback: Prefs = { trackOpponentTaps: false, timeoutClock: false };
   const raw = safeRead(s, keys.prefs);
   if (raw === null) return fallback;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown> | null;
-    return typeof parsed?.trackOpponentTaps === 'boolean' ? { trackOpponentTaps: parsed.trackOpponentTaps } : fallback;
+    const flag = (k: keyof Prefs) => (typeof parsed?.[k] === 'boolean' ? (parsed[k] as boolean) : fallback[k]);
+    return { trackOpponentTaps: flag('trackOpponentTaps'), timeoutClock: flag('timeoutClock') };
   } catch {
     return fallback;
   }

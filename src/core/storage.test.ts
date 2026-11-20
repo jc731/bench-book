@@ -277,22 +277,41 @@ describe('migrateGame (checks typed per quarter before game totals)', () => {
 });
 
 describe('prefs', () => {
-  it('defaults to not keeping the opponent score', () => {
-    expect(loadPrefs(new FakeStorage())).toEqual({ trackOpponentTaps: false });
+  // Changed for Task 6: Prefs gained `timeoutClock` (D15), so each expected shape carries it.
+  const off = { trackOpponentTaps: false, timeoutClock: false };
+  it('defaults to not keeping the opponent score and the clock off (D15)', () => {
+    expect(loadPrefs(new FakeStorage())).toEqual(off);
   });
   it('round-trips true and then false', () => {
     const s = new FakeStorage();
-    expect(savePrefs(s, { trackOpponentTaps: true })).toBe(true);
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true });
-    savePrefs(s, { trackOpponentTaps: false });
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
+    expect(savePrefs(s, { trackOpponentTaps: true, timeoutClock: false })).toBe(true);
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false });
+    savePrefs(s, off);
+    expect(loadPrefs(s)).toEqual(off);
   });
   it('falls back to the default on malformed JSON or a wrong type', () => {
     const s = new FakeStorage();
     s.setItem(PREFS_KEY, '{nope');
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
+    expect(loadPrefs(s)).toEqual(off);
     s.setItem(PREFS_KEY, '{"trackOpponentTaps":"yes"}');
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false });
+    expect(loadPrefs(s)).toEqual(off);
+  });
+  it('Review Focus 1: prefs saved before 0.10 load with the clock off, keeping their own field', () => {
+    const s = new FakeStorage();
+    s.setItem(PREFS_KEY, '{"trackOpponentTaps":false}');
+    expect(loadPrefs(s)).toEqual(off);
+    s.setItem(PREFS_KEY, '{"trackOpponentTaps":true}');
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false });
+  });
+  it('a saved timeoutClock true round-trips (D15)', () => {
+    const s = new FakeStorage();
+    savePrefs(s, { trackOpponentTaps: false, timeoutClock: true });
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false, timeoutClock: true });
+  });
+  it('a wrong-typed timeoutClock is off and does not drop the other field', () => {
+    const s = new FakeStorage();
+    s.setItem(PREFS_KEY, '{"trackOpponentTaps":true,"timeoutClock":"on"}');
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false });
   });
 });
 

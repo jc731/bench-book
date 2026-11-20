@@ -9,6 +9,7 @@ All notable changes to Bench Book are listed here, in the
 - A sub swaps the two cards instead of regrouping the half: the incoming player takes the outgoing player's slot.
 - Final offers a Usage CSV: taps, plays, undos, redos, fixes and late adds for the game, with no names.
 - More → Edit teams fixes names, numbers and both rosters mid-game, without recording a play. A player with plays, or on the floor, can't be removed (sub them out first).
+- More → Experiments: an opt-in timeout clock (off by default). Taking a timeout shows a 60 or 30 second countdown above the bottom bar, with a note at halfway and Time at 0:00.
 
 ## [0.9.2] - 2026-11-17
 

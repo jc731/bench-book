@@ -7,8 +7,9 @@ import { applyLabeled, applyRedo, applyUndo, applyUpdate, type GameState, type U
 import type { Toast } from './live-logic';
 import { resumeText } from './log-logic';
 import { bumpUsage, pruneUsage, type UsageKind } from '../core/usage';
+import type { Clock } from './clock-logic';
 
-export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end' | 'howto' | 'teams';
+export type View = 'setup' | 'live' | 'log' | 'running' | 'reconcile' | 'end' | 'howto' | 'teams' | 'experiments';
 export type { Toast } from './live-logic';
 
 function memoryStorage(): Storage {
@@ -62,6 +63,9 @@ export function useGameStore() {
     return text ? { text, canUndo: false } : null;
   });
   const persistAsked = useRef(false);
+  // D18, I7: the timeout clock is plain state, never in the game and never saved; an end time, so it keeps
+  // falling while another view is open.
+  const [clock, setClock] = useState<Clock | null>(null);
 
   // The ref is the source of truth; state only mirrors it for rendering.
   const commit = useCallback(
@@ -170,6 +174,7 @@ export function useGameStore() {
   return {
     game, saving, view, setView, update, quiet, bump, undo, redo, canUndo, toast, start, discard,
     reconcilePeriod, setReconcilePeriod, reconcileReturn, openReconcile, howtoReturn, openHowto,
+    storage, keys, clock, setClock,
   };
 }
 

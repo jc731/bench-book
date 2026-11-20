@@ -9,6 +9,9 @@ import { EventSheet, Sheet, WhoseNumberSheet } from './EventSheet';
 import { SubSheet } from './SubSheet';
 import { subRowText, type SubStart } from './sub-logic';
 import { FeedbackLine } from './FeedbackLine';
+import { ClockBand } from './ClockBand';
+import { newClock } from './clock-logic';
+import { loadPrefs } from '../core/storage';
 import {
   BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, who, reconcileBanner,
   outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
@@ -167,8 +170,11 @@ export function Live({ store }: { store: GameStore }) {
     const start: SubStart = l.floor.includes(id) ? { out: id } : { in: id };
     return { text, onSub: () => { setPicked(null); setSubbing({ side: pk.side, start }); } };
   };
-  const takeTimeout = (side: Side, kind: TimeoutKind) =>
+  /** D16: with the experiment on, a timeout from Live (a button or Take anyway) opens its clock. Undo leaves it (D21). */
+  const takeTimeout = (side: Side, kind: TimeoutKind) => {
     add({ type: 'TIMEOUT', timeoutKind: kind, ...sided(side) }, timeoutLabel(kind, sideName(game, side)));
+    if (loadPrefs(store.storage, store.keys).timeoutClock) store.setClock(newClock(kind));
+  };
   // A timeout with none left asks first; the count shown never drops below 0.
   const timeout = (side: Side, kind: TimeoutKind) => {
     if (timeoutsLeft(teamOf(side).timeouts, kind) > 0) return takeTimeout(side, kind);
@@ -238,13 +244,18 @@ export function Live({ store }: { store: GameStore }) {
         ))}
       </div>
 
-      {/* The last entry, and a chip for the check prompt or else the not-exported warning. The bar's Undo is its Undo. */}
-      <FeedbackLine
-        line={line}
-        class="shrink-0 border-t border-slate-600"
-        onPrompt={(p) => (p.kind === 'check' ? openReconcile(p.period, 'live') : openEnd())}
-        onRedo={redo}
-      />
+      {/* The last entry, and a chip for the check prompt or else the not-exported warning. The bar's Undo is its Undo.
+          D17: while a timeout clock is open it takes this line's place; × brings the line back. */}
+      {store.clock ? (
+        <ClockBand clock={store.clock} setClock={store.setClock} class="shrink-0 border-t border-slate-600" />
+      ) : (
+        <FeedbackLine
+          line={line}
+          class="shrink-0 border-t border-slate-600"
+          onPrompt={(p) => (p.kind === 'check' ? openReconcile(p.period, 'live') : openEnd())}
+          onRedo={redo}
+        />
+      )}
 
       <nav class="space-y-2 border-t border-slate-700 bg-slate-950 p-2 pb-3">
         <div class="grid grid-cols-4 gap-2">
@@ -376,6 +387,14 @@ export function Live({ store }: { store: GameStore }) {
               Reset demo
             </button>
           )}
+          {/* D15: the foot of More, gray and smaller: per-device settings, not part of a game. */}
+          <button
+            type="button"
+            class="mt-3 min-h-11 w-full rounded-lg border border-slate-600 text-sm font-semibold text-slate-300 active:bg-slate-700"
+            onClick={() => { setSheet(null); setView('experiments'); }}
+          >
+            Experiments
+          </button>
         </Sheet>
       )}
     </div>

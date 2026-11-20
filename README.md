@@ -86,8 +86,8 @@ when adding to the interface:
 
 | Color | Means | Examples |
 |---|---|---|
-| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving |
-| **Red** | Out, or ends something for good | an out player, End Q4 / OT (can end the game), Discard when the game is not exported |
+| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving, the timeout clock's last half |
+| **Red** | Out, or ends something for good | an out player, End Q4 / OT (can end the game), Discard when the game is not exported, the timeout clock's Time |
 | **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
