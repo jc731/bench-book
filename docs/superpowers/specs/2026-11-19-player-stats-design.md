@@ -125,7 +125,9 @@ the check only was rejected: the owner wants mid-game too.
 1. For each team and period, the player rows plus No number sum to the Team row's points.
 2. For each team and period, the player rows' fouls plus bench techs equal the Team row's fouls.
 3. The Score row is the running sum of both teams' Team rows, and its last column equals the score
-   on the live strip.
+   on the live strip, unless a saved check typed an opponent total that differs from their recorded
+   points (the strip then shows the book's total; the grid shows what was recorded). Amended
+   2026-11-19 after the plan critique.
 4. An add to period p changes only column p and the totals of that row, the Team row and the Score
    row from p on.
 5. A late add never adds anyone to the floor; it may only remove a player who fouls out.
