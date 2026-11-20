@@ -13,7 +13,7 @@ import { ClockBand } from './ClockBand';
 import { newClock } from './clock-logic';
 import { loadPrefs } from '../core/storage';
 import {
-  BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, who, reconcileBanner,
+  BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, reconcileBanner,
   outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
@@ -101,7 +101,7 @@ export function Live({ store }: { store: GameStore }) {
       let h = opts.newPlayer && p ? addPlayer(g, side, p, now) : g;
       if (opts.stopAsking) h = { ...h, noNumbers: { ...h.noNumbers, [side]: true } };
       const next = appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
-      return { game: next, label: playToast(g, next, side, p, type) };
+      return { game: next, label: playToast(g, side, p, type) };
     }, '');
   };
   const play = (type: PlayType) => {
@@ -148,7 +148,8 @@ export function Live({ store }: { store: GameStore }) {
   /**
    * One Sub per completed sub sheet; its toast is worded from the game the sub is applied to. A forgotten
    * sub (6 on, one taken off) stores only the out, but its toast names the player who came in by playing:
-   * the label only, so a Log fix to their play still takes them off the floor.
+   * the label only, so a Log fix to their play still takes them off the floor. `lineup` reads the same pairing
+   * from the replay for the card slots (D5).
    */
   const recordSubs = (side: Side, ins: string[], outs: string[]) => {
     store.bump('subs');

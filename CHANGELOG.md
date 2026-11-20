@@ -6,10 +6,10 @@ All notable changes to Bench Book are listed here, in the
 ## [Unreleased]
 
 - Cards look the same whether a player is on the floor or the bench: the bench tag, the amber Sub · 6 on and "now on the floor" are gone. Cards after the top five are a shade grayer (Home) or darker (Away).
-- A sub swaps the two cards instead of regrouping the half: the incoming player takes the outgoing player's slot.
+- A sub swaps the two cards instead of regrouping the half: the incoming player takes the outgoing player's slot. That includes a forgotten sub: when a bench player came on by making a play and the scorer then picks who went out, the player who came on takes that slot.
 - Final offers a Usage CSV: taps, plays, undos, redos, fixes and late adds for the game, with no names.
 - More → Edit teams fixes names, numbers and both rosters mid-game, without recording a play. A player with plays, or on the floor, can't be removed (sub them out first).
-- More → Experiments: an opt-in timeout clock (off by default). Taking a timeout shows a 60 or 30 second countdown above the bottom bar, with a note at halfway and Time at 0:00.
+- More → Experiments: an opt-in timeout clock (off by default). Taking a timeout shows a 60 or 30 second countdown above the bottom bar, with a note at halfway and Time at 0:00. A new game starts with no clock open, and turning the experiment off closes one.
 
 ## [0.9.2] - 2026-11-17
 

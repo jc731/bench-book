@@ -217,6 +217,23 @@ describe('subs: slot swap (D5, I12)', () => {
     expect(l.layout).toEqual(ids(1, 3, 4, 5, 2, 6, 7, 8, 9, 10));
     expect(l.layoutFloor).toBe(4);
   });
+
+  test('a bench player who scored, then "comes out" for another: the just-in takes the out\'s slot, two positions differ (D5, I12)', () => {
+    const g0 = add(game(ten), { type: 'FG2', playerId: 'h7' }); // h7 comes on by scoring: 6 on
+    expect(lineup(g0, 'us').floor).toHaveLength(6);
+    const l = lineup(sub(g0, [], ['h2']), 'us'); // what "#2 comes out" and "Who went out?" record
+    expect(l.layout).toEqual(ids(1, 7, 3, 4, 5, 6, 2, 8, 9, 10)); // D5: h7 in h2's slot, h2 in h7's
+    expect(diff(l.layout, lineup(g0, 'us').layout)).toBe(2); // I12
+    expect(l.layoutFloor).toBe(5);
+    expect(l.floor).toEqual(ids(1, 3, 4, 5, 7)); // the floor is the same as without the pairing
+  });
+
+  test('the just-in player who then comes out is not paired with themself: an unpaired out, first on the bench (D5)', () => {
+    const g0 = add(game(ten), { type: 'FG2', playerId: 'h7' });
+    const l = lineup(sub(g0, [], ['h7']), 'us');
+    expect(l.layout).toEqual(ids(1, 2, 3, 4, 5, 7, 6, 8, 9, 10));
+    expect(l.layoutFloor).toBe(5);
+  });
 });
 
 describe('subs', () => {
@@ -240,11 +257,12 @@ describe('subs', () => {
     g = sub(g, [], ['h4']);
     let l = lineup(g, 'us');
     expect(l.justIn).toBeNull();
-    expect(l.layout).toEqual(['h5', 'h7', 'h10', 'h12', 'h31', 'h4', 'h22']);
+    // D5 (final review I-3): h31 came on by scoring, so the lone out pairs with it and h31 takes h4's slot.
+    expect(l.layout).toEqual(['h31', 'h5', 'h7', 'h10', 'h12', 'h22', 'h4']);
     g = add(g, { type: 'FG2', playerId: 'h4' });
     l = lineup(g, 'us');
     expect(l.floor).toEqual(['h5', 'h7', 'h10', 'h12', 'h31', 'h4']);
-    expect(l.layout).toEqual(['h5', 'h7', 'h10', 'h12', 'h31', 'h4', 'h22']);
+    expect(l.layout).toEqual(['h31', 'h5', 'h7', 'h10', 'h12', 'h22', 'h4']);
     expect(l.justIn).toBe('h4');
   });
 

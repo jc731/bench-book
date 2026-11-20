@@ -147,7 +147,8 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await dialog.getByRole('button', { name: /^#00 / }).click();
     await expect(dialog).toHaveCount(0);
     await app.expectToastUndo('#44 (Home) in for #00');
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '23', '44']);
+    // D5 (final review I-3): the toast's pairing holds for the cards too: #44 takes #00's slot.
+    expect(await app.floorOf('Home')).toEqual(['4', '44', '0', '12', '23']);
     await expect(app.subButton('Home')).toHaveText('Sub');
     await strip(7, 5, 'Q1', 1);
     await expect(theirs(page).getByText('Team fouls 2', { exact: true })).toBeVisible();
@@ -164,7 +165,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     // A deliberate sub at the quarter break, 3 taps: #00 checks in for #44.
     await app.subIn('Home', 'Player Two', 'Player Seven');
     await app.expectToastUndo('#00 (Home) in for #44');
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '23', '00']);
+    expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '12', '23']); // D5: #00 takes #44's slot, the second since Q1
     await their(page, '24', ['Foul']);
     await app.ft('Player Two', true, false); // the second is logged as missed, though it went in
     await their(page, '24', ['Foul']);
@@ -251,7 +252,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.saveCheck();
     await expect(app.banner('Q2')).toHaveCount(0);
     // The foul added from the check was #31's while they were on: the floor is as the last sub left it.
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '12', '31', '00']);
+    expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '12', '31']); // D5 slots: #00 holds #44's since Q1
   });
 
   await test.step('halftime: a line change on "Who\'s on the floor?"; it changes no count', async () => {
@@ -263,7 +264,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await dialog.getByRole('button', exact('Done')).click();
     await expect(dialog).toHaveCount(0);
     await app.expectToastUndo('Home floor updated');
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '23', '44', '00']);
+    expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '23', '44']); // D5: #23 and #44 take #12's and #31's slots
     await strip(12, 11, 'Q3', 0);
   });
 
@@ -299,7 +300,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.score('Player Two', '+3');
     await strip(22, 18, 'Q4', 0);
     // Every Q3 and Q4 scorer of ours was in the halftime five: no promotion. Theirs is still 6 on.
-    expect(await app.floorOf('Home')).toEqual(['4', '0', '23', '44', '00']);
+    expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '23', '44']);
     expect(await app.floorOf('Away')).toEqual(['4', '10', '15', '5', '21', '33']);
     await expect(app.subButton('Home')).toHaveText('Sub');
     await app.endPeriodThen('Q4', 'End game (no overtime)');

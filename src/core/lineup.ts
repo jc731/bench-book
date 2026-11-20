@@ -103,6 +103,13 @@ export function lineup(g: Game, side: Side): Lineup {
     if (step.kind === 'sub') {
       const { ins, outs } = step.sub;
       const wasOnFloor = new Set(floor);
+      // D5, I12: one out with no in while a play has just put a sixth on the floor ("comes out", or "Who
+      // went out?" after a forgotten sub) is one for one: the just-in player is its in, as recordSubs'
+      // toast already reads it. Only the slot swap uses this; the floor is the same either way.
+      const impliedIn = ins.length === 0 && outs.length === 1 && floor.length === 6 && justIn !== null && justIn !== outs[0]
+        ? justIn
+        : null;
+      const pairIns = impliedIn ? [impliedIn] : ins;
       floor = floor.filter((id) => !outs.includes(id));
       const applied = new Set<string>();
       for (const id of ins) {
@@ -115,10 +122,11 @@ export function lineup(g: Game, side: Side): Lineup {
       const prev = (layout ?? rosterIds).filter((id) => onRoster.has(id));
       const slots = [...prev, ...rosterIds.filter((id) => !prev.includes(id))];
       const swapped = new Set<string>();
-      for (let k = 0; k < Math.min(ins.length, outs.length); k++) {
-        const a = slots.indexOf(ins[k]);
+      if (impliedIn) applied.add(impliedIn); // already on: it came on by its play, not by this sub
+      for (let k = 0; k < Math.min(pairIns.length, outs.length); k++) {
+        const a = slots.indexOf(pairIns[k]);
         const b = slots.indexOf(outs[k]);
-        if (a < 0 || b < 0 || !applied.has(ins[k]) || !wasOnFloor.has(outs[k])) continue;
+        if (a < 0 || b < 0 || !applied.has(pairIns[k]) || !wasOnFloor.has(outs[k])) continue;
         [slots[a], slots[b]] = [slots[b], slots[a]];
         swapped.add(outs[k]);
       }

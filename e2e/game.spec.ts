@@ -944,7 +944,8 @@ test('forgotten sub: #15 scores from the bench, Sub, "Who went out?" with #15 "j
   await expect(sheet).not.toContainText('Done');
   await subRow(page, 11).click();
   await expect(sheet).toHaveCount(0);
-  expect(await app.floorOf('Home')).toEqual(['10', '12', '13', '14', '15']);
+  // D5 (final review I-3): #15 came in by playing, so they take #11's card slot.
+  expect(await app.floorOf('Home')).toEqual(['10', '15', '12', '13', '14']);
   // The toast names the swap: #15 came in by playing, #11 is who they replaced. The stored sub is only #11 out.
   await app.expectToastUndo('#15 (Home) in for #11');
   await expect(app.subButton('Home')).toHaveText('Sub');
@@ -1007,7 +1008,7 @@ test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way
   await sheet.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(sheet).toHaveCount(0);
   await app.expectToastUndo('Home floor updated');
-  // D5: ins and outs pair in order, so #15..#17 take the slots of #10..#12, and #18 (unpaired) closes the floor block.
+  // D5: ins and outs pair in order, so #15..#18 take the slots of #10..#13.
   expect(await app.floorOf('Home')).toEqual(['15', '16', '17', '18', '14']);
   expect(await cardOrder(page, 'Home')).toEqual(['15', '16', '17', '18', '14', '10', '11', '12', '13']);
 });
