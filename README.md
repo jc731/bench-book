@@ -130,13 +130,16 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   quarter, for both teams, and a quick way to add or fix a play for a given quarter, mid-game or at
   the quarter's end. Design first (options, critique, mockups), as for 0.9. Later stats (rebounds,
   assists) would live here.
-- **Before 1.0: back toward neutral cards** (owner, 2026-11-18, after the first real game on 0.9).
-  Stop adding floor/bench emphasis: drop or soften the ghosted bench and the "bench" tag, and keep
-  the five most active at the top. Some light difference between the top five and the rest may
-  still help; whether it's worth anything is for a couple of design critique passes, then mockups
-  reviewed by the same group. With less emphasis on who is in, an easy way to set starters or
-  rearrange the lineup matters more: a Starters toggle in team Setup, or similar. Design the
-  cards with room for 1.1's one-tap buttons, so the cards aren't redone twice.
+- ~~**Before 1.0: back toward neutral cards** (owner, 2026-11-18, after the first real game on 0.9).~~
+  Done in 0.10: the cards look the same on the floor and the bench (no ghosted bench, no "bench"
+  tag, no amber Sub prompt), and the cards after the top five are one shade grayer (Home) or darker
+  (Away). The top five still sit at the top of each half.
+- **Starters and the lineup: revisit** (owner, 2026-11-19; still torn after the 2026-11-18 game).
+  With the floor/bench emphasis gone, an easy way to set starters or rearrange the lineup matters
+  more, for example a Starters toggle in team Setup. The owner hasn't settled what the lineup should
+  do. Trigger: the owner settles what the lineup should do; then design it again with mockups,
+  reviewed by the same group. Design the cards with room for 1.1's one-tap buttons, so the cards
+  aren't redone twice.
 - **0.9.x: a line-change view** for several subs at once, including several missed ones: move or
   swap multiple players between floor and bench in one place (drag and drop, or a tap-to-swap).
   Design note: the 0.9 critics rejected drag for single subs (hard to discover, and it fights the
@@ -174,6 +177,9 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
     players; missed free throws were caught up in a burst later. The owner's attention fades late in
     each half (a 5th foul for one player is missing from the log, likely in Q2 or Q4). The player
     stats page and the quarter check are where these get caught.
+  - One-tap +2/+3/Foul can't fit 44 px on today's 88 px cards (measured 2026-11-18), so 1.1 needs
+    its own layout decision.
+  - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
   - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
     play mix, so the design isn't fitted to one game.
 - **Maybe: nudges when something happens**, e.g. a foul while the other team is in the bonus
@@ -188,6 +194,12 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   a server the app doesn't have today.
 - Share: post the score, or the stats after the game, to social media, so a team can send results
   out from the app (the phone's share sheet, with a text or image summary).
+
+**Recorded, not planned:**
+
+- The quarter check compares team fouls too. Trigger: a second real game with a missed foul.
+- Merge a stray number into the real player in Edit teams. Trigger: a stray number with more than
+  about 2 plays.
 
 **Much later:**
 
