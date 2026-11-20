@@ -104,8 +104,10 @@ the check only was rejected: the owner wants mid-game too.
     sets the same flag, which closes audit 0.9.0 F1.
 12. **Feedback for an add**, built from the game before and after:
     - base: `Added #5 (Home) Foul to Q2` (the check's existing wording);
-    - when it puts the player out: `#5 (Home) out, 5 fouls. Tell the official.` (or `2 techs`), red,
-      as on live;
+    - when it puts the player out: `#5 (Home) out, 5 fouls. Tell the official.` (or `2 techs`): the
+      wording is live's, and on the cell sheet the line is red (live's feedback line has no tone, so
+      the red is a new use, recorded in README § Colors). Amended 2026-11-19 after the final review
+      (#5); it read "red, as on live";
     - when a saved check for that quarter was matched or fixed and now isn't: `· Q2 check now 2 over`
       (amber);
     - when it changes the current bonus: the live toast's bonus suffix.

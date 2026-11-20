@@ -103,7 +103,7 @@ export function insertEventBefore(g: Game, beforeId: string, d: EventDraft, now:
 export function editEvent(
   g: Game,
   id: string,
-  patch: Partial<Pick<GameEvent, 'type' | 'playerId' | 'period' | 'timeoutKind' | 'oppPoints' | 'side'>>,
+  patch: Partial<Pick<GameEvent, 'type' | 'playerId' | 'period' | 'timeoutKind' | 'oppPoints' | 'side' | 'late'>>,
   now: Date,
 ): Game {
   const target = g.events.find((e) => e.id === id);

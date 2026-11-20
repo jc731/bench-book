@@ -1,4 +1,5 @@
 import { periodLabel } from '../core/periods';
+import { isLateAdd } from '../core/late';
 import { editEvent, moveFrom, orderedEvents, rosterOf, sideName, sideOf } from '../core/events';
 import type { EventType, Game, GameEvent, TimeoutKind } from '../core/types';
 import { benchTechLabel, oppLabel, playButtonText, namedWho, playLabel, timeoutLabel, who, type PlayType } from './live-logic';
@@ -171,14 +172,18 @@ export function editSave(
   const patch = editPatch(e, d);
   if (Object.keys(patch).length === 0) return null;
   const followers = followersCount(g, e.id);
+  // A changed player (or team) on a play whose quarter is over credits someone who may be on the bench
+  // now, so the edit is marked late, as a late add is (D11; final review #1). A pure move is left alone.
+  const withLate = (x: Game, p: EditPatch): EditPatch & { late?: true } =>
+    ('playerId' in p || 'side' in p) && isLateAdd(x, d.period) ? { ...p, late: true } : p;
   if (!alsoMove || followers === 0 || patch.period === undefined) {
-    return { apply: (x, now) => editEvent(x, e.id, patch, now), label: editLabel(g, e, patch) };
+    return { apply: (x, now) => editEvent(x, e.id, withLate(x, patch), now), label: editLabel(g, e, patch) };
   }
   const { period: _moved, ...rest } = patch;
   const to = d.period;
   const edited = Object.keys(rest).length > 0;
   return {
-    apply: (x, now) => moveFrom(edited ? editEvent(x, e.id, rest, now) : x, e.id, to, now),
+    apply: (x, now) => moveFrom(edited ? editEvent(x, e.id, withLate(x, rest), now) : x, e.id, to, now),
     label: edited
       ? `${editLabel(g, e, rest)}; moved ${playsCount(followers + 1)} to ${periodLabel(to)}`
       : moveFromLabel(followers + 1, to),

@@ -86,8 +86,11 @@ test('Book: quarters not yet started are drawn but not tappable (controller ruli
   // In Q1, Q1 is open to adds (Task 4) and Q2-Q4 are not.
   await expect(one.getByRole('cell', { name: /^Q1/ })).toHaveAttribute('data-tappable', 'true');
   for (const q of ['Q2', 'Q3', 'Q4']) await expect(one.getByRole('cell', { name: new RegExp(`^${q}`) })).toHaveAttribute('data-tappable', 'false');
-  // The footer rows are never tappable (D9).
-  await expect(row(page, 'Team').getByRole('cell', { name: /^Q1/ })).not.toHaveAttribute('data-tappable', 'true');
+  // The footer rows are never tappable (D9): no button in either, however a tappable cell were built (final review #3).
+  for (const name of ['Team', 'Score']) {
+    await expect(row(page, name)).toHaveCount(1); // the row exists, so a count of 0 buttons means something
+    await expect(row(page, name).getByRole('button')).toHaveCount(0);
+  }
 });
 
 // ---- The cell sheet (Task 4: D9-D14, I5, I6; plan critique 3, 4, 6; Review Focus 5) ----------

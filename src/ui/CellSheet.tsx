@@ -7,7 +7,7 @@ import { PlayButtons, Sheet } from './EventSheet';
 import { FixSheet } from './FixSheet';
 import { outReason, type PlayType, type Toast } from './live-logic';
 import { eventRowText } from './log-logic';
-import { addFeedback, addToCell, cellPlays, cellTitle, statsGrid } from './stats-logic';
+import { addFeedback, addToCell, cellPlays, cellTitle, NO_NUMBER_KEY, statsGrid } from './stats-logic';
 import type { GameStore } from './store';
 
 export interface CellRef {
@@ -42,7 +42,7 @@ export function CellSheet({ store, cell, onClose }: { store: GameStore; cell: Ce
   const player = playerId ? rosterOf(game, side).find((p) => p.id === playerId) ?? null : null;
   const grid = statsGrid(game, side);
   const col = grid.periods.indexOf(period);
-  const r = grid.rows.find((x) => x.key === (playerId ?? 'none'));
+  const r = grid.rows.find((x) => x.key === (playerId ?? NO_NUMBER_KEY));
   const q = r && col >= 0 ? r.cells[col] : { points: 0, fouls: 0 };
   const plays = cellPlays(game, side, playerId, period);
   // Review Focus 5: an out player's plays wait behind the same warning as on the live sheet.

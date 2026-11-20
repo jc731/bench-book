@@ -128,10 +128,14 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   60 px cards so 10 players a half still fit an iPhone 13, and with 11 or more the floor stays in
   view while only the bench scrolls. Design:
   `docs/superpowers/specs/2026-11-17-active-lineup-design.md`.
-- ~~**1.0: a player stats page**~~ (done in 0.11; on the checklist, 2026-11-18): each player's points and fouls by
+- ~~**1.0: a player stats page** (on the checklist, 2026-11-18): each player's points and fouls by
   quarter, for both teams, and a quick way to add or fix a play for a given quarter, mid-game or at
-  the quarter's end. Design first (options, critique, mockups), as for 0.9. Later stats (rebounds,
-  assists) would live here.
+  the quarter's end.~~ Done in 0.11: Log became Book, with a Players tab (points and fouls by
+  quarter for Home or Away, with Team and Score rows) and a Plays tab (the old Log). Tapping a
+  quarter cell lists that player's plays there, one tap from the fix sheet, and adds a missing play
+  to that quarter. A play added or re-credited after its quarter never moves anyone onto the floor.
+  Later stats (rebounds, assists) would live here. Design:
+  `docs/superpowers/specs/2026-11-19-player-stats-design.md`.
 - ~~**Before 1.0: back toward neutral cards** (owner, 2026-11-18, after the first real game on 0.9).~~
   Done in 0.10: the cards look the same on the floor and the bench (no ghosted bench, no "bench"
   tag, no amber Sub prompt), and the cards after the top five are one shade grayer (Home) or darker

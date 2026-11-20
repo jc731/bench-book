@@ -39,7 +39,7 @@ export interface StatsGrid {
   score: { home: number[]; away: number[] };
 }
 
-const NO_NUMBER_KEY = 'none';
+export const NO_NUMBER_KEY = 'none';
 
 /** Whether a play belongs on a team's No number row: as `derive` credits it (no player, or one not on the roster). */
 function isNoNumberPlay(e: GameEvent, side: Side, onRoster: Set<string>): boolean {

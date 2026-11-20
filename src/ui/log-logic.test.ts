@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { appendEvent, moveFrom, newGame } from '../core/events';
+import { lineup } from '../core/lineup';
 import type { EventDraft, Game, GameEvent } from '../core/types';
 import { applyUndo, applyUpdate } from './game-state';
 import {
@@ -279,6 +280,57 @@ describe('editSave', () => {
     const s = editSave(g, e, { ...draftOf(e), type: 'FG3' }, true)!;
     expect(s.label).toBe('Edited #4 (Home) +2 → +3');
     expect(periods(apply(s))).toEqual([1, 2, 3, 3, 3, 4]);
+  });
+});
+
+describe('editSave: a changed player on an earlier quarter\'s play is late (D11; final review #1)', () => {
+  // Ten players, so h1..h5 start on the floor and h6..h10 on the bench (lineup: roster order).
+  const ten = Array.from({ length: 10 }, (_, i) => ({ id: `h${i + 1}`, number: String(i + 1), name: `Pat ${i + 1}`, pos: '' }));
+  const withPlay = (period: number, currentPeriod: number): Game => {
+    const g = { ...newGame(info, ten, NOW), currentPeriod };
+    return appendEvent(g, { type: 'FG2', playerId: 'h1', period }, NOW);
+  };
+  const STARTERS = ['h1', 'h2', 'h3', 'h4', 'h5'];
+  const fixTo = (g: Game, d: Partial<ReturnType<typeof draftOf>>, alsoMove = false) => {
+    const e = first(g);
+    return editSave(g, e, { ...draftOf(e), ...d }, alsoMove)!.apply(g, NOW);
+  };
+
+  it('the review probe: a Q1 +2 by h1, game in Q3, re-credited to bench h7, leaves the floor h1..h5', () => {
+    const next = fixTo(withPlay(1, 3), { playerId: 'h7' });
+    expect(first(next).playerId).toBe('h7');
+    expect(first(next).late).toBe(true);
+    expect(lineup(next, 'us').floor).toEqual(STARTERS);
+  });
+  it('the same fix within the current quarter still promotes (D10: as a live tap)', () => {
+    const next = fixTo(withPlay(3, 3), { playerId: 'h7' });
+    expect(first(next).late).toBeUndefined();
+    expect(lineup(next, 'us').floor).toContain('h7');
+  });
+  it('an ended game counts as over for every quarter (D13)', () => {
+    const g = { ...withPlay(3, 3), endedAt: NOW.toISOString() };
+    const next = fixTo(g, { playerId: 'h7' });
+    expect(first(next).late).toBe(true);
+    expect(lineup(next, 'us').floor).toEqual(STARTERS);
+  });
+  it('a change of player with "Also move" to an earlier quarter is late too (the quarter it ends in decides)', () => {
+    const g = appendEvent(withPlay(3, 3), { type: 'FOUL', playerId: 'h2', period: 3 }, NOW);
+    const next = fixTo(g, { playerId: 'h7', period: 1 }, true);
+    expect(first(next).late).toBe(true);
+    expect(lineup(next, 'us').floor).toEqual(STARTERS);
+  });
+  it('moving an earlier play to the other team is late too (the player changes)', () => {
+    const next = fixTo(withPlay(1, 3), { side: 'them', playerId: undefined });
+    expect(first(next).side).toBe('them');
+    expect(first(next).late).toBe(true);
+  });
+  it('a pure move back a quarter is left alone: the player really did play (final review #1)', () => {
+    const next = fixTo(withPlay(3, 3), { period: 1 });
+    expect(first(next).late).toBeUndefined();
+  });
+  it('a type change on an earlier play is not marked late (the player is unchanged)', () => {
+    const next = fixTo(withPlay(1, 3), { type: 'FG3' });
+    expect(first(next).late).toBeUndefined();
   });
 });
 

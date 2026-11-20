@@ -40,6 +40,7 @@ export interface GameEvent {
   editedAt?: string;
   /**
    * Added after its quarter (D10, D11): it counts for points and fouls but never moves a bench player onto the floor.
+   * Also set by a fix that changes the player or team of a play whose quarter is over (`editSave`, final review #1).
    * `editEvent` and `moveFrom` spread the event, so an edited or moved late play keeps the flag. Not exported.
    */
   late?: true;
