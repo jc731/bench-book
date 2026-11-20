@@ -177,8 +177,9 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
     players; missed free throws were caught up in a burst later. The owner's attention fades late in
     each half (a 5th foul for one player is missing from the log, likely in Q2 or Q4). The player
     stats page and the quarter check are where these get caught.
-  - One-tap +2/+3/Foul can't fit 44 px on today's 88 px cards (measured 2026-11-18), so 1.1 needs
-    its own layout decision.
+  - Today's cards are about 88 px wide and 60 px tall at 390 px (computed from the layout,
+    2026-11-18), so three 44 px one-tap buttons (+2, +3, Foul) don't fit on a card. 1.1 needs its
+    own layout decision.
   - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
   - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
     play mix, so the design isn't fitted to one game.
