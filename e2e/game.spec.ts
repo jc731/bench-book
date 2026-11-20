@@ -94,7 +94,7 @@ test('scripted game reconciles and exports', async ({ page }) => {
   await expect(page.getByTestId('feedback-text')).toHaveText('Last: #0 (Home) +3');
   await expect(page.getByRole('button', { name: 'Check Q2 — not checked against the book', exact: true })).toHaveText('Check Q2');
   await expect(
-    page.getByRole('navigation').getByRole('button', { name: 'Undo (history clears when the app reloads — fix plays in Log)' }),
+    page.getByRole('navigation').getByRole('button', { name: 'Undo (history clears when the app reloads — fix plays in Book)' }),
   ).toBeDisabled();
   await expect(page.getByText('Q3', { exact: true })).toBeVisible();
 
@@ -423,7 +423,8 @@ test('Log: newest first, tap to fix, Delete and Undo', async ({ page }) => {
   const one = card(page, '4', 'Player One');
   await tap(page, one, '+2');
   await tap(page, one, 'Foul');
-  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+  await page.getByRole('navigation').getByRole('button', { name: 'Book', exact: true }).click();
+  await page.getByRole('tab', { name: 'Plays', exact: true }).click();
 
   const q1 = page.getByRole('region', { name: 'Q1', exact: true });
   const rows = q1.getByRole('button');
@@ -489,7 +490,8 @@ test('Log: a fix that changes the player and the quarter, with the plays after i
   await tap(page, one, '+2');
   await tap(page, one, 'Foul');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
-  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+  await page.getByRole('navigation').getByRole('button', { name: 'Book', exact: true }).click();
+  await page.getByRole('tab', { name: 'Plays', exact: true }).click();
 
   const q1 = page.getByRole('region', { name: 'Q1', exact: true });
   const q2 = page.getByRole('region', { name: 'Q2', exact: true });
@@ -619,7 +621,8 @@ test("the check's player fouls are labeled as whole-game totals, apart from the 
   await tap(page, card(page, '4', 'Player One'), 'Foul');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await tap(page, card(page, '4', 'Player One'), 'Foul');
-  await page.getByRole('navigation').getByRole('button', { name: 'Log', exact: true }).click();
+  await page.getByRole('navigation').getByRole('button', { name: 'Book', exact: true }).click();
+  await page.getByRole('tab', { name: 'Plays', exact: true }).click();
   await page.getByRole('region', { name: 'Q1', exact: true }).getByRole('button', { name: 'Not checked', exact: true }).click();
   // Q1 had one of their two fouls: the quarter's count and their game total sit under separate labels.
   await expect(page.getByText(/^Team fouls in Q1:/)).toHaveText('Team fouls in Q1: 1');

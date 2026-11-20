@@ -191,7 +191,7 @@ export function Reconcile({ store }: { store: GameStore }) {
             Add play to {periodLabel(period)}
           </button>
           <div class="flex h-[50dvh] flex-col overflow-hidden rounded-lg border border-slate-700">
-            <Log store={store} period={period} fromPeriod={c.spanFrom} order="oldest" showToast={false} embedded />
+            <Log store={store} period={period} fromPeriod={c.spanFrom} order="oldest" showToast={false} />
           </div>
         </section>
 

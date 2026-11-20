@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'preact/hooks';
+import { Book } from './Book';
 import { demoActive } from './demo';
 import { EditTeams } from './EditTeams';
 import { EndGame } from './EndGame';
 import { Experiments } from './Experiments';
 import { HowTo } from './HowTo';
 import { Live } from './Live';
-import { Log } from './Log';
-import { Reconcile, StatusChip } from './Reconcile';
+import { Reconcile } from './Reconcile';
 import { RunningScore } from './RunningScore';
 import { Setup } from './Setup';
 import { useGameStore } from './store';
@@ -30,7 +30,7 @@ export function App() {
     document.addEventListener('click', onClick, true);
     return () => document.removeEventListener('click', onClick, true);
   }, []);
-  // The screen stays on through a live game on every view (Live, Log, a quarter check), not on Setup.
+  // The screen stays on through a live game on every view (Live, Book, a quarter check), not on Setup.
   useWakeLock(Boolean(store.game && !store.game.endedAt && view !== 'setup'));
 
   return (
@@ -49,12 +49,7 @@ export function App() {
         </div>
       )}
       {view === 'live' && <Live store={store} />}
-      {view === 'log' && (
-        <Log
-          store={store}
-          headerExtra={(p) => (store.game && (p < store.game.currentPeriod || store.game.endedAt) ? <StatusChip store={store} period={p} /> : null)}
-        />
-      )}
+      {view === 'log' && <Book store={store} />}
       {view === 'reconcile' && <Reconcile store={store} />}
       {view === 'end' && <EndGame store={store} />}
       {view === 'howto' && <HowTo store={store} />}

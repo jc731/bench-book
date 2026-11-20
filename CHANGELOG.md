@@ -5,6 +5,7 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- The bottom bar's Log is now **Book**. Its Players tab shows each player's points and fouls by quarter, for Home or Away, with Team and Score rows; its Plays tab is the old Log. Book remembers the tab and the team until the app reloads.
 - A play added to an earlier quarter from the check no longer moves that player onto the floor (audit 0.9.0 F1).
 
 ## [0.10.0] - 2026-11-19

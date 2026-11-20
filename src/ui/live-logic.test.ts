@@ -84,7 +84,7 @@ describe('reconcileBanner', () => {
 describe('undoAriaLabel', () => {
   it('explains a disabled Undo only when there are plays it cannot reach', () => {
     expect(undoAriaLabel(false, true)).toBe(UNDO_CLEARED_LABEL);
-    expect(UNDO_CLEARED_LABEL).toBe('Undo (history clears when the app reloads — fix plays in Log)');
+    expect(UNDO_CLEARED_LABEL).toBe('Undo (history clears when the app reloads — fix plays in Book)');
     expect(undoAriaLabel(true, true)).toBeUndefined();
     expect(undoAriaLabel(false, false)).toBeUndefined();
   });

@@ -22,7 +22,7 @@ with the book page after the game.
    with no card: pick the play, then **Whose number?** credits a typed number (adding a new one to
    that team), or **No number** records it for the team only. Under it are the team's **Bench /
    coach tech** card and its timeout buttons (`Full: 3`, `30s: 2`, plus `OT` in overtime), each
-   showing what is left; one at zero asks first. **Undo**, **Log**, **End Q** and **⋯** are on
+   showing what is left; one at zero asks first. **Undo**, **Book**, **End Q** and **⋯** are on
    the bottom bar. One line above the bar shows what was just entered, naming the team, and stays
    until the next entry, with a chip at its right for a quarter still to check.
 3. **Subs (optional).** Every card looks the same; the five on the floor lead, and the cards after
@@ -33,8 +33,8 @@ with the book page after the game.
    button (always gray) asks **Who went out?** (with a quiet
    "longest without a play" hint), **Who came in?** or, for a line change, **Who's on the floor?**. Subs change no score
    or count and are in neither CSV.
-4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Log** and
-   tap a row: it opens the fix, where you change the play, the team, the player or the quarter,
+4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Book**, then
+   **Plays** and tap a row: it opens the fix, where you change the play, the team, the player or the quarter,
    or delete it.
 5. **Check each quarter.** **End Q1** advances at once. When there is time, tap the check chip,
    enter the game score after the quarter from the book's running score, and the app checks the
@@ -88,7 +88,7 @@ when adding to the interface:
 |---|---|---|
 | **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match, a file not saved yet, Not saving, the timeout clock's last half |
 | **Red** | Out, or ends something for good | an out player, End Q4 / OT (can end the game), Discard when the game is not exported, the timeout clock's Time |
-| **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen, focused fields |
+| **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen (Setup, Book), the Book tab chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
 | **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step closer to the half's background: grayer on Home (slate-100 on white), darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
@@ -170,7 +170,7 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
     13 FT made, 9 FT missed, 6 3's and 3 timeouts. About 1.96 taps per entry today; with one-tap
     2/3/Foul and FTs unchanged, about 1.3 (43 of 68 become one tap).
   - Target: the owner's 1.25–1.5 is an arbitrary number. Track two numbers together: taps per
-    entry on a real game's mix, and fixes per game (undos, Log edits, late catch-up entries), so a
+    entry on a real game's mix, and fixes per game (undos, Book edits, late catch-up entries), so a
     faster card that causes more mis-taps doesn't count as a win.
   - Data points from that game, not bugs: free throws come when subs are busiest, so a pair often
     gets broken up (close the sheet, record the sub, come back), and one pair landed on two

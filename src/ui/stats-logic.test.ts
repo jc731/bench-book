@@ -7,7 +7,7 @@ import type { Game, GameInfo, Player, Side } from '../core/types';
 import { applyLabeled } from './game-state';
 import type { PlayType } from './live-logic';
 import {
-  addFeedback, addToCell, cellPlays, cellTitle, sideOrder, statsGrid, totalText, type StatsGrid,
+  addFeedback, addToCell, cellPlays, cellTappable, cellTitle, sideOrder, statsGrid, toggleText, totalText, type StatsGrid,
 } from './stats-logic';
 
 // Invented teams and players only (the repo is public).
@@ -427,5 +427,35 @@ describe('addFeedback (D12)', () => {
     g = times(g, 4, (x) => play(x, 'FOUL', 'a22', 'them', 1));
     g = endPeriod(g, t0);
     expect(fb(g, 'them', a14, 'FOUL', 1)).toEqual({ text: 'Added #14 (Away) Foul to Q1', tone: 'plain' });
+  });
+});
+
+describe('cellTappable (controller ruling 2026-11-19: quarters not yet started take no adds)', () => {
+  test('in Q2 of a game in progress, Q1 and Q2 are tappable and Q3, Q4 are not', () => {
+    const g = endPeriod(game(), t0);
+    expect(g.currentPeriod).toBe(2);
+    expect([1, 2, 3, 4].map((p) => cellTappable(g, p))).toEqual([true, true, false, false]);
+  });
+  test('every quarter of an ended game is tappable (D13: an ended game accepts adds)', () => {
+    const g = endGame(game(), t0);
+    expect([1, 2, 3, 4].map((p) => cellTappable(g, p))).toEqual([true, true, true, true]);
+  });
+});
+
+describe('toggleText (D2: each team name and score, as on the strip)', () => {
+  test('a home game: Home is our team name and score, Away the opponent', () => {
+    const g = play(play(game(), 'FG2', 'h5'), 'FG3', 'a14', 'them');
+    expect(toggleText(g, 'us')).toBe('Maple Hill 2');
+    expect(toggleText(g, 'them')).toBe('Cedar Run 3');
+  });
+  test('the opponent score is the strip score: a typed book total wins over recorded taps (I3 amended)', () => {
+    let g = endPeriod(play(game(), 'OPP_PTS', null, 'them'), t0);
+    g = saveReconcile(g, 1, 0, 5, '', t0);
+    expect(toggleText(g, 'them')).toBe(`Cedar Run ${oppTotal(g)}`);
+    expect(oppTotal(g)).toBe(5);
+  });
+  test('a blank team name falls back to its Home or Away tag', () => {
+    const g = newGame({ ...info, team: '' }, home, t0, away);
+    expect(toggleText(g, 'us')).toBe('Home 0');
   });
 });

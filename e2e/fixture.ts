@@ -137,11 +137,11 @@ export function ui(page: Page, ours: Side = 'Home') {
       await dialog().getByRole('button', exact('Bench tech')).click();
       await expect(dialog()).toHaveCount(0);
     },
-    /** The bottom bar: Undo, Log, the End slot and More, all on one line and at most 48px tall.
+    /** The bottom bar: Undo, Book, the End slot and More, all on one line and at most 48px tall.
      *  The End slot reads `End Qn` while the game is live, or the given name (`Final` once it has ended; its ▸ is hidden from screen readers). */
     async expectBarOneRow(endSlot?: string) {
       const end = endSlot === undefined ? { name: /^End (Q|OT)\d/ } : exact(endSlot);
-      const names = [{ name: /^Undo/ }, exact('Log'), end, exact('More')];
+      const names = [{ name: /^Undo/ }, exact('Book'), end, exact('More')];
       const boxes = [];
       for (const n of names) boxes.push((await nav().getByRole('button', n).boundingBox())!);
       expect(new Set(boxes.map((b) => b.y)).size).toBe(1);
@@ -273,7 +273,11 @@ export function ui(page: Page, ours: Side = 'Home') {
       await this.fillCheck(label, us, opp, note);
     },
     fixRegion: () => page.getByRole('region', exact('Plays to fix')),
-    openLog: () => nav().getByRole('button', exact('Log')).click(),
+    /** Book, then its Plays tab: the play list (the Log before 0.11). */
+    async openLog() {
+      await nav().getByRole('button', exact('Book')).click();
+      await page.getByRole('tab', exact('Plays')).click();
+    },
     back: () => page.getByRole('button', exact('Back')).click(),
     logSection: (label: string) => page.getByRole('region', exact(label)),
     /** A Log row's text: `#44 Player Seven · +2`. */

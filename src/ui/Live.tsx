@@ -148,7 +148,7 @@ export function Live({ store }: { store: GameStore }) {
   /**
    * One Sub per completed sub sheet; its toast is worded from the game the sub is applied to. A forgotten
    * sub (6 on, one taken off) stores only the out, but its toast names the player who came in by playing:
-   * the label only, so a Log fix to their play still takes them off the floor. `lineup` reads the same pairing
+   * the label only, so a Book fix to their play still takes them off the floor. `lineup` reads the same pairing
    * from the replay for the card slots (D5).
    */
   const recordSubs = (side: Side, ins: string[], outs: string[]) => {
@@ -270,7 +270,7 @@ export function Live({ store }: { store: GameStore }) {
           >
             Undo
           </button>
-          <button type="button" class={bar} onClick={() => setView('log')}>Log</button>
+          <button type="button" class={bar} onClick={() => setView('log')}>Book</button>
           <button
             type="button"
             class={`${barBase} whitespace-nowrap ${endTone[end.tone]}`}

@@ -2,7 +2,7 @@ import { derive, type PlayerLine, type TeamDerived } from '../core/derive';
 import { appendEvent, homeSide, orderedEvents, rosterOf, sideName, sideOf } from '../core/events';
 import { isLateAdd } from '../core/late';
 import { periodLabel } from '../core/periods';
-import { checkPeriod } from '../core/reconcile';
+import { checkPeriod, oppTotal } from '../core/reconcile';
 import type { Game, GameEvent, Player, Side } from '../core/types';
 import { BONUS_AT, foulOutLabel, namedWho, who, type PlayType } from './live-logic';
 import { addedLabel } from './log-logic';
@@ -109,6 +109,22 @@ export function statsGrid(g: Game, side: Side): StatsGrid {
 export function sideOrder(g: Game): Side[] {
   const h = homeSide(g);
   return [h, h === 'us' ? 'them' : 'us'];
+}
+
+/**
+ * Whether a quarter cell takes adds (Task 4 opens the cell sheet from it): any quarter that has
+ * started, and every quarter of an ended game (D13). A quarter not yet reached is drawn, faint, and
+ * not tappable (controller ruling 2026-11-19). The footer rows and totals are never tappable (D9).
+ */
+export function cellTappable(g: Game, period: number): boolean {
+  return Boolean(g.endedAt) || period <= g.currentPeriod;
+}
+
+/** A Home | Away toggle's text (D2): the team name, else its tag, then the strip's score for it. */
+export function toggleText(g: Game, side: Side): string {
+  const name = (side === 'us' ? g.info.team : g.info.opponent).trim() || sideName(g, side);
+  const score = side === 'us' ? derive(g).usTotal : oppTotal(g);
+  return `${name} ${score}`;
 }
 
 /** The total cell (D7): points, `F n` (amber at 4 by `foulState`), `OUT` when out, and `T n` with any tech. */

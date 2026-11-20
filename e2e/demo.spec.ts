@@ -51,10 +51,10 @@ test('?demo opens Setup with both demo rosters, shows the Demo marker on every s
   await page.getByRole('button', { name: /^#3 Sam Rivera,/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
   await expect(marker).toBeVisible();
-  for (const view of ['Log', 'More']) {
+  for (const view of ['Book', 'More']) {
     await page.getByRole('button', { name: view, exact: true }).click();
     await expect(marker).toBeVisible();
-    if (view === 'Log') await page.getByRole('button', { name: /^Back|Live/ }).first().click();
+    if (view === 'Book') await page.getByRole('button', { name: /^Back|Live/ }).first().click();
   }
 
   // A reload keeps the address: the demo game resumes like a real one.
@@ -102,7 +102,7 @@ test('a real game has no Reset demo and no Demo marker', async ({ page }) => {
   await expect(page.getByText('Demo', { exact: true })).toHaveCount(0);
 });
 
-test('the Demo marker covers no visible button on Setup, Live, Log or the quarter check', async ({ page }) => {
+test('the Demo marker covers no visible button on Setup, Live, Book or the quarter check', async ({ page }) => {
   await seedReal(page);
   await page.goto('/?demo');
   const overlaps = () =>
@@ -123,8 +123,10 @@ test('the Demo marker covers no visible button on Setup, Live, Log or the quarte
   await page.getByRole('button', { name: /^#3 Sam Rivera,/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
   expect(await overlaps()).toEqual([]); // Live
-  await page.getByRole('button', { name: 'Log', exact: true }).click();
-  expect(await overlaps()).toEqual([]); // Log
+  await page.getByRole('button', { name: 'Book', exact: true }).click();
+  expect(await overlaps()).toEqual([]); // Book, Players
+  await page.getByRole('tab', { name: 'Plays', exact: true }).click();
+  expect(await overlaps()).toEqual([]); // Book, Plays
   await page.getByRole('button', { name: /^Back|Live/ }).first().click();
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
   await page.getByRole('button', { name: /^Check Q1/ }).click();

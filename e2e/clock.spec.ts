@@ -67,8 +67,8 @@ test('timeout clock: opt in, a 30 counts down across views, warns at halfway, Ti
   await expect(band(page).getByTestId('clock-time')).toHaveText('0:15');
   await expect(band(page).getByTestId('clock-note')).toHaveText('15 seconds');
 
-  // D18 / Review Focus 4: it keeps falling while the scorer is on the Log.
-  await page.getByRole('navigation').getByRole('button', exact('Log')).click();
+  // D18 / Review Focus 4: it keeps falling while the scorer is on the Book.
+  await page.getByRole('navigation').getByRole('button', exact('Book')).click();
   await expect(band(page)).toHaveCount(0); // D18: it shows on Live only
   await page.clock.runFor(5_000);
   await page.getByRole('button', exact('Back')).click();

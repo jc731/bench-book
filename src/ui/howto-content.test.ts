@@ -70,7 +70,7 @@ describe('how-to content', () => {
     expect(text('Before tip-off')).toMatch(/Add to Home Screen/);
     expect(text('Before tip-off')).toMatch(/Game details/);
   });
-  it('says how to fix a mistake', () => expect(text('Mistakes')).toMatch(/Undo.*Log/));
+  it('says how to fix a mistake', () => expect(text('Mistakes')).toMatch(/Undo.*Book.*Plays/));
   it('covers ending early and reopening', () => {
     expect(text('Overtime and end of game')).toMatch(/End game early/);
     expect(text('Overtime and end of game')).toMatch(/Reopen game/);

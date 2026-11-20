@@ -253,7 +253,7 @@ export function feedbackLine(banner: Banner | null, unexported: string | null, t
   return { entry, prompt };
 }
 
-export const UNDO_CLEARED_LABEL = 'Undo (history clears when the app reloads — fix plays in Log)';
+export const UNDO_CLEARED_LABEL = 'Undo (history clears when the app reloads — fix plays in Book)';
 
 /** The Undo button's accessible name when it says more than its text: disabled with plays on the board. */
 export function undoAriaLabel(canUndo: boolean, hasEvents: boolean): string | undefined {
