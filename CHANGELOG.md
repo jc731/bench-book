@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-19
+
 - Cards look the same whether a player is on the floor or the bench: the bench tag, the amber Sub · 6 on and "now on the floor" are gone. Cards after the top five are a shade grayer (Home) or darker (Away).
 - A sub swaps the two cards instead of regrouping the half: the incoming player takes the outgoing player's slot. That includes a forgotten sub: when a bench player came on by making a play and the scorer then picks who went out, the player who came on takes that slot.
 - Final offers a Usage CSV: taps, plays, undos, redos, fixes and late adds for the game, with no names.
