@@ -309,3 +309,16 @@ export function playToast(before: Game, side: Side, p: Player | null, type: Play
   }
   return text;
 }
+
+/** How long the scorer must stop tapping before an activity swap shows on Live (owner, 2026-11-23). */
+export const SETTLE_MS = 8000;
+
+/**
+ * The card order Live shows: the order last shown, kept while the scorer is tapping. Ids no longer on
+ * the roster drop out; new ones go at the end, in the target's order, so a new card is never hidden.
+ */
+export function shownLayout(shown: string[], target: string[]): string[] {
+  const now = new Set(target);
+  const kept = shown.filter((id) => now.has(id));
+  return [...kept, ...target.filter((id) => !kept.includes(id))];
+}

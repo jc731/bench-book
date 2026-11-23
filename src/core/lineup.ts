@@ -87,7 +87,8 @@ export function lineup(g: Game, side: Side): Lineup {
   steps.sort((a, b) => orderOf(a) - orderOf(b) || (a.kind === b.kind ? 0 : a.kind === 'sub' ? -1 : 1));
 
   let floor = rosterIds.slice(0, 5);
-  let layout: string[] | null = null; // null until the first sub: roster order
+  // Roster order until the first sub; a sub (D5) or an activity swap (below) changes it.
+  let layout: string[] = [...rosterIds];
   let layoutFloorIds: string[] = [...floor]; // the floor when the layout was frozen
   const fouls = new Map<string, number>();
   const techs = new Map<string, number>();
@@ -119,18 +120,36 @@ export function lineup(g: Game, side: Side): Lineup {
         }
       }
       // D5: an incoming player takes the outgoing player's card slot.
-      const prev = (layout ?? rosterIds).filter((id) => onRoster.has(id));
+      const prev = layout.filter((id) => onRoster.has(id));
       const slots = [...prev, ...rosterIds.filter((id) => !prev.includes(id))];
+      const topCount = layoutFloorIds.length;
       const swapped = new Set<string>();
+      const swap = (x: string, y: string) => {
+        const a = slots.indexOf(x);
+        const b = slots.indexOf(y);
+        [slots[a], slots[b]] = [slots[b], slots[a]];
+      };
       if (impliedIn) applied.add(impliedIn); // already on: it came on by its play, not by this sub
       for (let k = 0; k < Math.min(pairIns.length, outs.length); k++) {
         const a = slots.indexOf(pairIns[k]);
         const b = slots.indexOf(outs[k]);
         if (a < 0 || b < 0 || !applied.has(pairIns[k]) || !wasOnFloor.has(outs[k])) continue;
-        [slots[a], slots[b]] = [slots[b], slots[a]];
+        // An activity swap already put the in in the top block: it keeps its slot (handled below).
+        if (a < topCount) continue;
+        swap(pairIns[k], outs[k]);
         swapped.add(outs[k]);
       }
-      const unpairedOuts = outs.filter((id) => wasOnFloor.has(id) && !swapped.has(id) && slots.includes(id));
+      // An out leaving the top block trades places with a floor player an activity swap pushed below
+      // it (the swap guessed the wrong player off), so the top block refills with two cards moving.
+      for (const id of outs) {
+        if (swapped.has(id) || !wasOnFloor.has(id) || !slots.includes(id) || slots.indexOf(id) >= topCount) continue;
+        const below = slots.slice(topCount).find((x) => floor.includes(x) && !ins.includes(x));
+        if (below === undefined) continue;
+        swap(id, below);
+        swapped.add(id);
+      }
+      // D5: unpaired outs from the top block go first on the bench; an out already below it stays put.
+      const unpairedOuts = outs.filter((id) => wasOnFloor.has(id) && !swapped.has(id) && slots.includes(id) && prev.indexOf(id) < topCount && prev.indexOf(id) >= 0);
       const rest = slots.filter((id) => !floor.includes(id));
       layout = [
         ...slots.filter((id) => floor.includes(id)),
@@ -149,7 +168,8 @@ export function lineup(g: Game, side: Side): Lineup {
     const pid = e.playerId && onRoster.has(e.playerId) ? e.playerId : undefined;
     if (pid) {
       lastPlay.set(pid, i);
-      if (!e.late && isPromotingPlay(e, out.has(pid)) && !floor.includes(pid)) {
+      const promotes = !e.late && isPromotingPlay(e, out.has(pid));
+      if (promotes && !floor.includes(pid)) {
         floor.push(pid);
         justIn = pid;
       }
@@ -164,12 +184,25 @@ export function lineup(g: Game, side: Side): Lineup {
           if (justIn === pid) justIn = null;
         }
       }
+      // Activity swap (owner, 2026-11-23): a promoting play by a card below the top block swaps it with
+      // the top-block card whose last play is oldest (an out player first). Two cards move, no more.
+      // Late adds never move a card, and neither does the foul that puts this player out. The live screen shows the swap only after a pause in tapping.
+      const top = layout.slice(0, layoutFloorIds.length);
+      if (promotes && !out.has(pid) && top.length > 0 && !top.includes(pid)) {
+        const outNow = rosterIds.filter((id) => out.has(id));
+        const swapWith = suggestFrom(top, outNow, lastPlay, layout);
+        if (swapWith !== null) {
+          const a = layout.indexOf(pid);
+          const b = layout.indexOf(swapWith);
+          if (a >= 0 && b >= 0) [layout[a], layout[b]] = [layout[b], layout[a]];
+        }
+      }
     }
     changedUnseen = floor.length !== before;
   });
 
   // Players added to the roster after the last sub go after the frozen layout, in roster order.
-  const frozen: string[] = (layout ?? rosterIds).filter((id) => onRoster.has(id));
+  const frozen: string[] = layout.filter((id) => onRoster.has(id));
   const fullLayout = [...frozen, ...rosterIds.filter((id) => !frozen.includes(id))];
   const outIds = rosterIds.filter((id) => out.has(id));
 
@@ -180,7 +213,10 @@ export function lineup(g: Game, side: Side): Lineup {
     layoutFloor: layoutFloorIds.filter((id) => onRoster.has(id)).length,
     outIds,
     justIn,
-    suggestion: suggestFrom(floor, outIds, lastPlay, fullLayout),
+    // Ties prefer a floor card below the top block: an activity swap already moved it there as the guess.
+    suggestion: suggestFrom(floor, outIds, lastPlay, [
+      ...fullLayout.slice(layoutFloorIds.length), ...fullLayout.slice(0, layoutFloorIds.length),
+    ]),
     tracked: rosterIds.length > 5,
     playedYet,
     changedUnseen,

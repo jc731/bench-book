@@ -30,7 +30,10 @@ with the book page after the game.
 3. **Subs (optional).** Every card looks the same; the five on the floor lead, and the cards after
    them are a shade grayer (Home) or darker (Away). Each team's first five start (the **Starters** button, beside + Play, changes
    them before that team's first play). A bench player who makes a play goes on the floor on
-   their own, so nothing is lost by skipping a sub, and a foul-out takes the player off. For a sub,
+   their own, so nothing is lost by skipping a sub, and a foul-out takes the player off. Their
+   card also trades places with the top-five card whose last play is oldest (a fouled-out one
+   first), but only once you stop tapping for about 8 seconds, so a card never moves under your
+   thumb; a recorded sub shows at once. For a sub,
    tap the player checking in, then **#22 checks in** on their sheet, then who went out. The **Sub**
    button (always gray) asks **Who went out?** (with a quiet
    "longest without a play" hint), **Who came in?** or, for a line change, **Who's on the floor?**. Subs change no score

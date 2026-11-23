@@ -744,6 +744,26 @@ test('Our team on the left (Experiments): an away game puts ours left, colors st
   await page.evaluate(() => localStorage.clear());
 });
 
+test('activity swap: a bench scorer trades cards with the longest-idle top player, only after a pause in tapping', async ({ page }) => {
+  // Owner, 2026-11-23: sort by activity, moving cards only after the scorer stops tapping (SETTLE_MS, 8 s).
+  await page.clock.install({ time: new Date('2026-11-23T18:00:00') });
+  await twoTeamGame(page, { ours: 7, theirs: 2 });
+  const before = ['10', '11', '12', '13', '14', '15', '16'];
+  expect(await cardOrder(page, 'Home')).toEqual(before);
+  await tap(page, ui(page).half('Home').getByRole('button', { name: /^#10 / }), '+2');
+  await tap(page, ui(page).half('Home').getByRole('button', { name: /^#16 / }), 'FT made', 'FT made');
+  // Still tapping: nothing moves, and a touch 5 s in restarts the wait.
+  await page.clock.fastForward(5000);
+  expect(await cardOrder(page, 'Home')).toEqual(before);
+  await page.mouse.click(195, 12); // the score in the strip: a touch, not a button
+  await page.clock.fastForward(5000);
+  expect(await cardOrder(page, 'Home')).toEqual(before);
+  // The pause: #16 takes #11's slot (#10 played, so #11 is the earliest never-played top card).
+  await page.clock.fastForward(4000);
+  await expect.poll(() => cardOrder(page, 'Home')).toEqual(['10', '16', '12', '13', '14', '15', '11']);
+  await page.evaluate(() => localStorage.clear());
+});
+
 /** A half's header: its title (name and tags) and its Team fouls count. */
 const header = (app: ReturnType<typeof ui>, side: Side) => ({
   title: app.half(side).getByTestId('half-title'),
@@ -1067,7 +1087,9 @@ test('"Who went out?" says how many are on and how many to pick, and updates wit
   await expect(pick).toHaveText('6 on · pick 1');
   await subRow(page, 13).click();
   await expect(sheet).toHaveCount(0);
-  expect(await app.floorOf('Home')).toEqual(['10', '14', '15', '16', '17']);
+  // Changed 2026-11-23 (activity swap): #15, #16 and #17 had already taken #11, #12 and #13's top slots,
+  // so the three outs, already below, leave every card where it was. The floor is the same five.
+  expect(await app.floorOf('Home')).toEqual(['10', '15', '16', '17', '14']);
 });
 
 test('line change at a quarter break: "Who\'s on the floor?", 4 toggles each way, Done; toast "Home floor updated"', async ({ page }) => {

@@ -46,7 +46,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'subs',
     title: 'Subs',
     body: [
-      "Every card looks the same: the five on the floor come first, and the cards after them are a shade grayer (Home) or darker (Away). The first five on the roster start, and the Sub button beside + Play reads Starters until that team's first play if you want to change them, then Sub. Subbing is optional: a bench player who makes a play goes on the floor on their own, and nothing waits on you.",
+      "Every card looks the same: the five on the floor come first, and the cards after them are a shade grayer (Home) or darker (Away). The first five on the roster start, and the Sub button beside + Play reads Starters until that team's first play if you want to change them, then Sub. Subbing is optional: a bench player who makes a play goes on the floor on their own, and nothing waits on you. Their card swaps with the top-five player who has gone longest without a play, once you stop tapping for a few seconds, so cards never move mid-tap.",
       "When #22 checks in at the table, tap #22, then #22 checks in at the foot of their sheet, then who went out. The Sub button opens the same sheet: Who went out? when more than five are on (longest without a play marks the player who has gone longest without one: only a hint, never acted on), Who came in? when fewer, as after a foul-out, and Who's on the floor? for a line change, ended with Done. Subs change no score or count, and Undo takes one back.",
     ],
     image: { src: '/howto/subs.png', alt: 'Who went out? for Home after #44 scored from the bench: six on the floor, #44 marked just in and #0, whose last play is the oldest, with the hint longest without a play; Cancel below.' },

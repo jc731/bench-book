@@ -237,6 +237,7 @@ export function Live({ store }: { store: GameStore }) {
             roster={rosterOf(game, side)}
             team={teamOf(side)}
             lineup={lineup(game, side)}
+            settleKey={`${game.id}:${(game.subs ?? []).filter((s) => s.side === side).length}`}
             period={period}
             onPick={(p) => pick(side, p)}
             onTeamPlay={() => pick(side, null)}

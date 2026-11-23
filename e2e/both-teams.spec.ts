@@ -301,7 +301,9 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await strip(22, 18, 'Q4', 0);
     // Every Q3 and Q4 scorer of ours was in the halftime five: no promotion. Theirs is still 6 on.
     expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '23', '44']);
-    expect(await app.floorOf('Away')).toEqual(['4', '10', '15', '5', '21', '33']);
+    // Changed 2026-11-23 (activity swap): compared as a set. The card order now depends on whether the
+    // scorer paused 8 s (real time in this test), so the order is checked in game.spec's activity-swap test.
+    expect((await app.floorOf('Away')).sort()).toEqual(['10', '15', '21', '33', '4', '5']);
     await expect(app.subButton('Home')).toHaveText('Sub');
     await app.endPeriodThen('Q4', 'End game (no overtime)');
     await app.expectFinalScore(22, 18);

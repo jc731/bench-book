@@ -1,8 +1,9 @@
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { TeamDerived } from '../core/derive';
 import type { Lineup } from '../core/lineup';
 import { isOvertime } from '../core/periods';
 import type { Player, TimeoutKind } from '../core/types';
-import { BENCH_CARD_TEXT, countText, subButtonText, teamFoulsWarn, timeoutButtonText, timeoutsLeft, type TeamTag } from './live-logic';
+import { BENCH_CARD_TEXT, SETTLE_MS, countText, shownLayout, subButtonText, teamFoulsWarn, timeoutButtonText, timeoutsLeft, type TeamTag } from './live-logic';
 
 interface Props {
   side: TeamTag;
@@ -14,8 +15,10 @@ interface Props {
   isUs: boolean;
   roster: Player[];
   team: TeamDerived;
-  /** Who is on the floor, and the card order (frozen between subs). */
+  /** Who is on the floor, and the card order (it changes at a sub and at an activity swap). */
   lineup: Lineup;
+  /** Changes when the order must show at once (a sub recorded or undone, another game), not after a pause. */
+  settleKey: string;
   period: number;
   onPick: (p: Player) => void;
   /** The dashed + Play card: a play for this team with no player picked. */
@@ -88,14 +91,16 @@ const SPLIT_AT = 11;
  * button, the half-height Bench card and the team's timeout buttons. Ten players fit an iPhone 13 with
  * no scroll; with 11 or more the first five cards stay in view and the rest scroll in their own region.
  */
-export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, period, onPick, onTeamPlay, onBench, onSub, onTimeout }: Props) {
+export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, settleKey, period, onPick, onTeamPlay, onBench, onSub, onTimeout }: Props) {
   const t = TONE[tone];
   const fouls = team.teamFoulsForBonus(period);
   const kinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
   const subText = subButtonText(lineup);
   const index = new Map(roster.map((p, i) => [p.id, i]));
-  // Display order is the lineup's layout: it changes only when a sub is recorded, so cards never jump mid-play.
-  const ordered = lineup.layout.filter((id) => index.has(id)).map((id) => index.get(id)!);
+  // Display order is the lineup's layout, but an activity swap waits for a pause in tapping, so a card
+  // never moves under the scorer's thumb (a free-throw pair, a foul then the shooter). A sub shows at once.
+  const layout = useSettledLayout(lineup.layout, settleKey);
+  const ordered = layout.filter((id) => index.has(id)).map((id) => index.get(id)!);
   const split = lineup.tracked && roster.length >= SPLIT_AT;
 
   const cardFor = (i: number, pos: number) => {
@@ -231,4 +236,37 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, period,
       </div>
     </section>
   );
+}
+
+/**
+ * The layout to draw: `target` once nobody has touched the screen for SETTLE_MS, else the last one
+ * drawn. A change of `key` shows `target` at once. Any pointerdown anywhere restarts the wait.
+ */
+function useSettledLayout(target: string[], key: string): string[] {
+  const [shown, setShown] = useState(target);
+  const [shownKey, setShownKey] = useState(key);
+  const latest = useRef(target);
+  latest.current = target;
+  const immediate = shownKey !== key;
+  const targetSig = target.join(',');
+  useEffect(() => {
+    if (immediate) {
+      setShown(target);
+      setShownKey(key);
+      return;
+    }
+    if (shown.join(',') === targetSig) return;
+    let timer = 0;
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setShown(latest.current), SETTLE_MS);
+    };
+    arm();
+    document.addEventListener('pointerdown', arm, true);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('pointerdown', arm, true);
+    };
+  }, [targetSig, key, shown.join(',')]);
+  return immediate ? target : shownLayout(shown, target);
 }

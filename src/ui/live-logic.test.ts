@@ -9,7 +9,7 @@ import {
   END_GUARD_MS, endTapAllowed, stripPeriodText, subButtonText, undoAriaLabel,
 } from './live-logic';
 import type { Lineup } from '../core/lineup';
-import { halfName, outReason } from './live-logic';
+import { halfName, outReason, shownLayout } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
   period, spanFrom: period, anchorBook: 0, anchorApp: 0, bookTotal: null, appTotal: 0, bookSpan: null, appSpan: 0,
@@ -290,5 +290,14 @@ describe('halfName: a live half shows the team name when one was entered (audit 
   });
   it('keeps an opponent that only looks like a date when it is not this game\'s date', () => {
     expect(halfName(newGame({ ...info, opponent: '11-20' }, [], at), 'them')).toBe('11-20');
+  });
+});
+
+describe('shownLayout (activity swap, owner 2026-11-23)', () => {
+  it('keeps the shown order while the target changes', () => {
+    expect(shownLayout(['a', 'b', 'c'], ['c', 'b', 'a'])).toEqual(['a', 'b', 'c']);
+  });
+  it('a new player shows at once, at the end; a removed one goes', () => {
+    expect(shownLayout(['a', 'b', 'c'], ['d', 'a', 'c'])).toEqual(['a', 'c', 'd']);
   });
 });

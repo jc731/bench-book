@@ -29,6 +29,8 @@ function sub(g: Game, ins: string[], outs: string[], side: Side = 'us', order = 
   return { ...g, subs: [...(g.subs ?? []), s] };
 }
 const STARTERS = ['h4', 'h5', 'h7', 'h10', 'h12'];
+/** How many positions differ between two layouts. */
+const diff = (a: string[], b: string[]) => a.filter((id, i) => id !== b[i]).length;
 
 describe('starters', () => {
   test('the first five are the floor; the rest are the bench; nothing played yet', () => {
@@ -51,14 +53,17 @@ describe('starters', () => {
 });
 
 describe('promotion', () => {
-  test('a bench FG2 puts them on the floor without moving their card; amber until the next play', () => {
-    // #31, the last bench card: a regrouped layout would put them ahead of #22.
+  test('a bench FG2 puts them on the floor and swaps their card with the longest-idle top card; amber until the next play', () => {
+    // Changed 2026-11-23 (activity swap): the layout used to stay in roster order until a sub. #31, the
+    // last bench card, now trades places with #4 (no top card has played; ties go to the earliest).
     const g = add(game(), { type: 'FG2', playerId: 'h31' });
     const l = lineup(g, 'us');
     expect(l.floor).toEqual([...STARTERS, 'h31']);
     expect(l.bench).toEqual(['h22']);
     expect(l.justIn).toBe('h31');
-    expect(l.layout).toEqual(home.map((p) => p.id));
+    expect(l.layout).toEqual(['h31', 'h5', 'h7', 'h10', 'h12', 'h22', 'h4']);
+    expect(diff(l.layout, home.map((p) => p.id))).toBe(2);
+    expect(l.layoutFloor).toBe(5);
     expect(l.playedYet).toBe(true);
     expect(l.changedUnseen).toBe(true);
 
@@ -193,7 +198,6 @@ describe('foul-out', () => {
 describe('subs: slot swap (D5, I12)', () => {
   const ten: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: `h${i + 1}`, number: String(i + 1), name: `P${i + 1}`, pos: '' }));
   const ids = (...n: number[]) => n.map((x) => `h${x}`);
-  const diff = (a: string[], b: string[]) => a.filter((id, i) => id !== b[i]).length;
 
   test('in takes the out slot; two positions differ (D5, I12); a second sub swaps again', () => {
     const g0 = game(ten);
@@ -221,8 +225,10 @@ describe('subs: slot swap (D5, I12)', () => {
   test('a bench player who scored, then "comes out" for another: the just-in takes the out\'s slot, two positions differ (D5, I12)', () => {
     const g0 = add(game(ten), { type: 'FG2', playerId: 'h7' }); // h7 comes on by scoring: 6 on
     expect(lineup(g0, 'us').floor).toHaveLength(6);
+    expect(lineup(g0, 'us').layout).toEqual(ids(7, 2, 3, 4, 5, 6, 1, 8, 9, 10)); // the activity swap guessed #1 off
     const l = lineup(sub(g0, [], ['h2']), 'us'); // what "#2 comes out" and "Who went out?" record
-    expect(l.layout).toEqual(ids(1, 7, 3, 4, 5, 6, 2, 8, 9, 10)); // D5: h7 in h2's slot, h2 in h7's
+    // Changed 2026-11-23: h7 keeps the top slot the activity swap gave it; h2 trades with h1, the wrong guess.
+    expect(l.layout).toEqual(ids(7, 1, 3, 4, 5, 6, 2, 8, 9, 10));
     expect(diff(l.layout, lineup(g0, 'us').layout)).toBe(2); // I12
     expect(l.layoutFloor).toBe(5);
     expect(l.floor).toEqual(ids(1, 3, 4, 5, 7)); // the floor is the same as without the pairing
@@ -231,7 +237,8 @@ describe('subs: slot swap (D5, I12)', () => {
   test('the just-in player who then comes out is not paired with themself: an unpaired out, first on the bench (D5)', () => {
     const g0 = add(game(ten), { type: 'FG2', playerId: 'h7' });
     const l = lineup(sub(g0, [], ['h7']), 'us');
-    expect(l.layout).toEqual(ids(1, 2, 3, 4, 5, 7, 6, 8, 9, 10));
+    // Changed 2026-11-23: h7 sat in h1's slot after its activity swap, so its out trades back with h1.
+    expect(l.layout).toEqual(ids(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
     expect(l.layoutFloor).toBe(5);
   });
 });
@@ -252,7 +259,7 @@ describe('subs', () => {
     expect(lineup(sub(g, [], ['h4']), 'us').changedUnseen).toBe(false);
   });
 
-  test('a sub clears justIn and freezes the layout until the next sub', () => {
+  test('a sub clears justIn; after it only an activity swap moves a card', () => {
     let g = add(game(), { type: 'FG2', playerId: 'h31' });
     g = sub(g, [], ['h4']);
     let l = lineup(g, 'us');
@@ -262,7 +269,8 @@ describe('subs', () => {
     g = add(g, { type: 'FG2', playerId: 'h4' });
     l = lineup(g, 'us');
     expect(l.floor).toEqual(['h5', 'h7', 'h10', 'h12', 'h31', 'h4']);
-    expect(l.layout).toEqual(['h31', 'h5', 'h7', 'h10', 'h12', 'h22', 'h4']);
+    // Changed 2026-11-23: h4 scoring from below the top block swaps with h5, the earliest never-played card.
+    expect(l.layout).toEqual(['h31', 'h4', 'h7', 'h10', 'h12', 'h22', 'h5']);
     expect(l.justIn).toBe('h4');
   });
 
@@ -457,5 +465,62 @@ describe('late plays (D11, I5)', () => {
     g = moveFrom(g, id, 1, now);
     expect(g.events[0].late).toBe(true);
     expect(lineup(g, 'us').floor).not.toContain('h7');
+  });
+});
+
+describe('activity swap (owner, 2026-11-23)', () => {
+  const roster = home.map((p) => p.id);
+  test('the swap takes the top card whose last play is oldest, not simply the first', () => {
+    const g = add(game(), { type: 'FG2', playerId: 'h4' }, { type: 'FOUL', playerId: 'h5' }, { type: 'FG2', playerId: 'h7' },
+      { type: 'FG2', playerId: 'h10' }, { type: 'FG2', playerId: 'h12' }, { type: 'FG3', playerId: 'h22' });
+    // Every top card has played; h4's play is the oldest, so h22 takes h4's slot.
+    expect(lineup(g, 'us').layout).toEqual(['h22', 'h5', 'h7', 'h10', 'h12', 'h4', 'h31']);
+  });
+
+  test('a top card that fouled out is swapped first', () => {
+    let g = add(game(), { type: 'FG2', playerId: 'h4' });
+    for (let i = 0; i < 5; i++) g = add(g, { type: 'FOUL', playerId: 'h10' });
+    g = add(g, { type: 'FG2', playerId: 'h22' });
+    expect(lineup(g, 'us').layout).toEqual(['h4', 'h5', 'h7', 'h22', 'h12', 'h10', 'h31']);
+  });
+
+  test('a play by a card already in the top block, a team play and the other team move nothing', () => {
+    const g = add(game(), { type: 'FG2', playerId: 'h12' }, { type: 'FOUL' }, { type: 'TIMEOUT', timeoutKind: 'full' },
+      { type: 'FG2', side: 'them' });
+    expect(lineup(g, 'us').layout).toEqual(roster);
+  });
+
+  test('a late add never moves a card (it never promotes)', () => {
+    let g = add(game(), { type: 'FG2', playerId: 'h4' });
+    g = { ...g, currentPeriod: 2 };
+    g = appendEvent(g, { type: 'FG2', playerId: 'h31', period: 1, late: true }, now);
+    expect(lineup(g, 'us').layout).toEqual(roster);
+  });
+
+  test('the foul that puts a bench player out moves nothing', () => {
+    // Four fouls added late (no promotion), then a live 5th: it promotes, but h31 is out, so no swap.
+    let g = { ...game(), currentPeriod: 2 };
+    for (let i = 0; i < 4; i++) g = appendEvent(g, { type: 'FOUL', playerId: 'h31', period: 1, late: true }, now);
+    g = appendEvent(g, { type: 'FOUL', playerId: 'h31', period: 2 }, now);
+    expect(lineup(g, 'us').outIds).toEqual(['h31']);
+    expect(lineup(g, 'us').layout).toEqual(roster);
+  });
+
+  test('undo: dropping the play restores the layout (it is replayed from the plays)', () => {
+    const g0 = add(game(), { type: 'FG2', playerId: 'h4' });
+    const g1 = add(g0, { type: 'FG2', playerId: 'h31' });
+    expect(lineup(g1, 'us').layout).not.toEqual(lineup(g0, 'us').layout);
+    expect(lineup({ ...g1, events: g1.events.slice(0, -1) }, 'us').layout).toEqual(lineup(g0, 'us').layout);
+  });
+
+  test('every swap moves exactly two cards', () => {
+    let g = game();
+    let prev = lineup(g, 'us').layout;
+    for (const pid of ['h22', 'h31', 'h4', 'h5', 'h22']) {
+      g = add(g, { type: 'FG2', playerId: pid });
+      const next = lineup(g, 'us').layout;
+      expect([0, 2]).toContain(diff(next, prev));
+      prev = next;
+    }
   });
 });
