@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-11-23
+
 - Cards sort by activity again: when a bench player scores or fouls, their card trades places with the top-five player who has gone longest without a play (a fouled-out one first). Only those two cards move, and only after about 8 seconds without a tap, so a free-throw pair or a foul and its shooter never land on a moved card. A recorded sub still shows at once, and a play added to an earlier quarter never moves a card.
 
 ## [0.12.1] - 2026-11-23
