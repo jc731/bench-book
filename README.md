@@ -191,6 +191,9 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   - Today's cards are about 88 px wide and 60 px tall at 390 px (computed from the layout,
     2026-11-18), so three 44 px one-tap buttons (+2, +3, Foul) don't fit on a card. 1.1 needs its
     own layout decision.
+  - Owner's candidate layout (2026-11-23, tabled): one full-width card per row in each half, a
+    little taller, leaving room for +2, +3, Foul and maybe FT made/missed on the card. Check
+    against 10 a side with no scroll at 390 × 664 before building.
   - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
   - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
     play mix, so the design isn't fitted to one game.
