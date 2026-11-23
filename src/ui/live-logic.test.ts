@@ -285,6 +285,9 @@ describe('halfName: a live half shows the team name when one was entered (audit 
     expect(halfName(g, 'us')).toBeNull();
     expect(halfName(g, 'them')).toBeNull();
   });
+  it('shows our team even when it is named like the date: the MM-DD default is the opponent\'s only', () => {
+    expect(halfName(newGame({ ...info, team: '11-19' }, [], at), 'us')).toBe('11-19');
+  });
   it('keeps an opponent that only looks like a date when it is not this game\'s date', () => {
     expect(halfName(newGame({ ...info, opponent: '11-20' }, [], at), 'them')).toBe('11-20');
   });

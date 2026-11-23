@@ -148,14 +148,14 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, period,
       class={`flex min-h-0 flex-col ${split ? 'overflow-hidden' : 'overflow-y-auto'} ${t.half}`}
     >
       <div class={`sticky top-0 z-[1] flex h-7 shrink-0 items-center justify-between gap-1 px-2 ${t.half}`}>
-        {/* A typed name shows under a small Home/Away tag (audit 0.11.0 F3): two lines, 12 + 16 px, in the
-            same 28 px row, so the cards never move. The name truncates; the tags and Team fouls never shrink. */}
+        {/* A typed name shows under a small Home/Away tag (audit 0.11.0 F3): two lines, 10 + 16 px, in the
+            same 28 px row with 1 px to spare above and below, so the cards never move. The name truncates; the tags and Team fouls never shrink. */}
         <span class="flex min-w-0 items-center gap-1" data-testid="half-title">
           {name === null ? (
             <span class="shrink-0 text-sm font-bold">{side}</span>
           ) : (
             <span class="flex min-w-0 flex-col">
-              <span class={`text-[10px] leading-3 font-semibold ${t.name}`}>{side}</span>
+              <span class={`text-[10px] leading-[10px] font-semibold ${t.name}`}>{side}</span>
               <span class="truncate text-sm leading-4 font-bold">{name}</span>
             </span>
           )}

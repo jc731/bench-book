@@ -743,8 +743,10 @@ test('a long team name truncates: Team fouls and the tags stay whole, the header
   for (const side of ['Home', 'Away'] as const) {
     const { title, fouls } = header(app, side);
     const name = title.getByText(side === 'Home' ? long : `${long} Two`, { exact: true });
-    // The name is cut with an ellipsis, not wrapped: one line, wider content than its box.
+    // The name is cut with an ellipsis, not wrapped: one line, wider content than its box, and clipped
+    // there, so it cannot paint over Team fouls (a nowrap name without overflow:hidden would).
     expect(await name.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true);
+    expect(await name.evaluate((e) => [getComputedStyle(e).overflow, getComputedStyle(e).textOverflow])).toEqual(['hidden', 'ellipsis']);
     const half = (await app.half(side).boundingBox())!;
     const f = (await fouls.boundingBox())!;
     const t = (await title.boundingBox())!;
@@ -756,7 +758,14 @@ test('a long team name truncates: Team fouls and the tags stay whole, the header
     const tag = title.getByText(side, { exact: true });
     expect(await tag.evaluate((e) => e.scrollWidth <= e.clientWidth && e.getBoundingClientRect().width > 0)).toBe(true);
     // The header row is the same 28 px (h-7) it is with no name, so no card moves down.
-    expect((await title.locator('..').boundingBox())!.height).toBe(28);
+    const row = (await title.locator('..').boundingBox())!;
+    expect(row.height).toBe(28);
+    // The tag and name lines sit inside the row with at least 1 px to spare top and bottom, so the text
+    // neither spills into the strip or onto the cards nor sits flush against them.
+    for (const box of [t, (await name.boundingBox())!, (await tag.boundingBox())!]) {
+      expect(box.y).toBeGreaterThanOrEqual(row.y + 1);
+      expect(box.y + box.height).toBeLessThanOrEqual(row.y + row.height - 1);
+    }
   }
   await expect(header(app, 'Home').title.getByText('US', { exact: true })).toBeVisible();
   await app.expectCardsFit();
