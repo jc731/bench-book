@@ -119,10 +119,11 @@ entry.
 
 - Test Home starts #3, #5, #7, #10, #12 (bench #22, #33): the first five on the list, as entered.
   Event 5: #22 in for #7 (a routine sub). Event 19: #7 in for #5 (a routine sub, during the
-  timeout). Event 32's foul, added to Q2 at the check, puts #33 on the floor by itself (six on);
-  event 33 says who #33 replaced: #10 (the app hints #10 "longest without a play", since the only basket #10 had that
-  quarter became #7's at event 26). Event 34: #5 and #10 in for #12 and #22 (a line change at
-  the half).
+  timeout). Event 32's foul, added to Q2 at the check, leaves #33 on the bench: since 0.11 a play
+  added after its quarter never moves anyone onto the floor. Event 33 says #33 went in for #10 in
+  Q2; the app keeps no sub per quarter, so it goes in as a sub now, #33 in for #10 (if skipped,
+  #33 goes on by their own basket at event 36, six on). Event 34: #5 and #10 in for #12 and #22
+  (a line change at the half).
 - Test Opp has no bench until #45 joins (event 35, on the floor by #45's own basket, six on):
   #24 out. Event 39 fouls #21 out (four on); event 40: #24 back in.
 - On the floor at the end: **Test Home #3, #5, #7, #10, #33** (bench #12, #22). **Test Opp #2,

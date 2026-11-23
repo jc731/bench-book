@@ -147,6 +147,7 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   do. Trigger: the owner settles what the lineup should do; then design it again with mockups,
   reviewed by the same group. Design the cards with room for 1.1's one-tap buttons, so the cards
   aren't redone twice.
+  - Audit v0.11.0 (2026-11-20, F1): a first-timer did not see the one-shade floor/bench cue.
 - **0.9.x: a line-change view** for several subs at once, including several missed ones: move or
   swap multiple players between floor and bench in one place (drag and drop, or a tap-to-swap).
   Design note: the 0.9 critics rejected drag for single subs (hard to discover, and it fights the
@@ -158,7 +159,9 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   - "Who's on the floor?": a tapped player stays under the old heading (audit F3, first-timer).
   - A sub that belongs to an earlier quarter has no home: adding a missed foul from the check puts
     the player on the floor now (audit F1). The check's Add play could ask who went out.
+    Audit v0.11.0 (2026-11-20, F2): 0.11 no longer promotes, but the Q2 sub went in as a Q3 one.
   - A new opposing player can only be added after picking a play (audit F2).
+    Audit v0.11.0 (2026-11-20, F4): same order again, milder ("a small difference").
   - With 11+ players, nothing hints that the bench scrolls; cut-off cards look like a glitch.
   - "Stop asking this game" sits beside No number and can only be undone right away.
   - Explain the bonus and amber team fouls in the How-to; say the first five start on Setup;
@@ -208,6 +211,10 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 - The quarter check compares team fouls too. Trigger: a second real game with a missed foul.
 - Merge a stray number into the real player in Edit teams. Trigger: a stray number with more than
   about 2 plays.
+- Ending Q1 to Q3 takes one tap, with no confirm (audits v0.6.0, v0.9.0, v0.11.0 2026-11-20 F6;
+  theoretical). Trigger: a quarter ended by mistake in a run or a real game.
+- The Book CSV marks no foul-out (5 fouls, no out marker or quarter; audits v0.6.0, v0.9.0,
+  v0.11.0 2026-11-20 F8). Trigger: a scorer or the book needing the foul-out quarter from the file.
 
 **Much later:**
 

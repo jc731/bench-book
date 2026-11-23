@@ -38,8 +38,9 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
 - [x] A usage counter (taps and fixes per game, a Usage CSV) and neutral cards. Added 2026-11-19
       (owner). (0.10)
 - [x] An Experiments page with an opt-in timeout clock (off by default). Added 2026-11-19 (owner). (0.10)
-- [ ] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
-      both-team game with nothing blocking (not yet run; the scenario was rewritten in 0.8).
+- [x] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
+      both-team game with nothing blocking (audit v0.11.0, 2026-11-20: 0 wrong entries, nothing
+      blocking).
 - [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,
       with no lost data and no hand-fixed CSV.
 - Out of scope for 1.0: missed shots, rebounds, assists, configurable rule sets, the cross-scorer
