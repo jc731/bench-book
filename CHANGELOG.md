@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-23
+
 - A new setting, ⋯ → Experiments → **Our team on the left**, puts your team's half on the left of the live screen whether you are Home or Away; the score and the Book's team toggle follow. Off by default (Home stays left). Home keeps its light cards and Away its dark ones either way.
 
 ## [0.12.0] - 2026-11-23
