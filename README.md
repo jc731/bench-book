@@ -193,6 +193,14 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
   - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
     play mix, so the design isn't fitted to one game.
+- **Small safety nets** (owner, 2026-11-23, from audit v0.11.0: "prob should add"):
+  - A warning when a play is credited to a bench player. Today it is taken silently and the
+    player goes on the floor (audit F5: the scripted slip at event 20, caught only by the
+    confirmation line). 0.10 removed "now on the floor" on purpose, so word this as a check on
+    the slip, not the old lineup prompt.
+  - A confirm when ending Q1 to Q3, which take one tap today (audits v0.6.0, v0.9.0, v0.11.0 F6;
+    no quarter has been ended by mistake yet). It adds a tap at every quarter end, so weigh it
+    against 1.1's tap counts. Ending Q4 already asks overtime or end game.
 - **Maybe: nudges when something happens**, e.g. a foul while the other team is in the bonus
   suggests free throws for the fouled team. Only as a way to make things better, not a rule engine.
 
@@ -211,10 +219,10 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
 - The quarter check compares team fouls too. Trigger: a second real game with a missed foul.
 - Merge a stray number into the real player in Edit teams. Trigger: a stray number with more than
   about 2 plays.
-- Ending Q1 to Q3 takes one tap, with no confirm (audits v0.6.0, v0.9.0, v0.11.0 2026-11-20 F6;
-  theoretical). Trigger: a quarter ended by mistake in a run or a real game.
-- The Book CSV marks no foul-out (5 fouls, no out marker or quarter; audits v0.6.0, v0.9.0,
-  v0.11.0 2026-11-20 F8). Trigger: a scorer or the book needing the foul-out quarter from the file.
+- The Book CSV marks no foul-out, and that is fine (owner, 2026-11-23): the row's 5 fouls say it,
+  and a reader can assume the rest. Raised by audits v0.6.0, v0.9.0 and v0.11.0 F8; don't
+  re-raise it while the row shows the 5 fouls. Trigger: a scorer or the book needing the
+  foul-out quarter from the file.
 
 **Much later:**
 
