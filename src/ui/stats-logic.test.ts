@@ -271,6 +271,12 @@ describe('sideOrder, totalText, cellTitle, cellPlays', () => {
     expect(sideOrder(game({ homeAway: 'away' }))).toEqual(['them', 'us']);
   });
 
+  test('Our team on the left (owner, 2026-11-23): ours first, home or away; off keeps Home first', () => {
+    expect(sideOrder(game(), true)).toEqual(['us', 'them']);
+    expect(sideOrder(game({ homeAway: 'away' }), true)).toEqual(['us', 'them']);
+    expect(sideOrder(game({ homeAway: 'away' }), false)).toEqual(['them', 'us']);
+  });
+
   test('D7: F 3, F 4 (warn), OUT at 5, T 1 with a tech', () => {
     const at = (fouls: number, techs = 0) => {
       let g = times(game(), fouls - techs, (x) => play(x, 'FOUL', 'h1'));

@@ -17,7 +17,8 @@ with the book page after the game.
    date, MM-DD), the date, your team name, the coach, scorer and timekeeper. Your roster is saved
    on the device for next time; theirs is not.
 2. **Live.** Home is on the left with light cards, Away on the right with dark ones, and a small
-   **US** tag marks your team. A team name you entered heads its half, under a small Home or Away
+   **US** tag marks your team (⋯ → Experiments → **Our team on the left** puts yours on the left
+   either way; the colors stay with Home and Away). A team name you entered heads its half, under a small Home or Away
    (the opponent's date default, MM-DD, is not shown as a name). Tap any player card on either team, then `+2`, `+3`, `FT made`,
    `FT missed`, `Foul` or `Tech foul`. Each half ends with a dashed **+ Play** card for a play
    with no card: pick the play, then **Whose number?** credits a typed number (adding a new one to

@@ -1,5 +1,7 @@
 import { useState } from 'preact/hooks';
+import { homeSide } from '../core/events';
 import { periodLabel } from '../core/periods';
+import { loadPrefs } from '../core/storage';
 import type { Game, Side } from '../core/types';
 import { CellSheet, type CellRef } from './CellSheet';
 import { FeedbackLine } from './FeedbackLine';
@@ -27,7 +29,7 @@ export function Book({ store }: { store: GameStore }) {
   if (!game) return null;
   const setTab = (t: BookTab) => setTabState((keptTab = t));
   const setSide = (s: Side) => setSideState((keptSide = s));
-  const order = sideOrder(game);
+  const order = sideOrder(game, loadPrefs(store.storage, store.keys).usLeft);
   const side = pickedSide ?? order[0];
 
   return (
@@ -71,7 +73,7 @@ export function Book({ store }: { store: GameStore }) {
                 </button>
               ))}
             </div>
-            <PlayersGrid game={game} side={side} tone={side === order[0] ? 'light' : 'dark'} onCell={(playerId, period) => setCell({ side, playerId, period })} />
+            <PlayersGrid game={game} side={side} tone={side === homeSide(game) ? 'light' : 'dark'} onCell={(playerId, period) => setCell({ side, playerId, period })} />
           </>
         ) : (
           <Log

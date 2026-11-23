@@ -714,6 +714,36 @@ test('both halves: Home left and light, Away right and dark, US tag on our side'
   }
 });
 
+test('Our team on the left (Experiments): an away game puts ours left, colors stay with Home/Away, the strip follows', async ({ page }) => {
+  // Owner request 2026-11-23: Home/Away stays left/right by default; the switch puts our team on the left.
+  await twoTeamGame(page, { away: true });
+  const app = ui(page);
+  const x = async (side: Side) => (await app.half(side).boundingBox())!.x;
+  expect(await x('Home')).toBeLessThan(await x('Away')); // default: Home left, even on an away night
+  await app.half('Away').getByRole('button', { name: /^#10 Player 1,/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByLabel('Score Home 0, Away 2')).toHaveText('0–2');
+
+  await page.getByRole('navigation').getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Experiments', exact: true }).click();
+  const toggle = page.getByRole('switch', { name: 'Our team on the left', exact: true });
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+
+  expect(await x('Away')).toBeLessThan(await x('Home')); // ours (Away) now left
+  await expect(page.getByLabel('Score Away 2, Home 0')).toHaveText('2–0');
+  expect(await bgLightness(app.half('Away').getByRole('button', { name: /^#10 Player 1,/ }))).toBeLessThan(0.3); // Away stays dark
+  expect(await bgLightness(app.half('Home').getByRole('button', { name: /^#50,/ }))).toBeGreaterThan(0.8); // Home stays light
+
+  // The Book's team toggle follows: ours first.
+  await page.getByRole('navigation').getByRole('button', { name: 'Book', exact: true }).click();
+  const teams = page.getByRole('group', { name: 'Team' }).getByRole('button');
+  await expect(teams.first()).toHaveText(/Away/);
+  await page.evaluate(() => localStorage.clear());
+});
+
 /** A half's header: its title (name and tags) and its Team fouls count. */
 const header = (app: ReturnType<typeof ui>, side: Side) => ({
   title: app.half(side).getByTestId('half-title'),

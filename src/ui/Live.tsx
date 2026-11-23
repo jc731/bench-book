@@ -12,6 +12,7 @@ import { FeedbackLine } from './FeedbackLine';
 import { ClockBand } from './ClockBand';
 import { newClock } from './clock-logic';
 import { loadPrefs } from '../core/storage';
+import { sideOrder } from './stats-logic';
 import {
   BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, halfName, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, reconcileBanner,
   outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
@@ -208,9 +209,10 @@ export function Live({ store }: { store: GameStore }) {
   const end = endSlot(period, Boolean(game.endedAt));
   const unexported = notExportedText(game, new Date());
   const line = feedbackLine(banner, unexported, toast);
-  // Home always left and light, Away right and dark; only the US tag changes between home and away nights.
+  // Home light and Away dark, always. Home sits on the left unless "Our team on the left" is on
+  // (Experiments), which puts ours there whether Home or Away; the strip follows the halves.
   const home = homeSide(game);
-  const away: Side = home === 'us' ? 'them' : 'us';
+  const [left, right] = sideOrder(game, loadPrefs(store.storage, store.keys).usLeft);
   const total = (side: Side) => (side === 'us' ? d.usTotal : oppTotal(game));
   // A team shoots when the other team is in the bonus: our fouls put them there, theirs put us there.
   const shoots = (side: Side) => (side === 'us' ? d.usInBonus(period) : d.oppInBonus(period));
@@ -219,14 +221,13 @@ export function Live({ store }: { store: GameStore }) {
   return (
     <div class="flex min-h-0 flex-1 flex-col">
       <StatusStrip
-        home={total(home)}
-        away={total(away)}
+        left={{ tag: sideName(game, left), score: total(left), shoots: shoots(left) }}
+        right={{ tag: sideName(game, right), score: total(right), shoots: shoots(right) }}
         period={period}
         ended={Boolean(game.endedAt)}
-        shooters={{ home: shoots(home), away: shoots(away) }}
       />
       <div class="grid min-h-0 flex-1 grid-cols-2">
-        {[home, away].map((side) => (
+        {[left, right].map((side) => (
           <TeamHalf
             key={side}
             side={sideName(game, side)}

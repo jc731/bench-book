@@ -105,8 +105,12 @@ export function statsGrid(g: Game, side: Side): StatsGrid {
   };
 }
 
-/** The Home | Away toggle's order: Home first (D2). */
-export function sideOrder(g: Game): Side[] {
+/**
+ * Left-to-right order of the two teams, on Live and in the Book's toggle: Home first (D2), or ours
+ * first when the "Our team on the left" setting is on. Colors stay with Home/Away, not the position.
+ */
+export function sideOrder(g: Game, usLeft = false): Side[] {
+  if (usLeft) return ['us', 'them'];
   const h = homeSide(g);
   return [h, h === 'us' ? 'them' : 'us'];
 }
