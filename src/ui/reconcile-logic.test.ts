@@ -3,7 +3,7 @@ import { appendEvent, newGame } from '../core/events';
 import { checkPeriod, endGame, markExported, saveReconcile } from '../core/reconcile';
 import type { Game } from '../core/types';
 import {
-  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, theirScoreLineIfRecorded, foulSidesOf, oppPlaceholder, parseScore,
+  MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, theirScoreLineIfRecorded, foulSidesOf, parseScore,
   comparePanel, reconcileDraftToSave, savedCheckText, statusChipText,
 } from './reconcile-logic';
 
@@ -154,10 +154,6 @@ describe('their score line', () => {
   });
   it('says nothing for a blank box, never a match', () => {
     expect(theirScoreLine(c(null, 6))).toBeNull();
-  });
-  it('shows the app total only as a placeholder, and only once their points are recorded', () => {
-    expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, true)).toBe('12 from the app');
-    expect(oppPlaceholder({ period: 2, oppSpanFrom: 2, anchorOppBook: 9, oppTapped: 3 }, false)).toBe('');
   });
 });
 

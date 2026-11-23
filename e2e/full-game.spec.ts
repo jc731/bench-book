@@ -160,8 +160,8 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.expectStrip({ us: 8, opp: 6, period: 'Q2', fouls: 0, bonus: false, timeouts: { full: 2, thirty: 2 } });
     await expect(app.banner('Q1')).toBeVisible();
     await app.banner('Q1').click();
-    await expect(page.getByLabel(/Their game score after Q1/)).toHaveValue('');
-    await app.expectOppHint('Q1', 6);
+    await app.expectBlankScoreBoxes('Q1');
+    await expect(page.getByTestId('app-has')).toHaveText('App after Q1: Us 8 · Them 6 (Q1: 8–6)');
     await app.fillCheck('Q1', 8, 6);
     await app.expectMatches();
     await expectNoOverflow(page);

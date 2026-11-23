@@ -1708,7 +1708,8 @@ test('check: their score off warns but the quarter still saves as matched', asyn
   await page.getByRole('dialog').getByRole('button', { name: '+3', exact: true }).click();
   await app.endPeriod('Q1');
   await app.banner('Q1').click();
-  await expect(page.getByLabel(/Their game score after Q1/)).toHaveAttribute('placeholder', '3 from the app');
+  await ui(page).expectBlankScoreBoxes('Q1'); // 0.12.3: no "from the app" hint; the app's 3 is in the line above
+  await expect(page.getByTestId('app-has')).toHaveText('App after Q1: Us 2 · Them 3 (Q1: 2–3)');
   await app.fillCheck('Q1', 2, 5);
   const line = page.getByTestId('compare-opp');
   await expect(line).toHaveText('Their score: book 5 · app 3 — 2 off');

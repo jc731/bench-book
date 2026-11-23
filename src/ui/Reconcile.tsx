@@ -12,7 +12,7 @@ import { NO_NUMBER, feedbackLine, namedWho, outReason, type PlayType, type Toast
 import { addFeedback, addToCell } from './stats-logic';
 import { Log } from './Log';
 import {
-  MISMATCH_HINT, appHasText, comparePanel, isMismatch, savedCheckText, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, oppPlaceholder, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, comparePanel, isMismatch, savedCheckText, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -160,7 +160,6 @@ export function Reconcile({ store }: { store: GameStore }) {
           <input
             class={field}
             inputMode="numeric"
-            placeholder={oppPlaceholder(c, recorded)}
             value={oppText}
             onInput={(e) => setOppText(e.currentTarget.value)}
           />

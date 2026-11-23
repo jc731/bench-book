@@ -346,9 +346,13 @@ export function ui(page: Page, ours: Side = 'Home') {
       await expect(page.getByTestId('export-state-book')).toHaveText(book ? 'Book CSV ✓ saved' : 'Book CSV — not saved yet');
       await expect(page.getByTestId('export-state-plays')).toHaveText(plays ? 'Plays CSV ✓ saved' : 'Plays CSV — not saved yet');
     },
-    /** The opponent box starts blank, with the tap total only as a hint. */
-    expectOppHint: (label: string, taps: number) =>
-      expect(page.getByLabel(new RegExp(`Their game score after ${label}`))).toHaveAttribute('placeholder', `${taps} from the app`),
+    /** Both score boxes start blank, with no hint: the app's numbers are in the line above them (0.12.3). */
+    async expectBlankScoreBoxes(label: string) {
+      for (const box of [new RegExp(`Our game score after ${label}`), new RegExp(`Their game score after ${label}`)]) {
+        await expect(page.getByLabel(box)).toHaveValue('');
+        await expect(page.getByLabel(box)).not.toHaveAttribute('placeholder', /./);
+      }
+    },
 
     /** The strip (score home–away, period, the bonus badge) and our half's header and timeout buttons. */
     async expectStrip(s: { us: number; opp: number; period: string; fouls: number; bonus: boolean; timeouts: TimeoutsLeft }) {

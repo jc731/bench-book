@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- The quarter check's "Their game score" box no longer shows a grayed "N from the app" hint, so both score boxes start the same: blank. The app's numbers for both teams are in the line above them. The hint was a leftover from before 0.8 and could disagree with that line after a corrected book total.
+
 ## [0.12.2] - 2026-11-23
 
 - Cards sort by activity again: when a bench player scores or fouls, their card trades places with the top-five player who has gone longest without a play (a fouled-out one first). Only those two cards move, and only after about 8 seconds without a tap, so a free-throw pair or a foul and its shooter never land on a moved card. A recorded sub still shows at once, and a play added to an earlier quarter never moves a card.

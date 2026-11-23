@@ -135,11 +135,6 @@ export function foulSidesOf(g: Game): Side[] {
   return sideName(g, 'us') === 'Home' ? ['us', 'them'] : ['them', 'us'];
 }
 
-/** Placeholder for their box: the app's game total of their points as a hint, never as a value. */
-export function oppPlaceholder(c: OppBasis, recorded: boolean): string {
-  return recorded ? `${c.anchorOppBook + c.oppTapped} from the app` : '';
-}
-
 export const EXPORT_NAME: Record<ExportKind, string> = { book: 'Book CSV', plays: 'Plays CSV' };
 export const EXPORT_DESCRIPTION: Record<ExportKind, string> = {
   book: 'Box score: running score, points, fouls, timeouts',
