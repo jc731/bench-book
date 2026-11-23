@@ -69,7 +69,7 @@ test('?demo opens Setup with both demo rosters, shows the Demo marker on every s
 
   // Without ?demo the real game is still there, with no marker.
   await page.goto('/');
-  await expect(page.getByText('Real Opp').or(page.getByRole('banner'))).toBeVisible();
+  await expect(page.getByText('Real Opp').or(page.getByRole('banner')).first()).toBeVisible();
   await expect(page.getByText('Demo', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^#9 Real Player,/ })).toBeVisible();
   expect(await read(page)).toEqual(real);
