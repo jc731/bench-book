@@ -118,6 +118,9 @@ test('the Demo marker covers no visible button on Setup, Live, Book or the quart
       }
       return hit;
     });
+  // The app is a client:only island, so goto's load event can fire before it renders: wait for Setup
+  // itself, not the marker, so a missing marker still fails as 'no marker'.
+  await expect(page.getByRole('heading', { name: 'New game' })).toBeVisible();
   expect(await overlaps()).toEqual([]); // Setup
   await ui(page).startGame();
   await page.getByRole('button', { name: /^#3 Sam Rivera,/ }).click();
