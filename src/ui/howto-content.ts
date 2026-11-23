@@ -25,7 +25,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     id: 'play',
     title: 'Record a play',
     body: [
-      'Home is on the left with light cards, Away on the right with dark ones, and a small US tag marks your team.',
+      'Home is on the left with light cards, Away on the right with dark ones, and a small US tag marks your team. A team name you entered shows at the top of its half, under Home or Away.',
       'Tap any player, on either team, then the play: +2, +3, a foul or a free throw. The line above the bar names the team, for example #4 (Home) +2.',
     ],
   },

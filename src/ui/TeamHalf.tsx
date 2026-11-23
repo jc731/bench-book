@@ -6,6 +6,8 @@ import { BENCH_CARD_TEXT, countText, subButtonText, teamFoulsWarn, timeoutButton
 
 interface Props {
   side: TeamTag;
+  /** The team's name for the header (`halfName`), or null to show the side alone. */
+  name: string | null;
   /** Home is light (the home team traditionally wears white), Away dark. */
   tone: 'light' | 'dark';
   /** Our team's half carries the US tag. */
@@ -86,7 +88,7 @@ const SPLIT_AT = 11;
  * button, the half-height Bench card and the team's timeout buttons. Ten players fit an iPhone 13 with
  * no scroll; with 11 or more the first five cards stay in view and the rest scroll in their own region.
  */
-export function TeamHalf({ side, tone, isUs, roster, team, lineup, period, onPick, onTeamPlay, onBench, onSub, onTimeout }: Props) {
+export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, period, onPick, onTeamPlay, onBench, onSub, onTimeout }: Props) {
   const t = TONE[tone];
   const fouls = team.teamFoulsForBonus(period);
   const kinds: TimeoutKind[] = isOvertime(period) ? ['full', 'thirty', 'ot'] : ['full', 'thirty'];
@@ -146,11 +148,20 @@ export function TeamHalf({ side, tone, isUs, roster, team, lineup, period, onPic
       class={`flex min-h-0 flex-col ${split ? 'overflow-hidden' : 'overflow-y-auto'} ${t.half}`}
     >
       <div class={`sticky top-0 z-[1] flex h-7 shrink-0 items-center justify-between gap-1 px-2 ${t.half}`}>
-        <span class="flex items-center gap-1 text-sm font-bold">
-          {side}
-          {isUs && <span class={`rounded border px-1 text-[10px] leading-4 font-bold ${t.tag}`}>US</span>}
+        {/* A typed name shows under a small Home/Away tag (audit 0.11.0 F3): two lines, 12 + 16 px, in the
+            same 28 px row, so the cards never move. The name truncates; the tags and Team fouls never shrink. */}
+        <span class="flex min-w-0 items-center gap-1" data-testid="half-title">
+          {name === null ? (
+            <span class="shrink-0 text-sm font-bold">{side}</span>
+          ) : (
+            <span class="flex min-w-0 flex-col">
+              <span class={`text-[10px] leading-3 font-semibold ${t.name}`}>{side}</span>
+              <span class="truncate text-sm leading-4 font-bold">{name}</span>
+            </span>
+          )}
+          {isUs && <span class={`shrink-0 rounded border px-1 text-[10px] leading-4 font-bold ${t.tag}`}>US</span>}
         </span>
-        <span class={`whitespace-nowrap text-xs font-semibold ${teamFoulsWarn(fouls) ? t.foulsWarn : ''}`}>Team fouls {fouls}</span>
+        <span class={`shrink-0 whitespace-nowrap text-xs font-semibold ${teamFoulsWarn(fouls) ? t.foulsWarn : ''}`}>Team fouls {fouls}</span>
       </div>
       <div class={`flex flex-1 flex-col gap-1.5 px-1.5 pb-1.5 ${split ? 'min-h-0' : ''}`}>
         {split ? (

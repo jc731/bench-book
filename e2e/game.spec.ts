@@ -661,8 +661,13 @@ test("setup: the other team's roster is optional, numbered, and starts the game 
 // ---- Both teams on the live screen: Home vs Away halves ----------------------------------------
 
 /** A game with `ours` players (#10 up) and `theirs` (#50 up), at home unless `away`. */
-async function twoTeamGame(page: Page, { ours = 2, theirs = 2, away = false } = {}) {
+async function twoTeamGame(page: Page, { ours = 2, theirs = 2, away = false, team = '', opponent = '' } = {}) {
   await page.goto('/');
+  if (team || opponent) {
+    await page.getByText('Game details', { exact: true }).click();
+    await page.getByLabel('Opponent (optional)').fill(opponent);
+    await page.getByLabel('Our team (optional)').fill(team);
+  }
   if (away) await page.getByRole('group', { name: 'Home or away' }).getByRole('button', { name: 'Away', exact: true }).click();
   for (let i = 0; i < ours; i++) {
     if (i > 0) await page.getByRole('button', { name: 'Add player', exact: true }).click();
@@ -707,6 +712,55 @@ test('both halves: Home left and light, Away right and dark, US tag on our side'
     }
     await page.evaluate(() => localStorage.clear());
   }
+});
+
+/** A half's header: its title (name and tags) and its Team fouls count. */
+const header = (app: ReturnType<typeof ui>, side: Side) => ({
+  title: app.half(side).getByTestId('half-title'),
+  fouls: app.half(side).getByText(/^Team fouls \d+$/),
+});
+
+test('half headers name the teams when given (audit 0.11.0 F3); a default opponent shows just the side', async ({ page }) => {
+  // Owner ruling 2026-11-23 on F3: the typed name shows, Home/Away stays as a small tag above it, US stays on ours.
+  await twoTeamGame(page, { team: 'Maple Hill', opponent: 'Cedar Run' });
+  let app = ui(page);
+  await expect(header(app, 'Home').title).toHaveText('HomeMaple HillUS');
+  await expect(header(app, 'Away').title).toHaveText('AwayCedar Run');
+  await page.evaluate(() => localStorage.clear());
+
+  // No opponent typed: the game is named MM-DD, which is not a team name, so the half reads plain "Away".
+  // An away game with our name typed: the name sits on the right half, tagged Away.
+  await twoTeamGame(page, { team: 'Maple Hill', away: true });
+  app = ui(page);
+  await expect(header(app, 'Home').title).toHaveText('Home');
+  await expect(header(app, 'Away').title).toHaveText('AwayMaple HillUS');
+});
+
+test('a long team name truncates: Team fouls and the tags stay whole, the header keeps its height, 10 a side still fit', async ({ page }) => {
+  const long = 'Northwestern Consolidated Junior High Wildcats';
+  await twoTeamGame(page, { ours: 10, theirs: 10, team: long, opponent: `${long} Two` });
+  const app = ui(page);
+  for (const side of ['Home', 'Away'] as const) {
+    const { title, fouls } = header(app, side);
+    const name = title.getByText(side === 'Home' ? long : `${long} Two`, { exact: true });
+    // The name is cut with an ellipsis, not wrapped: one line, wider content than its box.
+    expect(await name.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true);
+    const half = (await app.half(side).boundingBox())!;
+    const f = (await fouls.boundingBox())!;
+    const t = (await title.boundingBox())!;
+    // Team fouls fully inside the half, to the right of the title, never overlapping it.
+    expect(f.x + f.width).toBeLessThanOrEqual(half.x + half.width);
+    expect(t.x + t.width).toBeLessThanOrEqual(f.x);
+    expect(await fouls.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+    // The side tag (and US on ours) are still there, whole.
+    const tag = title.getByText(side, { exact: true });
+    expect(await tag.evaluate((e) => e.scrollWidth <= e.clientWidth && e.getBoundingClientRect().width > 0)).toBe(true);
+    // The header row is the same 28 px (h-7) it is with no name, so no card moves down.
+    expect((await title.locator('..').boundingBox())!.height).toBe(28);
+  }
+  await expect(header(app, 'Home').title.getByText('US', { exact: true })).toBeVisible();
+  await app.expectCardsFit();
+  expect(await noOverflow(page)).toBe(true);
 });
 
 /**

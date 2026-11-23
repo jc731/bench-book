@@ -5,8 +5,20 @@ import type { EventType, Game, Player, Side, TimeoutKind } from '../core/types';
 import type { Lineup } from '../core/lineup';
 import { rosterOf, sideName } from '../core/events';
 import { derive } from '../core/derive';
+import { defaultOpponent } from '../core/opponent';
 
 export type TeamTag = 'Home' | 'Away';
+
+/**
+ * The name a live half's header shows above its Home/Away tag (audit 0.11.0 F3), or null for the
+ * plain side name. Ours is the team name if one was typed; theirs is the opponent unless it is the
+ * automatic MM-DD default, which names the game, not the team.
+ */
+export function halfName(g: Game, side: Side): string | null {
+  const name = (side === 'us' ? g.info.team : g.info.opponent).trim();
+  if (!name || (side === 'them' && name === defaultOpponent(g.info.date))) return null;
+  return name;
+}
 
 export type PlayType = Extract<EventType, 'FG2' | 'FG3' | 'FTM' | 'FTX' | 'FOUL' | 'TECH'>;
 

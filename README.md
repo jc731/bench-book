@@ -17,7 +17,8 @@ with the book page after the game.
    date, MM-DD), the date, your team name, the coach, scorer and timekeeper. Your roster is saved
    on the device for next time; theirs is not.
 2. **Live.** Home is on the left with light cards, Away on the right with dark ones, and a small
-   **US** tag marks your team. Tap any player card on either team, then `+2`, `+3`, `FT made`,
+   **US** tag marks your team. A team name you entered heads its half, under a small Home or Away
+   (the opponent's date default, MM-DD, is not shown as a name). Tap any player card on either team, then `+2`, `+3`, `FT made`,
    `FT missed`, `Foul` or `Tech foul`. Each half ends with a dashed **+ Play** card for a play
    with no card: pick the play, then **Whose number?** credits a typed number (adding a new one to
    that team), or **No number** records it for the team only. Under it are the team's **Bench /
@@ -93,7 +94,7 @@ when adding to the interface:
 | **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen (Setup, Book), the Book tab chosen, focused fields |
 | **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
 | **Green** | Done and fine | Matched, Fixed, saved files |
-| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step closer to the half's background: grayer on Home (slate-100 on white), darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, a player's first three fouls, the bar |
+| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step closer to the half's background: grayer on Home (slate-100 on white), darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, the small Home/Away tag over a team name in a half header, a player's first three fouls, the bar |
 
 Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
 each kept at 3:1 or better for borders and dots and 4.5:1 for text:

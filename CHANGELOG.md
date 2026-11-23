@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- Each half of the live screen shows that team's name when one was entered, under a small Home or Away tag; a long name is cut short so Team fouls stays in view. An opponent left blank (named for the date) still reads just Home or Away (audit 0.11.0 F3).
+
 ## [0.11.0] - 2026-11-19
 
 - Log is now **Book**, on the bottom bar. Its Players tab shows each player's points and fouls by quarter, for Home or Away, with Team and Score rows; its Plays tab is the old Log. Book remembers the tab and the team until the app reloads. Tap a quarter cell to see that player's plays in that quarter (tap one to fix it) and add a missing play to that quarter in one tap. A 5th foul added late says "Tell the official." as on the live screen, in red.

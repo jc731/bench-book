@@ -9,7 +9,7 @@ import {
   END_GUARD_MS, endTapAllowed, stripPeriodText, subButtonText, undoAriaLabel,
 } from './live-logic';
 import type { Lineup } from '../core/lineup';
-import { outReason } from './live-logic';
+import { halfName, outReason } from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
   period, spanFrom: period, anchorBook: 0, anchorApp: 0, bookTotal: null, appTotal: 0, bookSpan: null, appSpan: 0,
@@ -267,5 +267,25 @@ describe('the Sub button', () => {
     expect(subButtonText(base)).toBe('Sub');
     expect(subButtonText({ ...base, floor: six, changedUnseen: true })).toBe('Sub');
     expect(subButtonText({ ...base, floor: ['a', 'b', 'c', 'd'], changedUnseen: true })).toBe('Sub');
+  });
+});
+
+describe('halfName: a live half shows the team name when one was entered (audit 0.11.0 F3)', () => {
+  // Expected values come from the owner's 2026-11-23 ruling on F3: our name if non-blank; the
+  // opponent unless it is the automatic MM-DD default (src/core/opponent.ts), which shows plain Home/Away.
+  const info = { team: 'Maple Hill', opponent: 'Cedar Run', date: '2026-11-19', homeAway: 'home' as const, coach: '', scorer: '', timer: '' };
+  const at = new Date('2026-11-19T10:00:00Z');
+  it('shows both names when both were typed', () => {
+    const g = newGame(info, [], at);
+    expect(halfName(g, 'us')).toBe('Maple Hill');
+    expect(halfName(g, 'them')).toBe('Cedar Run');
+  });
+  it('shows no name for a blank team or the default MM-DD opponent', () => {
+    const g = newGame({ ...info, team: '  ', opponent: '11-19' }, [], at);
+    expect(halfName(g, 'us')).toBeNull();
+    expect(halfName(g, 'them')).toBeNull();
+  });
+  it('keeps an opponent that only looks like a date when it is not this game\'s date', () => {
+    expect(halfName(newGame({ ...info, opponent: '11-20' }, [], at), 'them')).toBe('11-20');
   });
 });

@@ -13,7 +13,7 @@ import { ClockBand } from './ClockBand';
 import { newClock } from './clock-logic';
 import { loadPrefs } from '../core/storage';
 import {
-  BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, reconcileBanner,
+  BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, halfName, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, reconcileBanner,
   outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
 } from './live-logic';
 import { validateRoster } from './roster';
@@ -230,6 +230,7 @@ export function Live({ store }: { store: GameStore }) {
           <TeamHalf
             key={side}
             side={sideName(game, side)}
+            name={halfName(game, side)}
             tone={side === home ? 'light' : 'dark'}
             isUs={side === 'us'}
             roster={rosterOf(game, side)}
