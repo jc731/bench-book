@@ -197,6 +197,8 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   - Owner's candidate layout (2026-11-23, tabled): one full-width card per row in each half, a
     little taller, leaving room for +2, +3, Foul and maybe FT made/missed on the card. Check
     against 10 a side with no scroll at 390 × 664 before building.
+  - Activity swap (0.12.2): the owner finds 8 s (`SETTLE_MS`) long and suggests 2–3 s; left at 8
+    until after 1.0 (owner, 2026-11-23). Also for later: animate the two cards trading places.
   - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
   - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
     play mix, so the design isn't fitted to one game.
