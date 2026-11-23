@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-23
+
 - Each half of the live screen shows that team's name when one was entered, under a small Home or Away tag; a long name is cut short so Team fouls stays in view. An opponent left blank (named for the date) still reads just Home or Away (audit 0.11.0 F3).
 
 ## [0.11.0] - 2026-11-19
