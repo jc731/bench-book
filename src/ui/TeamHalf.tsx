@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { TeamDerived } from '../core/derive';
 import type { Lineup } from '../core/lineup';
 import { isOvertime } from '../core/periods';
@@ -124,6 +124,7 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, settleK
   const listRef = useRef<HTMLDivElement>(null);
   const swapShownAt = useRef<number | null>(null);
   const lastHandScrollAt = useRef<number | null>(null);
+  const holdTop = useRef<number | null>(null);
   const [swapText, setSwapText] = useState('');
   // Counts swaps that should scroll the list back to the top; the effect below does it after the render.
   const [scrollBack, setScrollBack] = useState(0);
@@ -145,7 +146,14 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, settleK
     const numbers = up.map((id) => r.find((p) => p.id === id)?.number).filter((n): n is string => n !== undefined);
     setSwapText(numbers.length > 0 ? movedUpText(numbers) : '');
     if (scrollBackAllowed(lastHandScrollAt.current, at)) setScrollBack((n) => n + 1);
+    else holdTop.current = listRef.current?.scrollTop ?? null;
   });
+  // Reordering the rows drops a scrolled list to the top (Chromium, measured 2026-11-24: scrollTop 412
+  // to 0 on a swap), so a list held by a hand scroll is put back before the new order paints.
+  useLayoutEffect(() => {
+    if (holdTop.current !== null && listRef.current) listRef.current.scrollTop = holdTop.current;
+    holdTop.current = null;
+  }, [layout.join(',')]);
   // Back to the top once the new order is drawn: a smooth scroll started before the rows move is cut
   // short when they do (seen in the 2026-11-24 screenshots).
   useEffect(() => {
