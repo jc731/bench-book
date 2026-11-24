@@ -173,8 +173,9 @@ skill in `.claude/skills/ux-audit/`.
 
 ### Contributing
 
-Bug reports from real games are the most useful thing. If you open an issue, describe what you
-tapped and what the screen showed; please don't attach a CSV with real players' names.
+Bug reports from real games are the most useful thing. Open an issue with the "Something went
+wrong at a game" form: describe what you tapped and what the screen showed. Please don't attach a
+Book CSV or Plays CSV with real players' names; the Usage CSV is fine, since it holds only counts.
 
 For code changes:
 

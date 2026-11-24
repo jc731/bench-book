@@ -92,6 +92,11 @@ they were first aimed at.
 - Share: post the score, or the stats after the game, to social media, so a team can send results
   out from the app (the phone's share sheet, with a text or image summary).
 
+- **Export without names** (owner, 2026-11-24): a choice on the export screen that writes the Book
+  and Plays CSVs with the name column blank (numbers only), so a scorer can attach one to a bug
+  report or share it publicly. Until then, the issue form asks for no names and accepts the Usage
+  CSV, which has none.
+
 ## Recorded, not planned
 
 - The quarter check compares team fouls too. Trigger: a second real game with a missed foul.

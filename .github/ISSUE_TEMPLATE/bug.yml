@@ -1,0 +1,45 @@
+name: Something went wrong at a game
+description: Report a bug or a confusing moment from a real game.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. Bug reports from real games are the most useful thing.
+
+        **Please don't attach a Book CSV or Plays CSV that has real players' names.** The repo is
+        public, and so is anything attached here. Describe what you tapped and what the screen
+        showed instead. The **Usage CSV** is fine to attach: it holds only counts (taps, plays,
+        undos), no names.
+  - type: textarea
+    id: tapped
+    attributes:
+      label: What you tapped
+      description: The steps, in order, as you'd tell another scorer. Use jersey numbers, not names.
+      placeholder: "Q2, tapped #23, then +2, then Done ..."
+    validations:
+      required: true
+  - type: textarea
+    id: saw
+    attributes:
+      label: What the screen showed, and what you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown at the bottom of the How-to's last section, or in the Usage CSV's app_version column.
+      placeholder: "1.0.1"
+  - type: input
+    id: phone
+    attributes:
+      label: Phone and browser
+      placeholder: "Android, Chrome, installed to home screen"
+  - type: checkboxes
+    id: names
+    attributes:
+      label: Names
+      options:
+        - label: Nothing I attached has real players' names in it.
+          required: true
