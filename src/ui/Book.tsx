@@ -93,7 +93,7 @@ export function Book({ store }: { store: GameStore }) {
   );
 }
 
-// Home rows light and Away rows dark, as on Live (D2). State colors per README § Colors, at the
+// Home rows light and Away rows dark, as on Live (D2). State colors per docs/colors.md, at the
 // shades TeamHalf uses on each tone: bars at 3:1 or better, text at 4.5:1 or better.
 const TONE = {
   light: {

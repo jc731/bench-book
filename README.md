@@ -1,13 +1,45 @@
 # Bench Book
 
-A free, open-source web app for the person keeping the scorebook at a junior high
-basketball game. Tap in both teams' points, fouls and timeouts as they happen (or just your
-own), reconcile against the paper book at the end of each quarter, and export CSVs that pair
+A free, open-source phone app for the person keeping the scorebook at a junior high basketball
+game. Tap in both teams' points, fouls and timeouts as they happen (or just your own team's),
+check the app against the paper book at the end of each quarter, and download CSV files that pair
 with the book page after the game.
 
-- No login, no server. Everything stays on your device.
-- Works offline once loaded. On iPhone/iPad, use **Add to Home Screen**.
+The paper scorebook stays the official record. Bench Book sits beside it.
+
+**Open it:** <https://quiet-swan-ee2365.netlify.app>. To look around without a real roster, add
+`?demo` to the address: <https://quiet-swan-ee2365.netlify.app/?demo>.
+
+<img src="public/howto/reading-the-screen.png" alt="The live screen in Q1: Home on the left with light player cards, Away on the right with dark ones, each card showing a number, name, points and foul dots; the score and Away shoots at the top; Undo, Book, End Q1 and the three-dot menu on the bottom bar." width="300">
+
+- No login, no server. Everything stays on your phone.
+- Works offline once loaded.
 - Rules: IESA / NFHS (team fouls reset each quarter, bonus on the 5th).
+- Status: 1.0. It has been used beside the paper book at real games, keeping both teams.
+
+## Contents
+
+- [Put it on your phone](#put-it-on-your-phone)
+- [How a game works](#how-a-game-works)
+- [What it does not do](#what-it-does-not-do)
+- [Privacy](#privacy)
+- [Development](#development)
+- [Project docs](#project-docs)
+- [License](#license)
+
+## Put it on your phone
+
+Open the link above in the phone's browser while you have a connection. After that first load,
+the app works with no signal.
+
+- **iPhone or iPad:** in Safari, tap **Share**, then **Add to Home Screen**. Open Bench Book from
+  the home screen icon from then on. Your roster stays saved between games.
+- **Android:** in Chrome, open the menu and choose **Add to Home screen** (or **Install app**).
+
+When a new version is ready, Setup shows an **Update available — reload** button. Nothing updates
+in the middle of a game unless you tap it.
+
+**How to use**, under the ⋯ button, explains everything below in the app, with screenshots.
 
 ## How a game works
 
@@ -15,34 +47,36 @@ with the book page after the game.
    roster under it (numbers, names optional) if you keep both teams. Both rosters are optional.
    Tap **Start game**. **Game details** holds the opponent (left blank, the game is named for its
    date, MM-DD), the date, your team name, the coach, scorer and timekeeper. Your roster is saved
-   on the device for next time; theirs is not.
+   on the phone for next time; theirs is not. ⋯ → **Edit teams** fixes a number, adds a name or
+   adds a player mid-game.
 2. **Live.** Home is on the left with light cards, Away on the right with dark ones, and a small
    **US** tag marks your team (⋯ → Experiments → **Our team on the left** puts yours on the left
-   either way; the colors stay with Home and Away). A team name you entered heads its half, under a small Home or Away
-   (the opponent's date default, MM-DD, is not shown as a name). Tap any player card on either team, then `+2`, `+3`, `FT made`,
-   `FT missed`, `Foul` or `Tech foul`. Each half ends with a dashed **+ Play** card for a play
-   with no card: pick the play, then **Whose number?** credits a typed number (adding a new one to
-   that team), or **No number** records it for the team only. Under it are the team's **Bench /
-   coach tech** card and its timeout buttons (`Full: 3`, `30s: 2`, plus `OT` in overtime), each
-   showing what is left; one at zero asks first. **Undo**, **Book**, **End Q** and **⋯** are on
-   the bottom bar. One line above the bar shows what was just entered, naming the team, and stays
-   until the next entry, with a chip at its right for a quarter still to check.
+   either way; the colors stay with Home and Away). A team name you entered heads its half, under
+   a small Home or Away (the opponent's date default, MM-DD, is not shown as a name). Tap any
+   player card on either team, then `+2`, `+3`, `FT made`, `FT missed`, `Foul` or `Tech foul`.
+   Each half ends with a dashed **+ Play** card for a play with no card: pick the play, then
+   **Whose number?** credits a typed number (adding a new one to that team), or **No number**
+   records it for the team only. Under it are the team's **Bench / coach tech** card and its
+   timeout buttons (`Full: 3`, `30s: 2`, plus `OT` in overtime), each showing what is left; one at
+   zero asks first. **Undo**, **Book**, **End Q** and **⋯** are on the bottom bar. One line above
+   the bar shows what was just entered, naming the team, and stays until the next entry, with a
+   chip at its right for a quarter still to check.
 3. **Subs (optional).** Every card looks the same; the five on the floor lead, and the cards after
-   them are a shade grayer (Home) or darker (Away). Each team's first five start (the **Starters** button, beside + Play, changes
-   them before that team's first play). A bench player who makes a play goes on the floor on
-   their own, so nothing is lost by skipping a sub, and a foul-out takes the player off. Their
-   card also trades places with the top-five card whose last play is oldest (a fouled-out one
-   first), but only once you stop tapping for about 8 seconds, so a card never moves under your
-   thumb; a recorded sub shows at once. For a sub,
-   tap the player checking in, then **#22 checks in** on their sheet, then who went out. The **Sub**
-   button (always gray) asks **Who went out?** (with a quiet
-   "longest without a play" hint), **Who came in?** or, for a line change, **Who's on the floor?**. Subs change no score
-   or count and are in neither CSV.
+   them are a shade grayer (Home) or darker (Away). Each team's first five start (the
+   **Starters** button, beside + Play, changes them before that team's first play). A bench player
+   who makes a play goes on the floor on their own, so nothing is lost by skipping a sub, and a
+   foul-out takes the player off. Their card also trades places with the top-five card whose last
+   play is oldest (a fouled-out one first), but only once you stop tapping for about 8 seconds, so
+   a card never moves under your thumb; a recorded sub shows at once. For a sub, tap the player
+   checking in, then **#22 checks in** on their sheet, then who went out. The **Sub** button
+   (always gray) asks **Who went out?** (with a quiet "longest without a play" hint), **Who came
+   in?** or, for a line change, **Who's on the floor?**. Subs change no score or count and are in
+   neither CSV.
 4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Book**, then
-   **Plays** and tap a row: it opens the fix, where you change the play, the team, the player or the quarter,
-   or delete it. **Book → Players** shows each player's points and fouls by quarter, for either team,
-   like the book's rows; tap a quarter cell to list that player's plays there, fix one, or add a
-   missing play to that quarter (a 5th foul added late says Tell the official).
+   **Plays** and tap a row: it opens the fix, where you change the play, the team, the player or
+   the quarter, or delete it. **Book → Players** shows each player's points and fouls by quarter,
+   for either team, like the book's rows; tap a quarter cell to list that player's plays there,
+   fix one, or add a missing play to that quarter (a 5th foul added late says Tell the official).
 5. **Check each quarter.** **End Q1** advances at once. When there is time, tap the check chip,
    enter the game score after the quarter from the book's running score, and the app checks the
    quarter's own points against its plays. Their score, if you type it, only warns when it is
@@ -53,202 +87,117 @@ with the book page after the game.
    an ended game back in play.
 7. **Export.** From Final, download the Book CSV (pairs with the paper book page, with a block
    for each team you recorded; plays with no number get a "No number" row, so each block adds
-   up) and the Plays CSV (every entry, in order, each marked Home or
-   Away).
+   up) and the Plays CSV (every entry, in order, each marked Home or Away). A separate Usage CSV
+   counts taps and fixes for the game, with no names.
 
-**How to use**, under the ⋯ button, explains all of this in the app, with screenshots.
+**Experiments**, under ⋯, holds settings that may change or go away: **Our team on the left**,
+and an opt-in **Timeout clock** (off by default) that counts down 60 or 30 seconds when a timeout
+is taken. On Android the phone buzzes at half time and at 0; iPhone browsers don't let a web app
+vibrate, so there the clock is silent.
 
 **Demo mode.** Add `?demo` to the address to open Setup with both rosters filled with invented
 players, for trying the app or showing it off. Demo keeps its own saved game and rosters, so a
 real roster or game on that phone is never touched; a gray **Demo** strip shows at the top, and
-⋯ > **Reset demo** starts it over.
+⋯ → **Reset demo** starts it over.
 
-Rules: IESA / NFHS. Game data is purged 72 hours after the last change; the saved roster is kept.
+## What it does not do
+
+- It is not the official record. If the app and the book disagree, the book wins; the quarter
+  check is there to find the difference.
+- No game clock or shot clock. The only clock is the optional timeout countdown.
+- No missed field goals, rebounds, assists, turnovers, steals or blocks.
+- One rule set, IESA / NFHS. Other rules can't be configured.
+- No syncing between phones and no backup. A game lives on the one phone it was entered on, and
+  is cleared 72 hours after its last change, so download the CSVs before then. The saved roster
+  is kept.
+- No comparing with the other team's scorer, and no posting or sharing results from the app.
+
+Some of these are ideas for later; see [`docs/backlog.md`](docs/backlog.md).
 
 ## Privacy
 
-Nothing leaves the device. There is no server, no account, no analytics and no third-party
-scripts or fonts. Roster names and game data live in the browser's local storage only.
+Nothing leaves the phone. There is no server, no account, no analytics and no third-party
+scripts or fonts. Roster names and game data live in the browser's local storage only. The CSV
+files are written only when you tap to download them, and go wherever your phone saves downloads.
 
 ## Development
 
+**Stack:** [Astro](https://astro.build) 7 (static output) with [Preact](https://preactjs.com)
+components, Tailwind CSS 4, TypeScript, and `@vite-pwa/astro` (Workbox) for the offline service
+worker. Tests use [Vitest](https://vitest.dev) and [Playwright](https://playwright.dev).
+Package manager: pnpm.
+
 ```bash
 pnpm install
-pnpm dev        # dev server
-pnpm dev:demo   # dev server opened at /?demo: both rosters filled with invented players, in demo's own storage
-pnpm build      # static build to dist/
-pnpm preview    # serve the built site
-pnpm test       # unit tests (vitest)
-pnpm test:e2e   # scripted games in a real browser (Playwright, iPhone 13 profile); the bonus game prints taps per quarter
-pnpm check      # the gate: astro check, tsc, unit tests
+pnpm dev         # dev server
+pnpm dev:demo    # dev server opened at /?demo: both rosters filled with invented players, in demo's own storage
+pnpm build       # static build to dist/
+pnpm preview     # serve the built site
+pnpm test        # unit tests (vitest)
+pnpm test:e2e    # scripted games in a real browser (Playwright, iPhone 13 profile); the bonus game prints taps per quarter
+pnpm check       # the per-commit gate: astro check, tsc, unit tests
 pnpm howto:shots # refresh the How-to screenshots in public/howto/ (pnpm release runs it)
 ```
 
 The first `pnpm test:e2e` run needs the browser once: `pnpm exec playwright install chromium`.
 
-## Colors
+**Layout:**
 
-Each color has one job, so a color on screen says what kind of thing it is. Keep to these
-when adding to the interface:
+| Path | What's there |
+|---|---|
+| `src/core/` | Game logic with no UI: the play list, totals derived from it, the quarter check, lineup, storage, CSV export |
+| `src/ui/` | Preact screens and sheets; the testable logic for each sits beside it in `*-logic.ts` |
+| `src/ui/howto-content.ts` | The in-app How-to text |
+| `src/pages/index.astro` | The one page |
+| `e2e/` | Playwright games played through the real interface |
+| `scripts/` | The release script, the How-to screenshot run, and UX-audit helpers |
+| `docs/` | Backlog, color rules, design specs and plans, audit reports |
 
-| Color | Means | Examples |
-|---|---|---|
-| **Amber** | Caution: something to look at, never "tap here" | a player at 4 fouls, the bonus, team fouls near the bonus, bench techs, a check that doesn't match (and the Book cell sheet's "check now 2 over" line), a file not saved yet, Not saving, the timeout clock's last half |
-| **Red** | Out, or ends something for good | an out player (and the Book cell sheet's out line), End Q4 / OT (can end the game), Discard when the game is not exported, the timeout clock's Time |
-| **Blue** (`sky`) | The action to take, links, selection, focus | End Q1–Q3, Check, Undo, Redo, Home/Away chosen (Setup, Book), the Book tab chosen, focused fields |
-| **White fill** | The main button of a screen or sheet | Start game, Save, Done, Book CSV, Plays CSV |
-| **Green** | Done and fine | Matched, Fixed, saved files |
-| **Gray** (`slate`) | Everything else: data, ordinary buttons, neutral state | the cards (one style, outlines slate-600 on Home and slate-400 on Away; the cards after the top five are one fill step closer to the half's background: grayer on Home (slate-100 on white), darker on Away), the Sub button, the sub sheet's "just in" tag and "longest without a play" hint, the Demo strip, the small Home/Away tag over a team name in a half header, a player's first three fouls, the bar |
+**Tests.** Unit tests sit next to the code as `*.test.ts`. The Playwright specs in `e2e/` build
+the site and play scripted games on an iPhone 13-sized screen, checking the screen and the
+exported CSVs. Test data and screenshots use invented names only.
 
-Home cards are light (white) and Away cards dark, so the state colors have two sets of shades,
-each kept at 3:1 or better for borders and dots and 4.5:1 for text:
+**Releases.** Changes are listed in [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog). New
+user-visible work gets a bullet under `## [Unreleased]`. A release is cut with
+`pnpm release <patch|minor|major>`: it runs `pnpm check`, the full e2e suite and the How-to
+screenshots, then bumps `package.json`, moves the Unreleased bullets under the new version,
+commits and tags. It never pushes. Version numbers follow the product's phases (0.x on the way to
+1.0, 2.0 and 3.0 for the later phases); `CLAUDE.md` has the details.
 
-| Card | Warn border and dots (4 fouls; Bench card with techs) | Out | Warn text (team fouls near the bonus, tech count) |
-|---|---|---|---|
-| Dark (Away) | amber-400 | red-500 border and dots, red-400 OUT | amber-300 |
-| Light (Home) | amber-600 (amber-700 on the cards after the top five and on the Bench card: amber-600 measured 2.92:1 on slate-100) | red-600 border, dots and OUT | amber-800 |
+**Deploy.** Pushing `master` deploys to Netlify (build `pnpm build`, publish `dist`, from
+`netlify.toml`).
 
-A warned card's number, name and points keep the card's ordinary text color (slate-900 on a
-light card, white on a dark one); only its border and dots turn amber.
+**UX audit.** At milestones, a first-time-user audit plays a scripted game blind in a phone-sized
+browser and writes a report to `docs/ux-audit/reports/`. It runs as the `/ux-audit` Claude Code
+skill in `.claude/skills/ux-audit/`.
 
-A status shown on a button (the amber check chip for a quarter that doesn't match) is still a
-state color: the color says what is true, and the button shape says it can be tapped.
+### Contributing
 
-## Releases
+Bug reports from real games are the most useful thing. If you open an issue, describe what you
+tapped and what the screen showed; please don't attach a CSV with real players' names.
 
-Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
-`pnpm release <patch|minor|major>`, which never pushes.
+For code changes:
 
-## Backlog
+- Run `pnpm check`, and `pnpm test:e2e` for any change to the interface or `e2e/`.
+- Use invented names only in tests, fixtures and screenshots. The repo is public.
+- Follow the color rules in [`docs/colors.md`](docs/colors.md): each color has one job.
+- Write US English, and keep player wording gender-neutral.
+- Add a `CHANGELOG.md` bullet under `## [Unreleased]` for anything a scorer would notice.
 
-**For 1.0** (the checklist in `CLAUDE.md`):
+`CLAUDE.md` holds the working rules the maintainer and their coding assistant follow.
 
-- ~~Opponent team stats on the live screen: their fouls (and so our bonus), their timeouts,
-  their points by player number.~~ Done in 0.8: both teams on one screen, by number, in both
-  CSVs and in the quarter check.
-- ~~**0.9: active lineup with substitutions.** The five on the floor sit at the top of their half
-  and the bench below. A sub moves players between floor and bench, and nothing is hidden, so
-  subbing is optional and a missed sub costs nothing. A fouled-out player prompts a sub.~~ Done
-  in 0.9: floor solid and bench ghosted, a Sub button per team, the sub sheet's three questions,
-  60 px cards so 10 players a half still fit an iPhone 13, and with 11 or more the floor stays in
-  view while only the bench scrolls. Design:
-  `docs/superpowers/specs/2026-11-17-active-lineup-design.md`.
-- ~~**1.0: a player stats page** (on the checklist, 2026-11-18): each player's points and fouls by
-  quarter, for both teams, and a quick way to add or fix a play for a given quarter, mid-game or at
-  the quarter's end.~~ Done in 0.11: Log became Book, with a Players tab (points and fouls by
-  quarter for Home or Away, with Team and Score rows) and a Plays tab (the old Log). Tapping a
-  quarter cell lists that player's plays there, one tap from the fix sheet, and adds a missing play
-  to that quarter. A play added or re-credited after its quarter never moves anyone onto the floor.
-  Later stats (rebounds, assists) would live here. Design:
-  `docs/superpowers/specs/2026-11-19-player-stats-design.md`.
-- ~~**Before 1.0: back toward neutral cards** (owner, 2026-11-18, after the first real game on 0.9).~~
-  Done in 0.10: the cards look the same on the floor and the bench (no ghosted bench, no "bench"
-  tag, no amber Sub prompt), and the cards after the top five are one shade grayer (Home) or darker
-  (Away). The top five still sit at the top of each half.
-- **Starters and the lineup: revisit** (owner, 2026-11-19; still torn after the 2026-11-18 game).
-  With the floor/bench emphasis gone, an easy way to set starters or rearrange the lineup matters
-  more, for example a Starters toggle in team Setup. The owner hasn't settled what the lineup should
-  do. Trigger: the owner settles what the lineup should do; then design it again with mockups,
-  reviewed by the same group. Design the cards with room for 1.1's one-tap buttons, so the cards
-  aren't redone twice.
-  - Audit v0.11.0 (2026-11-20, F1): a first-timer did not see the one-shade floor/bench cue.
-- **0.9.x: a line-change view** for several subs at once, including several missed ones: move or
-  swap multiple players between floor and bench in one place (drag and drop, or a tap-to-swap).
-  Design note: the 0.9 critics rejected drag for single subs (hard to discover, and it fights the
-  bench's scrolling), and "Who's on the floor?" already toggles several players at once, so the
-  design should start from what a real game shows that sheet missing.
-- **0.9.x: from the 0.9.0 audit and persona reviews** (2026-11-17; check against tonight's game):
-  - Cards regroup after every sub (three reviewers): the incoming player could take the outgoing
-    player's slot instead.
-  - "Who's on the floor?": a tapped player stays under the old heading (audit F3, first-timer).
-  - A sub that belongs to an earlier quarter has no home: adding a missed foul from the check puts
-    the player on the floor now (audit F1). The check's Add play could ask who went out.
-    Audit v0.11.0 (2026-11-20, F2): 0.11 no longer promotes, but the Q2 sub went in as a Q3 one.
-  - A new opposing player can only be added after picking a play (audit F2).
-    Audit v0.11.0 (2026-11-20, F4): same order again, milder ("a small difference").
-  - With 11+ players, nothing hints that the bench scrolls; cut-off cards look like a glitch.
-  - "Stop asking this game" sits beside No number and can only be undone right away.
-  - Explain the bonus and amber team fouls in the How-to; say the first five start on Setup;
-    "Full: 3" doesn't say left or used; two Save buttons on the check with a play open.
-  - Plays CSV for spreadsheets: #0 and #00 merge in Excel; no date/opponent columns; explain `*`.
-  - Accessibility (brighter solid-card borders done in 0.9.2): "pressed" rows in Who went out?
-    read wrong to a screen reader; 40 px timeout buttons; larger phone text pushes timeouts
-    below the fold.
+## Project docs
 
-**After 1.0 (1.x):**
+- [`docs/backlog.md`](docs/backlog.md): what might come next, with the reasons and triggers.
+- [`docs/colors.md`](docs/colors.md): what each color means in the interface.
+- [`docs/superpowers/specs/`](docs/superpowers/specs/): design specs, starting with
+  [`2026-11-10-bench-book-v1-design.md`](docs/superpowers/specs/2026-11-10-bench-book-v1-design.md).
+- [`docs/ux-audit/reports/`](docs/ux-audit/reports/): first-time-user audit reports.
 
-- **1.1: efficiency (UI refinement).** Measure taps and fixes per play, then cut them. Direction
-  (owner, 2026-11-18): one tap on a card for +2, +3 and Foul; free throws stay a popup.
-  - First real game on 0.9 (2026-11-17, both teams, OT, a foul-out, no techs or bonus; the CSV
-    stays out of the repo because it has real names): 68 entries, of which 19 2's, 18 fouls,
-    13 FT made, 9 FT missed, 6 3's and 3 timeouts. About 1.96 taps per entry today; with one-tap
-    2/3/Foul and FTs unchanged, about 1.3 (43 of 68 become one tap).
-  - Target: the owner's 1.25–1.5 is an arbitrary number. Track two numbers together: taps per
-    entry on a real game's mix, and fixes per game (undos, Book edits, late catch-up entries), so a
-    faster card that causes more mis-taps doesn't count as a win.
-  - Data points from that game, not bugs: free throws come when subs are busiest, so a pair often
-    gets broken up (close the sheet, record the sub, come back), and one pair landed on two
-    players; missed free throws were caught up in a burst later. The owner's attention fades late in
-    each half (a 5th foul for one player is missing from the log, likely in Q2 or Q4). The player
-    stats page and the quarter check are where these get caught.
-  - Today's cards are about 88 px wide and 60 px tall at 390 px (computed from the layout,
-    2026-11-18), so three 44 px one-tap buttons (+2, +3, Foul) don't fit on a card. 1.1 needs its
-    own layout decision.
-  - Owner's candidate layout (2026-11-23, tabled): one full-width card per row in each half, a
-    little taller, leaving room for +2, +3, Foul and maybe FT made/missed on the card. Check
-    against 10 a side with no scroll at 390 × 664 before building.
-  - Activity swap (0.12.2): the owner finds 8 s (`SETTLE_MS`) long and suggests 2–3 s; left at 8
-    until after 1.0 (owner, 2026-11-23). Also for later: animate the two cards trading places.
-  - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
-  - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
-    play mix, so the design isn't fitted to one game.
-- ~~**Timeout clock: buzz and auto-close** (owner, 2026-11-24).~~ Done after 1.0: a buzz at the
-  warning point and at 0, and the clock closes 10 s after 0. Android only: iPhone has no
-  Vibration API for web apps, and the owner wants no beep instead (2026-11-24).
-- **Card order: an option to keep cards sorted by jersey number** (owner, 2026-11-24). Subs
-  continue to prove optional: the 2026-11-23 game recorded none. A customization setting, next to
-  "Our team on the left", choosing between the activity swap and a fixed number order. Trigger:
-  the 1.1 card layout, since full-width cards change what ordering is for.
-- **Small safety nets** (owner, 2026-11-23, from audit v0.11.0: "prob should add"):
-  - A warning when a play is credited to a bench player. Today it is taken silently and the
-    player goes on the floor (audit F5: the scripted slip at event 20, caught only by the
-    confirmation line). 0.10 removed "now on the floor" on purpose, so word this as a check on
-    the slip, not the old lineup prompt.
-  - A confirm when ending Q1 to Q3, which take one tap today (audits v0.6.0, v0.9.0, v0.11.0 F6;
-    no quarter has been ended by mistake yet). It adds a tap at every quarter end, so weigh it
-    against 1.1's tap counts. Ending Q4 already asks overtime or end game.
-- **Maybe: nudges when something happens**, e.g. a foul while the other team is in the bonus
-  suggests free throws for the fouled team. Only as a way to make things better, not a rule engine.
+The product is built in phases. Phase 1 (1.0) is a companion to the paper book. Phase 2 would
+update the book after each quarter from the app, and Phase 3 would let the app replace the book.
+Neither has a date.
 
-- Cross-scorer check at halftime and end of game: compare what you recorded with the other
-  team's scorer and talk through any difference.
-- Tablet-size release test.
-- Notifications: alerts for timeouts remaining, a player in foul trouble or fouled out, the team
-  fouls reaching the bonus, and so on. Open question for the design: on-device alerts for the
-  scorer, or push notifications to other people's phones (a coach, a parent), which would need
-  a server the app doesn't have today.
-- Share: post the score, or the stats after the game, to social media, so a team can send results
-  out from the app (the phone's share sheet, with a text or image summary).
+## License
 
-**Recorded, not planned:**
-
-- The quarter check compares team fouls too. Trigger: a second real game with a missed foul.
-- Merge a stray number into the real player in Edit teams. Trigger: a stray number with more than
-  about 2 plays.
-- The Book CSV marks no foul-out, and that is fine (owner, 2026-11-23): the row's 5 fouls say it,
-  and a reader can assume the rest. Raised by audits v0.6.0, v0.9.0 and v0.11.0 F8; don't
-  re-raise it while the row shows the 5 fouls. Trigger: a scorer or the book needing the
-  foul-out quarter from the file.
-
-**Much later:**
-
-- Read a roster from a photo of the book (OCR). Handwriting recognition on the phone is a
-  multi-megabyte download and reads poorly.
-
-## Deploy
-
-Connect the repo in Netlify (build `pnpm build`, publish `dist`).
-
-Design: [`docs/superpowers/specs/2026-11-10-bench-book-v1-design.md`](docs/superpowers/specs/2026-11-10-bench-book-v1-design.md).
-
-Licensed under [MIT](LICENSE).
+[MIT](LICENSE).

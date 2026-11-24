@@ -29,7 +29,7 @@ interface Props {
   onTimeout: (kind: TimeoutKind) => void;
 }
 
-// One job per color (README § Colors) on both tones. An element whose border shows a state (a card,
+// One job per color (docs/colors.md) on both tones. An element whose border shows a state (a card,
 // Bench) gets exactly one border-color class: two on one element resolve by stylesheet order, not class order. The warn, out and bench-tech colors differ by tone because
 // amber-400 and red-500 sit under 3:1 on a white card; the light shades are amber-600 and red-600.
 // Every card is solid (D1); a card after the top five takes the `rest` fill, one step toward the half's

@@ -17,6 +17,8 @@ The product is built in phases, called **Phase 1/2/3**. Version numbers follow t
 
 ### The 1.0 checklist
 
+The backlog (everything off this list) is `docs/backlog.md`.
+
 Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met at a real game on
 0.4, so it no longer marked anything. The list is fixed: anything not on it goes to 1.x.
 
@@ -83,7 +85,7 @@ runs as `/ux-audit`.
 ## Style
 
 - Colors have one job each (amber caution, red out, blue action, white main button, green done,
-  gray the rest). The table is in `README.md` § Colors: follow it, and update it with any change.
+  gray the rest). The table is in `docs/colors.md`: follow it, and update it with any change.
 - US English in all prose, comments and commit messages.
 - Commit messages carry no Claude or Anthropic attribution trailer.
 - Test data uses invented names only. The repo is public.

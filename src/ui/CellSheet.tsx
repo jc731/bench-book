@@ -19,7 +19,7 @@ export interface CellRef {
 
 type Tone = 'plain' | 'amber' | 'red';
 
-// README § Colors: red for out, amber for caution (a check that no longer matches), gray the rest.
+// docs/colors.md: red for out, amber for caution (a check that no longer matches), gray the rest.
 const TONE_CLASS: Record<Tone, string> = { plain: 'text-slate-200', amber: 'text-amber-300', red: 'text-red-300' };
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
