@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-24
+
 - A player's points no longer touch the +2 button on a two-digit number with two-digit points: the number area keeps 4 px clear on its right.
 
 ## [1.1.0] - 2026-11-24
