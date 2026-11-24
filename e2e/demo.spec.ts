@@ -48,7 +48,7 @@ test('?demo opens Setup with both demo rosters, shows the Demo marker on every s
   await expect(page.getByRole('banner')).toBeVisible();
   await expect(marker).toBeVisible();
   // Play something.
-  await page.getByRole('button', { name: /^#3 Sam Rivera,/ }).click();
+  await page.getByRole('button', { name: /^#3,/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
   await expect(marker).toBeVisible();
   for (const view of ['Book', 'More']) {
@@ -65,13 +65,14 @@ test('?demo opens Setup with both demo rosters, shows the Demo marker on every s
   expect(await read(page)).toEqual(real);
   const demoKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('benchbook-demo:')).sort());
   // Task 3/D7: a demo game also keeps its own usage record, under the demo prefix, never a real key.
-  expect(demoKeys.map((k) => k.replace(/^(benchbook-demo:usage:).+/, '$1<id>'))).toEqual(['benchbook-demo:game', 'benchbook-demo:roster', 'benchbook-demo:usage:<id>']);
+  // 1.1: the first live screen saves the row tip's shown flag (Prefs.rowTipShown), in the demo's own prefs.
+  expect(demoKeys.map((k) => k.replace(/^(benchbook-demo:usage:).+/, '$1<id>'))).toEqual(['benchbook-demo:game', 'benchbook-demo:prefs', 'benchbook-demo:roster', 'benchbook-demo:usage:<id>']);
 
   // Without ?demo the real game is still there, with no marker.
   await page.goto('/');
   await expect(page.getByText('Real Opp').or(page.getByRole('banner')).first()).toBeVisible();
   await expect(page.getByText('Demo', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^#9 Real Player,/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^#9,/ })).toBeVisible();
   expect(await read(page)).toEqual(real);
 });
 
@@ -123,7 +124,7 @@ test('the Demo marker covers no visible button on Setup, Live, Book or the quart
   await expect(page.getByRole('heading', { name: 'New game' })).toBeVisible();
   expect(await overlaps()).toEqual([]); // Setup
   await ui(page).startGame();
-  await page.getByRole('button', { name: /^#3 Sam Rivera,/ }).click();
+  await page.getByRole('button', { name: /^#3,/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: '+2', exact: true }).click();
   expect(await overlaps()).toEqual([]); // Live
   await page.getByRole('button', { name: 'Book', exact: true }).click();

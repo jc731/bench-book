@@ -9,6 +9,14 @@ import { OPPONENT, TEAM, ui } from './fixture';
 const exact = (name: string) => ({ name, exact: true });
 const half = (page: Page, side: 'Home' | 'Away') => page.getByRole('region', exact(side));
 
+/** Home #4's popup is titled with the player's name (`namedWho`), then closed with Done. */
+async function expectSheetName(page: Page, name: string) {
+  await half(page, 'Home').getByRole('button', { name: /^#4,/ }).click();
+  await expect(page.getByRole('dialog')).toHaveAccessibleName(`#4 ${name} (Home)`);
+  await page.getByRole('dialog').getByRole('button', exact('Done')).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+
 async function openEditTeams(page: Page) {
   await page.getByRole('navigation').getByRole('button', exact('More')).click();
   await page.getByRole('dialog').getByRole('button', exact('Edit teams')).click();
@@ -45,14 +53,17 @@ test('Edit teams: rename a player with plays, add #33 to theirs, Save; Undo rest
   await page.getByLabel('Their player 3 number', { exact: true }).fill('33');
   await page.getByRole('button', exact('Save')).click();
 
-  // Back on Live: the new name keeps the play (D12: same player id), #33 has a card (D13: appended).
-  await expect(half(page, 'Home').getByRole('button', { name: /^#4 Player Uno, 2 points, 0 fouls/ })).toBeVisible();
+  // Back on Live: the new name keeps the play (D12: same player id), #33 has a row (D13: appended).
+  // 1.1 rows show no names, so the name is read from the player's popup title.
+  await expect(half(page, 'Home').getByRole('button', { name: /^#4, 2 points, 0 fouls/ })).toBeVisible();
+  await expectSheetName(page, 'Player Uno');
   await expect(half(page, 'Away').getByRole('button', { name: /^#33, 0 points/ })).toBeVisible();
   await app.expectToast('Edited teams'); // D11: one undoable entry, "Edited teams"
 
   // Review Focus 3 / I6: Undo restores the old name and removes #33.
   await app.undo();
-  await expect(half(page, 'Home').getByRole('button', { name: /^#4 Player One, 2 points, 0 fouls/ })).toBeVisible();
+  await expect(half(page, 'Home').getByRole('button', { name: /^#4, 2 points, 0 fouls/ })).toBeVisible();
+  await expectSheetName(page, 'Player One');
   await expect(half(page, 'Away').getByRole('button', { name: /^#33,/ })).toHaveCount(0);
 
   // Review Focus 3 / I10: the usage record still counts the save, and the undo (D8: team_edits, undos).
@@ -70,7 +81,8 @@ test('Edit teams: Cancel leaves the game unchanged (D10)', async ({ page }) => {
   await page.getByLabel('Their player 3 number', { exact: true }).fill('33');
   await page.getByRole('button', exact('Cancel')).click();
 
-  await expect(half(page, 'Home').getByRole('button', { name: /^#4 Player One, 2 points, 0 fouls/ })).toBeVisible();
+  await expect(half(page, 'Home').getByRole('button', { name: /^#4, 2 points, 0 fouls/ })).toBeVisible();
+  await expectSheetName(page, 'Player One');
   await expect(half(page, 'Away').getByRole('button', { name: /^#33,/ })).toHaveCount(0);
   // Reopening shows the game's teams, not the cancelled draft.
   await openEditTeams(page);

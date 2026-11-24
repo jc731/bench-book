@@ -118,7 +118,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.startGame();
     await app.expectStrip({ us: 0, opp: 0, period: 'Q1', fouls: 0, bonus: false, timeouts: FULL_TIMEOUTS });
     await expectNoOverflow(page);
-    await app.expectCardsFit();
+    await app.expectControlsInView();
     await app.expectBarOneRow();
   });
 
@@ -215,7 +215,7 @@ test('full game: every number on screen and in both CSVs', async ({ page }) => {
     await app.foul('Player Four');
     await app.expectToast('#12 Player Four (Home) out, 5 fouls. Tell the official.');
     await app.expectEntryWhole();
-    await app.expectCardsFit();
+    await app.expectControlsInView();
     await app.expectPlayer('Player Four', 0, 5, true);
     await app.timeout('30s');
     await app.tech('Player Five');

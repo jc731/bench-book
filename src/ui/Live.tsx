@@ -11,11 +11,12 @@ import { subRowText, type SubStart } from './sub-logic';
 import { FeedbackLine } from './FeedbackLine';
 import { ClockBand } from './ClockBand';
 import { newClock } from './clock-logic';
-import { loadPrefs } from '../core/storage';
+import { loadPrefs, savePrefs } from '../core/storage';
 import { sideOrder } from './stats-logic';
 import {
   BENCH_TECH_TEXT, END_GUARD_MS, TAKE_ANYWAY, halfName, endTapAllowed, namedWho, endChoices, endPeriodLabel, endSlot, feedbackLine, foulLabel, playLabel, playToast, reconcileBanner,
   outReason, subLabel, timeoutLabel, timeoutsLeft, undoAriaLabel, zeroTimeoutWarning, type PlayType, type Toast,
+  ROW_TIP, isDoubleTap, quickAction, quickKey, type QuickPlay, type QuickTap,
 } from './live-logic';
 import { validateRoster } from './roster';
 import { notExportedText } from './reconcile-logic';
@@ -76,6 +77,17 @@ export function Live({ store }: { store: GameStore }) {
     setEndCooling(true);
     act();
   };
+  // The last row +2 or Foul, so a double tap on the same button records once (spec invariant 3).
+  const lastQuick = useRef<QuickTap | null>(null);
+  // 1.1: the first live screen on a device shows the row tip once, as the feedback line's entry until a
+  // play replaces it. The flag is saved as soon as a game shows it, so a second game never does.
+  const [tip, setTip] = useState<string | null>(() => (loadPrefs(store.storage, store.keys).rowTipShown ? null : ROW_TIP));
+  useEffect(() => {
+    if (tip && game) savePrefs(store.storage, { ...loadPrefs(store.storage, store.keys), rowTipShown: true }, store.keys);
+  }, [Boolean(game)]);
+  useEffect(() => {
+    if (toast && tip) setTip(null);
+  }, [toast]);
   const pick = (side: Side, p: Player | null) => {
     sheetOpenedWith.current = toast;
     setAsking(null);
@@ -104,6 +116,15 @@ export function Live({ store }: { store: GameStore }) {
       const next = appendEvent(h, { type, ...(p ? { playerId: p.id } : {}), ...sided(side) }, now);
       return { game: next, label: playToast(g, side, p, type) };
     }, '');
+  };
+  /** A row's +2 or Foul: the same record() as the popup's buttons. An out player's row opens the popup and its warning instead. */
+  const quick = (side: Side, p: Player, type: QuickPlay) => {
+    const key = quickKey(side, p.id, type);
+    const now = Date.now();
+    if (isDoubleTap(lastQuick.current, key, now)) return;
+    lastQuick.current = { key, at: now };
+    if (quickAction(lineOf({ side, p })) === 'open') pick(side, p);
+    else record(side, p, type);
   };
   const play = (type: PlayType) => {
     if (!picked) return;
@@ -208,7 +229,7 @@ export function Live({ store }: { store: GameStore }) {
 
   const end = endSlot(period, Boolean(game.endedAt));
   const unexported = notExportedText(game, new Date());
-  const line = feedbackLine(banner, unexported, toast);
+  const line = feedbackLine(banner, unexported, toast, tip);
   // Home light and Away dark, always. Home sits on the left unless "Our team on the left" is on
   // (Experiments), which puts ours there whether Home or Away; the strip follows the halves.
   const home = homeSide(game);
@@ -240,6 +261,7 @@ export function Live({ store }: { store: GameStore }) {
             settleKey={`${game.id}:${(game.subs ?? []).filter((s) => s.side === side).length}`}
             period={period}
             onPick={(p) => pick(side, p)}
+            onQuick={(p, type) => quick(side, p, type)}
             onTeamPlay={() => pick(side, null)}
             onBench={() => openBench(side)}
             onSub={() => setSubbing({ side, start: null })}

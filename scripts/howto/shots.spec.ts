@@ -29,7 +29,7 @@ test('How-to screenshots', async ({ page }) => {
   await app.startGame();
   // Their cards, by number: tap, then the play.
   const their = async (no: string, plays: string[]) => {
-    await app.half('Away').getByRole('button', { name: new RegExp(`^#${no} `) }).click();
+    await app.half('Away').getByRole('button', { name: new RegExp(`^#${no},`) }).click();
     for (const p of plays) await dialog().getByRole('button', { name: p, exact: true }).click();
     await expect(dialog()).toHaveCount(0);
   };

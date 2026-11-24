@@ -121,8 +121,8 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await app.score('Player One', '+2');
     await their(page, '4', ['+3']);
     await app.expectToast('#4 (Away) +3');
-    await expect(app.card('Player One')).toHaveAccessibleName('#4 Player One, 2 points, 0 fouls');
-    await expect(theirCard(page, '4')).toHaveAccessibleName('#4 Rival One, 3 points, 0 fouls');
+    await expect(app.card('Player One')).toHaveAccessibleName('#4, 2 points, 0 fouls, more plays');
+    await expect(theirCard(page, '4')).toHaveAccessibleName('#4, 3 points, 0 fouls, more plays');
     // A forgotten sub: #44 scores from the bench. They go on silently (D4); the Sub button stays a gray Sub (D3).
     await app.score('Player Seven', '+2');
     await app.expectToast('#44 (Home) +2');
@@ -152,7 +152,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(app.subButton('Home')).toHaveText('Sub');
     await strip(7, 5, 'Q1', 1);
     await expect(theirs(page).getByText('Team fouls 2', { exact: true })).toBeVisible();
-    await expect(theirCard(page, '24')).toHaveAccessibleName('#24 Rival Two, 0 points, 2 fouls');
+    await expect(theirCard(page, '24')).toHaveAccessibleName('#24, 0 points, 2 fouls, more plays');
 
     await app.endPeriod('Q1');
     await app.checkQuarter('Q1', 7, 5);
@@ -174,7 +174,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await their(page, '15', ['+2']);
     await their(page, '24', ['Foul']);
     await app.expectToast('#24 Rival Two (Away) out, 5 fouls. Tell the official.');
-    await expect(theirCard(page, '24')).toHaveAccessibleName('#24 Rival Two, 0 points, 5 fouls, out');
+    await expect(theirCard(page, '24')).toHaveAccessibleName('#24, 0 points, 5 fouls, out, more plays');
     await expect(app.subButton('Away')).toHaveText('Sub');
     // The out warning shows on their sheet and every play is grayed out.
     await theirCard(page, '24').click();
@@ -275,7 +275,7 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     // Their seventh player: they join on the bench, and their play puts them on.
     await app.expectToast('#33 (Away) +3');
     await expect(theirCard(page, '33')).toHaveCount(1);
-    await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 3 points, 0 fouls');
+    await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 3 points, 0 fouls, more plays');
     // Nobody tells the app who they replaced, and nothing asks: the Sub button just reads Sub.
     await expect(app.subButton('Away')).toHaveText('Sub');
     await app.score('Player One', '+2');
@@ -295,14 +295,14 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await dialog.getByRole('button', exact('FT made')).click();
     await dialog.getByRole('button', exact('Done')).click();
     await expect(theirCard(page, '33')).toHaveCount(1);
-    await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 7 points, 0 fouls');
+    await expect(theirCard(page, '33')).toHaveAccessibleName('#33, 7 points, 0 fouls, more plays');
     await app.score('Player Three', '+2');
     await app.score('Player Two', '+3');
     await strip(22, 18, 'Q4', 0);
     // Every Q3 and Q4 scorer of ours was in the halftime five: no promotion. Theirs is still 6 on.
     expect(await app.floorOf('Home')).toEqual(['4', '00', '0', '23', '44']);
     // Changed 2026-11-23 (activity swap): compared as a set. The card order now depends on whether the
-    // scorer paused 8 s (real time in this test), so the order is checked in game.spec's activity-swap test.
+    // scorer paused 2 s (SETTLE_MS, real time in this test), so the order is checked in game.spec's activity-swap test.
     expect((await app.floorOf('Away')).sort()).toEqual(['10', '15', '21', '33', '4', '5']);
     await expect(app.subButton('Home')).toHaveText('Sub');
     await app.endPeriodThen('Q4', 'End game (no overtime)');

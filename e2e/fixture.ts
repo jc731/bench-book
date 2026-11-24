@@ -46,7 +46,10 @@ export function ui(page: Page, ours: Side = 'Home') {
   /** One team's half of the live screen: its cards, + Play, Bench card and timeout buttons. */
   const half = (side: Side) => page.getByRole('region', exact(side));
 
-  const card = (name: Name) => half(ours).getByRole('button', { name: new RegExp(`^#${numberOf(name)} ${name},`) });
+  /** A player's number area (1.1 rows: no names, so by number): it opens the player's popup. */
+  const card = (name: Name) => half(ours).getByRole('button', { name: new RegExp(`^#${numberOf(name)},`) });
+  /** A player's row, by side and number: a group labeled `Home #23, on floor` (or `, bench`). */
+  const row = (side: Side, number: string) => half(side).getByRole('group', { name: new RegExp(`^${side} #${number}, (on floor|bench)$`) });
   /** A fixture name's number, or the string itself when it is already a number. */
   const numOrName = (who: string) => ROSTER.find((p) => p.name === who)?.number ?? who;
   /** A player's row in the sub sheet, by name or number. */
@@ -84,6 +87,10 @@ export function ui(page: Page, ours: Side = 'Home') {
     },
     startGame: () => page.getByRole('button', exact('Start game')).click(),
     card,
+    row,
+    /** A row's one-tap +2 and Foul, by their exact labels (`Home #23, 2 points`, `Home #23, foul`). */
+    quick2: (side: Side, number: string) => row(side, number).getByRole('button', exact(`${side} #${number}, 2 points`)),
+    quickFoul: (side: Side, number: string) => row(side, number).getByRole('button', exact(`${side} #${number}, foul`)),
     score: (name: Name, pts: '+2' | '+3') => onPlayer(name, [pts], false),
     ft: (name: Name, ...made: boolean[]) => onPlayer(name, made.map((m) => (m ? 'FT made' : 'FT missed')), true),
     foul: (name: Name) => onPlayer(name, ['Foul'], false),
@@ -97,7 +104,7 @@ export function ui(page: Page, ours: Side = 'Home') {
      */
     async subIn(side: Side, inName: string, outName: string) {
       const n = numOrName(inName);
-      await half(side).getByRole('button', { name: new RegExp(`^#${n}(,| )`) }).click();
+      await half(side).getByRole('button', { name: new RegExp(`^#${n},`) }).click();
       await dialog().getByRole('button', exact(`#${n} checks in`)).click();
       await expect(dialog()).toHaveAccessibleName('Who went out?');
       await subRow(outName).click();
@@ -114,13 +121,14 @@ export function ui(page: Page, ours: Side = 'Home') {
       await dialog().getByRole('button', exact('Done')).click();
       await expect(dialog()).toHaveCount(0);
     },
-    /** The numbers on a half's floor cards, in display order: every card whose name doesn't end `, bench` or `, out`. */
+    /** The numbers on a half's floor rows, in display order: every row whose group label ends `, on floor` and whose player is not out. */
     floorOf: (side: Side) =>
-      half(side).getByRole('button', { name: /^#/ }).evaluateAll((els) =>
+      half(side).getByRole('group').evaluateAll((els) =>
         els
-          .map((el) => el.getAttribute('aria-label') ?? '')
-          .filter((name) => !/, (bench|out)$/.test(name))
-          .map((name) => /^#([^\s,]+)/.exec(name)![1])),
+          .filter((el) => !/, out, more plays$/.test(el.querySelector('button')?.getAttribute('aria-label') ?? ''))
+          .map((el) => /^(Home|Away) #(\S+), on floor$/.exec(el.getAttribute('aria-label') ?? ''))
+          .filter((m) => m !== null)
+          .map((m) => m![2])),
     /** Points for the other team with no number, through their + Play and Whose number? > No number: 1 is an FT made (then Done), 2 a +2, 3 a +3. */
     async opp(n: 1 | 2 | 3) {
       await half(other(ours)).getByRole('button', exact('+ Play')).click();
@@ -148,13 +156,15 @@ export function ui(page: Page, ours: Side = 'Home') {
       for (const b of boxes) expect(b.height).toBeLessThanOrEqual(48);
       expect(await nav().getByRole('button').count()).toBe(4);
     },
-    /** Each half shows all of its cards, + Play, Bench and timeouts with no scrolling, above the feedback line. */
-    async expectCardsFit() {
+    /** Spec invariant 6: each half's controls (+ Play, Sub, Tech, timeouts) sit fully above the feedback
+     *  line, and nothing scrolls sideways, the page or either half; only the row list scrolls. */
+    async expectControlsInView() {
       const line = (await page.getByTestId('feedback-text').boundingBox())!;
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       for (const side of ['Home', 'Away'] as const) {
-        expect(await half(side).evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
-        const box = (await half(side).boundingBox())!;
-        expect(box.y + box.height).toBeLessThanOrEqual(line.y);
+        const last = (await half(side).getByRole('button', { name: /^(Full|30s|OT): \d+$/ }).last().boundingBox())!;
+        expect(last.y + last.height).toBeLessThanOrEqual(line.y);
+        expect(await half(side).evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
       }
     },
     /** Opens a player's sheet, checks Done is the white primary button, then taps the dimmed backdrop. */
@@ -394,13 +404,12 @@ export function ui(page: Page, ours: Side = 'Home') {
     async backToLive() {
       await page.getByRole('button', exact('Back to game')).click();
     },
-    /** The 4-foul warning, which shows only as the card's amber border (amber-600 on the light Home half, amber-400 on the dark Away half). */
-    expectWarning: (name: Name) => expect(card(name)).toHaveClass(ours === 'Home' ? /border-amber-600/ : /border-amber-400/),
-    /** A player card's foul state, through its accessible name (OUT reads ", out"). */
+    /** The 4-foul warning, which shows only as the row's inset amber ring (amber-600 on the light Home half, amber-400 on the dark Away half; spec "The row"). */
+    expectWarning: (name: Name) => expect(row(ours, numberOf(name))).toHaveClass(ours === 'Home' ? /ring-amber-600/ : /ring-amber-400/),
+    /** A player's points and foul state, through the number area's accessible name (spec Accessibility: `#23, 12 points, 3 fouls, more plays`, `, out` before `, more plays`). */
     async expectPlayer(name: Name, points: number, fouls: number, out = false) {
       const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`;
-      const tail = `, ${n(fouls, 'foul')}${out ? ', out' : ''}$`;
-      await expect(card(name)).toHaveAccessibleName(new RegExp(`^#${numberOf(name)} ${name}, ${n(points, 'point')}${tail}`));
+      await expect(card(name)).toHaveAccessibleName(`#${numberOf(name)}, ${n(points, 'point')}, ${n(fouls, 'foul')}${out ? ', out' : ''}, more plays`);
     },
   };
 }
@@ -418,11 +427,12 @@ const STRIP_MAX_HEIGHT = 56;
  * WCAG contrast ratio of one of an element's colors against the nearest opaque background, read
  * through a canvas because Tailwind 4 emits `oklch()`. `prop` is the color measured; `from` is where
  * the background search starts: the element itself (its text or border sits on its own fill) or its
- * parent (a dot's own fill is the color measured, so the card behind it is the background).
+ * parent (a dot's own fill is the color measured, so the row behind it is the background). `ringColor`
+ * reads a row's inset ring; a row with no ring measures 0.
  */
 export function colorContrast(
   l: Locator,
-  prop: 'color' | 'borderTopColor' | 'backgroundColor' = 'color',
+  prop: 'color' | 'borderTopColor' | 'backgroundColor' | 'ringColor' = 'color',
   from: 'self' | 'parent' = 'self',
 ): Promise<number> {
   return l.evaluate(
@@ -443,7 +453,12 @@ export function colorContrast(
         });
         return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
       };
-      const fg = rgba((getComputedStyle(el) as unknown as Record<string, string>)[p]);
+      // A row's state is an inset ring (1.1), drawn from Tailwind's --tw-ring-color custom property.
+      const cs = getComputedStyle(el);
+      const fgCss = p === 'ringColor' ? cs.getPropertyValue('--tw-ring-color').trim() : (cs as unknown as Record<string, string>)[p];
+      // No ring at all measures 0, so a check for a readable ring cannot pass on a row without one.
+      if (!fgCss) return 0;
+      const fg = rgba(fgCss);
       let node: Element | null = f === 'parent' ? el.parentElement : el;
       let bg = { r: 255, g: 255, b: 255, a: 255 };
       for (; node; node = node.parentElement) {
