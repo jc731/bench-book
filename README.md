@@ -202,10 +202,9 @@ Changes are listed in [`CHANGELOG.md`](CHANGELOG.md). A release is cut with
   - Tap volume still felt high at the 2026-11-18 game (owner); 0.10's Usage CSV gives the baseline.
   - Still useful before designing: 30–40 real play-by-plays (high school or junior high) for the
     play mix, so the design isn't fitted to one game.
-- **Timeout clock: buzz and auto-close** (owner, 2026-11-24, after the 2026-11-23 game): buzz at
-  the warning point (30 s left on a full, 15 s on a 30) and at 0, and close the clock 10 s after
-  it reaches 0. Open: the Vibration API does nothing on iPhone (Safari, installed or not), so on an
-  iPhone the "buzz" would have to be a sound or a screen flash.
+- ~~**Timeout clock: buzz and auto-close** (owner, 2026-11-24).~~ Done after 1.0: a buzz at the
+  warning point and at 0, and the clock closes 10 s after 0. Android only: iPhone has no
+  Vibration API for web apps, and the owner wants no beep instead (2026-11-24).
 - **Card order: an option to keep cards sorted by jersey number** (owner, 2026-11-24). Subs
   continue to prove optional: the 2026-11-23 game recorded none. A customization setting, next to
   "Our team on the left", choosing between the activity swap and a fixed number order. Trigger:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  WARN_FRACTION, clockLeftMs, clockPhase, clockText, newClock, pauseClock, resetClock, startClock, warnText,
+  BUZZ, CLOSE_AFTER_MS, WARN_FRACTION, alertBetween, clockLeftMs, closeDue, clockPhase, clockText, newClock, pauseClock, resetClock, startClock, warnText,
 } from './clock-logic';
 
 /* Design 2026-11-19, D16-D19 and I8. Every `now` is an explicit number of ms; nothing reads Date. */
@@ -100,5 +100,54 @@ describe('clockText (m:ss, rounding up)', () => {
     expect(clockText(1)).toBe('0:01');
     expect(clockText(0)).toBe('0:00');
     expect(clockText(-5)).toBe('0:00');
+  });
+});
+
+/* Owner, 2026-11-24: buzz at 30 s left on a full, 15 s left on a 30, and at 0; close 10 s after 0. */
+describe('alertBetween: the buzz points', () => {
+  const thirty = startClock(newClock('thirty'), 0); // ends at 30_000
+  const full = startClock(newClock('full'), 0); // ends at 60_000
+
+  it('a 30 buzzes warn crossing 15 s left, and only on the crossing', () => {
+    expect(alertBetween(thirty, 14_750, 15_000)).toBe('warn');
+    expect(alertBetween(thirty, 14_500, 14_750)).toBeNull();
+    expect(alertBetween(thirty, 15_000, 15_250)).toBeNull();
+  });
+
+  it('a full buzzes warn crossing 30 s left', () => {
+    expect(alertBetween(full, 29_900, 30_100)).toBe('warn');
+    expect(alertBetween(full, 14_900, 15_100)).toBeNull();
+  });
+
+  it('time crossing 0, and never again after', () => {
+    expect(alertBetween(thirty, 29_900, 30_100)).toBe('time');
+    expect(alertBetween(thirty, 30_100, 31_000)).toBeNull();
+  });
+
+  it('a read that skips both points (the phone slept) buzzes time only', () => {
+    expect(alertBetween(thirty, 1_000, 40_000)).toBe('time');
+  });
+
+  it('a paused clock crosses nothing', () => {
+    expect(alertBetween(pauseClock(thirty, 10_000), 10_000, 50_000)).toBeNull();
+  });
+
+  it('time buzzes longer than warn', () => {
+    const sum = (p: number[]) => p.reduce((a, b) => a + b, 0);
+    expect(sum(BUZZ.time)).toBeGreaterThan(sum(BUZZ.warn));
+  });
+});
+
+describe('closeDue: closes 10 s after 0', () => {
+  const thirty = startClock(newClock('thirty'), 0);
+  it('the constant is 10 s', () => expect(CLOSE_AFTER_MS).toBe(10_000));
+  it('open at 0 and 9.999 s after; closed at 10 s after', () => {
+    expect(closeDue(thirty, 30_000)).toBe(false);
+    expect(closeDue(thirty, 39_999)).toBe(false);
+    expect(closeDue(thirty, 40_000)).toBe(true);
+  });
+  it('a paused or reset clock never closes by itself', () => {
+    expect(closeDue(pauseClock(thirty, 5_000), 100_000)).toBe(false);
+    expect(closeDue(resetClock(thirty), 100_000)).toBe(false);
   });
 });

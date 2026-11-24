@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { Book } from './Book';
+import { useClockAlerts } from './clock-alerts';
 import { demoActive } from './demo';
 import { EditTeams } from './EditTeams';
 import { EndGame } from './EndGame';
@@ -32,6 +33,8 @@ export function App() {
   }, []);
   // The screen stays on through a live game on every view (Live, Book, a quarter check), not on Setup.
   useWakeLock(Boolean(store.game && !store.game.endedAt && view !== 'setup'));
+  // The timeout clock buzzes and closes itself on any view (the band shows on Live only).
+  useClockAlerts(store.clock, store.setClock);
 
   return (
     <div class="flex h-dvh flex-col overflow-hidden bg-slate-900 text-white">

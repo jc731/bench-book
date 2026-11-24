@@ -58,3 +58,30 @@ export function clockText(ms: number): string {
 export function warnText(c: Clock): string {
   return `${Math.round((c.totalMs * WARN_FRACTION) / 1000)} seconds`;
 }
+
+/** The clock closes itself this long after it reaches 0 (owner, 2026-11-24). */
+export const CLOSE_AFTER_MS = 10_000;
+
+export type ClockAlert = 'warn' | 'time';
+
+/** Vibration patterns in ms: one buzz at the warning, a longer double at 0. */
+export const BUZZ: Record<ClockAlert, number[]> = { warn: [300], time: [600, 200, 600] };
+
+/**
+ * The alert a running clock crossed between two reads, or null: 'time' when it reached 0, 'warn' when
+ * it reached the warning point (D19). A paused clock crosses nothing; when both were crossed at once
+ * (the phone slept through the warning), only 'time' is due.
+ */
+export function alertBetween(c: Clock, before: number, now: number): ClockAlert | null {
+  if (c.endsAt === null || now <= before) return null;
+  const a = clockLeftMs(c, before);
+  const b = clockLeftMs(c, now);
+  if (a > 0 && b === 0) return 'time';
+  const warnAt = c.totalMs * WARN_FRACTION;
+  return a > warnAt && b <= warnAt ? 'warn' : null;
+}
+
+/** A clock that ran out closes CLOSE_AFTER_MS later. A paused or reset one never closes by itself. */
+export function closeDue(c: Clock, now: number): boolean {
+  return c.endsAt !== null && now >= c.endsAt + CLOSE_AFTER_MS;
+}

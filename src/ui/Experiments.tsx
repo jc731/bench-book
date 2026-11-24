@@ -49,7 +49,7 @@ export function Experiments({ store }: { store: GameStore }) {
       </header>
       <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
         <p class="text-slate-300">Settings on this phone only. They may change or go away.</p>
-        <Toggle id="exp-clock" label="Timeout clock" text="Taking a timeout opens a 60 or 30 second clock." on={prefs.timeoutClock} onToggle={toggleClock} />
+        <Toggle id="exp-clock" label="Timeout clock" text="Taking a timeout opens a 60 or 30 second clock. On Android the phone buzzes at half time and at 0, and the clock closes 10 seconds after 0." on={prefs.timeoutClock} onToggle={toggleClock} />
         <Toggle
           id="exp-us-left"
           label="Our team on the left"

@@ -158,3 +158,36 @@ test('a full timeout opens a 60 s clock that warns at 30 s; the band fits one ro
   // For a look at the band in warn: CLOCK_SHOT=<path> pnpm test:e2e clock.
   if (process.env.CLOCK_SHOT) await page.screenshot({ path: process.env.CLOCK_SHOT });
 });
+
+test('a running 30 buzzes at 15 s left and at 0, then closes itself 10 s after 0, even on the Book (owner, 2026-11-24)', async ({ page }) => {
+  // Record vibrate calls; the phone's own buzz can't be observed from a test.
+  await page.addInitScript(() => {
+    const w = window as unknown as { buzzes: number[][] };
+    w.buzzes = [];
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: (p: number[]) => (w.buzzes.push(p), true) });
+  });
+  const app = await startGame(page);
+  await turnClockOn(page);
+  const buzzes = () => page.evaluate(() => (window as unknown as { buzzes: number[][] }).buzzes.length);
+
+  await app.timeout('30s');
+  await band(page).getByRole('button', exact('Start')).click();
+  await page.clock.runFor(14_000);
+  expect(await buzzes()).toBe(0);
+  await page.clock.runFor(1_500); // past 15 s left
+  await expect.poll(buzzes).toBe(1);
+
+  // Off Live the band is hidden, but the buzz and the close still happen.
+  await page.getByRole('navigation').getByRole('button', exact('Book')).click();
+  await page.clock.runFor(15_000); // past 0
+  await expect.poll(buzzes).toBe(2);
+  await page.getByRole('button', exact('Back')).click();
+  await expect(band(page).getByTestId('clock-note')).toHaveText('Time');
+
+  await page.clock.runFor(9_000); // 9.5 s after 0: still open
+  await expect(band(page)).toHaveCount(1);
+  await page.clock.runFor(1_000); // 10.5 s after 0
+  await expect(band(page)).toHaveCount(0);
+  await expect(page.getByTestId('feedback-text')).toHaveText('Home timeout (30s)');
+  expect(await buzzes()).toBe(2);
+});
