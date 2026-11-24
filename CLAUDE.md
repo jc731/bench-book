@@ -41,8 +41,10 @@ Redefined 2026-11-16. The old 1.0 ("trusted for the owner's own team") was met a
 - [x] The How-to covers both-team scoring (done in 0.8), and `/ux-audit` finishes a scripted
       both-team game with nothing blocking (audit v0.11.0, 2026-11-20: 0 wrong entries, nothing
       blocking).
-- [ ] Used at 3 or more real games on the release candidate, at least one tracking both teams,
-      with no lost data and no hand-fixed CSV.
+- [x] Used at real games with no lost data and no hand-fixed CSV, at least one tracking both teams.
+      Was "3 or more on the release candidate"; the owner ruled two enough on 2026-11-24: the game
+      before 0.12 and the 2026-11-23 game (on 0.12.2, both teams, the app matched the paper book).
+      0.12.3 differs from 0.12.2 only by a removed hint on the quarter check. (1.0)
 - Out of scope for 1.0: missed shots, rebounds, assists, configurable rule sets, the cross-scorer
   check (1.x), and anything from Phase 2.
 

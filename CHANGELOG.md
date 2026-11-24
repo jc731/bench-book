@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- 1.0: Phase 1 is done. Every item on the 1.0 checklist is met, and the app matched the paper book at real games, tracking both teams. No change to the app since 0.12.3.
+
 ## [0.12.3] - 2026-11-23
 
 - The quarter check's "Their game score" box no longer shows a grayed "N from the app" hint, so both score boxes start the same: blank. The app's numbers for both teams are in the line above them. The hint was a leftover from before 0.8 and could disagree with that line after a corrected book total.
