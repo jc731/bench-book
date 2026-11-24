@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-24
+
 - Timeout clock: the phone buzzes when the time left reaches half (30 s on a full, 15 s on a 30) and again at 0, and the clock closes itself 10 seconds after 0. It works on any screen, not only Live. Buzzing needs Android; iPhone browsers don't allow a web app to vibrate, so there the clock is silent.
 
 ## [1.0.0] - 2026-11-24
