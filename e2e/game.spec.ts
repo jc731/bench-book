@@ -787,7 +787,7 @@ test('half headers name the teams when given (audit 0.11.0 F3); a default oppone
 });
 
 test('a long team name truncates: Team fouls and the tags stay whole, the header keeps its height, 10 a side still fit', async ({ page }) => {
-  const long = 'Northwestern Consolidated Junior High Wildcats';
+  const long = 'Slumberland Consolidated Junior High Somnambulists'; // invented: Little Nemo in Slumberland (Winsor McCay, 1905)
   await twoTeamGame(page, { ours: 10, theirs: 10, team: long, opponent: `${long} Two` });
   const app = ui(page);
   for (const side of ['Home', 'Away'] as const) {
