@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-24
+
 - One-tap rows on the live screen: each player is a row with their number (no names), a small gray points figure, foul dots, and two buttons, **+2** (filled) and **Foul** (outlined). One tap records the play, the same event as the player's sheet. Tap the number for +3, free throws, a tech, fixes and subs; the sheet is unchanged. Rows are 56 px tall whatever the roster size, and the list scrolls inside its half with a fade at the foot.
 - A player at 4 fouls gets an amber ring around the row, and an out player a red ring with OUT; the out row's +2 and Foul are dashed and open the sheet instead of recording.
 - The activity swap now waits 2 seconds (was 8) after you stop tapping or scrolling. The moved rows flash blue, the half scrolls back to the top (unless you scrolled it by hand in the last 5 seconds; with reduced motion it jumps), and a hidden status line names who moved up.
