@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-24
+
 - 1.0: Phase 1 is done. Every item on the 1.0 checklist is met, and the app matched the paper book at real games, tracking both teams. No change to the app since 0.12.3.
 
 ## [0.12.3] - 2026-11-23
