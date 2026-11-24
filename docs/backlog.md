@@ -97,6 +97,12 @@ they were first aimed at.
   report or share it publicly. Until then, the issue form asks for no names and accepts the Usage
   CSV, which has none.
 
+- **A more striking foul count per player** (owner, 2026-11-24, while trying the 1.1 rows): the
+  five foul dots work but are small. Explore something more obvious at a glance, for example the
+  row's background filling in step by step with each foul, or another visual cue. Leave the dots
+  alone for 1.1 ("it's solid"). Trigger: after 1.1 ships, or a real game where a foul count was
+  misread.
+
 ## Recorded, not planned
 
 - The quarter check compares team fouls too. Trigger: a second real game with a missed foul.
