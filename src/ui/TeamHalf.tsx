@@ -209,11 +209,12 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, settleK
       >
         <button
           type="button"
-          class="flex h-full min-w-0 flex-1 flex-col justify-center pl-1.5 text-left"
+          class="flex h-full min-w-0 flex-1 flex-col justify-center pl-1.5 pr-1 text-left"
           onClick={() => onPick(p)}
           aria-label={numberAreaLabel(p.number, points, pf, out)}
         >
-          {/* The points sit top-right of the number area, smaller and gray, so "#3 0" never reads as 30. The
+          {/* The points sit top-right of the number area, smaller and gray, so "#3 0" never reads as 30, and pr-1 keeps
+              them 4 px off the +2 (1.1.1: they touched it on "00" with 12 points). The
               area is about 53 px: a two-digit number and two-digit points fit side by side, with the dots below. */}
           <span class={`flex items-start justify-between ${dim}`}>
             <span class="text-[28px] font-bold leading-none">{p.number}</span>

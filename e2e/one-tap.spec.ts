@@ -273,3 +273,23 @@ test("an out row's ring stays readable while a swap flashes it", async ({ page }
     expect(await colorContrast(row, 'ringColor')).toBeGreaterThanOrEqual(3); // WCAG non-text 3:1 during the flash
   }
 });
+
+test('two-digit points clear the +2 button and the jersey number (1.1.1, owner: "score is bumping against the +2")', async ({ page }) => {
+  // Spec "The row": points are set apart from the number; the owner saw them touch +2 on a phone.
+  const app = await startSeven(page, true);
+  await freeze(page);
+  for (const [side, n] of [['Home', '00'], ['Away', '24']] as const) {
+    for (let i = 0; i < 6; i++) {
+      await app.quick2(side, n).click();
+      await page.clock.runFor(500); // past the 400 ms double-tap window
+    }
+    const r = app.row(side, n);
+    const area = r.getByRole('button', { name: new RegExp(`^#${n},`) });
+    await expect(area).toHaveAccessibleName(`#${n}, 12 points, 0 fouls, more plays`);
+    const num = (await area.getByText(n, { exact: true }).boundingBox())!;
+    const pts = (await area.getByText('12', { exact: true }).boundingBox())!;
+    const plus = (await app.quick2(side, n).boundingBox())!;
+    expect(pts.x + pts.width).toBeLessThanOrEqual(plus.x - 4);
+    expect(pts.x).toBeGreaterThanOrEqual(num.x + num.width + 3);
+  }
+});

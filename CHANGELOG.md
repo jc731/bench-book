@@ -5,6 +5,8 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- A player's points no longer touch the +2 button on a two-digit number with two-digit points: the number area keeps 4 px clear on its right.
+
 ## [1.1.0] - 2026-11-24
 
 - One-tap rows on the live screen: each player is a row with their number (no names), a small gray points figure, foul dots, and two buttons, **+2** (filled) and **Foul** (outlined). One tap records the play, the same event as the player's sheet. Tap the number for +3, free throws, a tech, fixes and subs; the sheet is unchanged. Rows are 56 px tall whatever the roster size, and the list scrolls inside its half with a fade at the foot.
