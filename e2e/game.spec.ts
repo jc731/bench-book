@@ -1436,6 +1436,29 @@ test('a game saved before 0.8, with opponent taps and no their roster, opens in 
   await expect(page.getByRole('banner').getByLabel('Score Home 2, Away 7')).toBeVisible();
 });
 
+test('a flashing row keeps a readable ring: the 4th foul by row Foul, on both tones', async ({ page }) => {
+  // Spec Accessibility: rings at least 3:1 on every fill used, and spec "The row": the flash changes the
+  // fill only, so the 4th-foul amber shows at once. Fake clock, paused, so the 400 ms flash holds while measured.
+  await page.clock.install({ time: new Date('2026-11-24T18:00:00') });
+  await page.clock.pauseAt(new Date('2026-11-24T18:00:01'));
+  await twoTeamGame(page);
+  const app = ui(page);
+  for (const [side, n] of [['Home', '10'], ['Away', '50']] as const) {
+    for (let i = 0; i < 4; i++) {
+      await app.quickFoul(side, n).click();
+      // Past the 400 ms double-tap window and the flash, except after the 4th tap.
+      if (i < 3) await page.clock.runFor(500);
+    }
+    const row = app.row(side, n);
+    await expect(row).toHaveAttribute('data-flash', '1');
+    await expect(row).toHaveClass(/ring-amber-/);
+    expect(await colorContrast(row, 'ringColor'), `${side} warn ring on the flash fill`).toBeGreaterThanOrEqual(3);
+    await page.clock.runFor(500);
+    await expect(row).not.toHaveAttribute('data-flash', '1');
+    expect(await colorContrast(row, 'ringColor'), `${side} warn ring after the flash`).toBeGreaterThanOrEqual(3);
+  }
+});
+
 test('light rows: warn and OUT stay readable', async ({ page }) => {
   const fouls = async (half: Locator, n: number) => {
     const c = half.getByRole('button', { name: /^#(10|50)(,| Player 1,)/ });

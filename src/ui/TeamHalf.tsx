@@ -52,6 +52,10 @@ const TONE = {
     ringWarn: 'ring-amber-600',
     restRingWarn: 'ring-amber-700',
     ringOut: 'ring-red-600',
+    // While a row flashes its ring keeps 3:1 on the flash fill: amber-600 on sky-100 is 2.78:1, amber-700
+    // 4.40:1; red-600 on sky-100 is 4.15:1 (measured 2026-11-24, WCAG formula on Tailwind 4 oklch).
+    flashRingWarn: 'ring-amber-700',
+    flashRingOut: 'ring-red-600',
     // +2 is filled and Foul outlined, the same border, so they differ by shape, not by a state color.
     quick: 'border-slate-500 bg-slate-200 active:bg-slate-300',
     quickOutline: 'border-slate-500 bg-transparent active:bg-slate-200',
@@ -77,6 +81,9 @@ const TONE = {
     ringWarn: 'ring-amber-400',
     restRingWarn: 'ring-amber-400',
     ringOut: 'ring-red-500',
+    // On sky-900: amber-400 5.5:1; red-500 2.48:1, so red-400 (3.27:1; 5.07:1 on slate-800, 5.62:1 on the rest fill).
+    flashRingWarn: 'ring-amber-400',
+    flashRingOut: 'ring-red-400',
     quick: 'border-slate-400 bg-slate-600 active:bg-slate-500',
     quickOutline: 'border-slate-400 bg-transparent active:bg-slate-700',
     fade: 'from-slate-900',
@@ -160,7 +167,9 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, settleK
     const rest = !out && pos >= lineup.layoutFloor;
     const flashing = flash.has(p.id);
     const fill = flashing ? t.flash : rest ? t.rest : t.card;
-    const ring = out ? `ring-2 ring-inset ${t.ringOut}` : state === 'warn' ? `ring-2 ring-inset ${rest ? t.restRingWarn : t.ringWarn}` : '';
+    // The ring shows through a flash (only the fill changes), in a shade that clears 3:1 on the flash fill.
+    const ringColor = out ? (flashing ? t.flashRingOut : t.ringOut) : state === 'warn' ? (flashing ? t.flashRingWarn : rest ? t.restRingWarn : t.ringWarn) : null;
+    const ring = ringColor ? `ring-2 ring-inset ${ringColor}` : '';
     // An out player's number and points are grayed so a tap reads as a mistake before it is one. The
     // red ring and OUT stay at full strength (graying a whole card once took OUT to 2.2:1), and so do
     // the +2 and Foul labels; their dashed border says they will not record.
