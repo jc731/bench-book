@@ -119,6 +119,34 @@ merge: rebuild it properly with tests.
   game); padding against Android's back-swipe on the Away half's right edge (trigger: a misfired
   back gesture at a game); logging taps within 1 s of a swap (trigger: an undo right after a swap).
 
+## Settled after the builder check (2026-11-24)
+
+Answered from the code or the conversation, or decided as my calls (marked):
+
+- **Same path as the popup.** A row's +2 and Foul call the same `record()` in `Live.tsx` that the
+  popup's buttons call, so the toast, Undo label, foul-out "tell the official" line and bonus text
+  are identical. No second recording path. Invariant 1 is tested by comparing the saved event from
+  each route.
+- **Taps.** Taps are counted by the one capturing click listener in `App.tsx` (any button). A tap
+  the double-tap guard or the swap guard ignores still counts as a tap (my call: a tap is what the
+  scorer did; the gap between taps and plays is the cost being measured).
+- **Top block.** "Top five" means the layout's top block, `layoutFloor` rows, as today (it can be
+  other than 5 after a sub). With 5 or fewer players there is no rest section and no extra gap. The
+  old 11+ split (floor fixed, bench scrolls) is replaced by the single scrolling list.
+- **Swap guard scope** (my call). The 500 ms guard follows an activity swap only, not a sub or an
+  Undo (those come from the scorer's own action), and it covers the row's +2 and Foul only; the
+  number area always opens the popup.
+- **Out rows.** The Foul that makes the 5th foul records; a repeat within 400 ms is a double tap
+  and is dropped; any later tap on the out row's +2 or Foul opens the popup with its out warning.
+  No special case beyond the double-tap guard.
+- **Labels** use Home / Away (`sideName`), as the feedback line does, never the typed team name
+  (my call: stable for screen readers and for e2e selectors). The e2e fixture finds a row by
+  number; the full-game fixture, How-to shots and UX-audit scenario follow.
+- **Release.** 1.0 is cut; this lands on master as 1.1.0 (minor), with a CHANGELOG entry.
+- **Colors.** New row styles go into `TONE` in `TeamHalf.tsx`. Contrast is checked by hand and
+  recorded in `docs/colors.md`, as the existing light-tone notes are (my call: no automated
+  contrast test).
+
 ## Invariants
 
 Each is a test in the plan, or marked not checked with the reason.
