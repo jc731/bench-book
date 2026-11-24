@@ -139,8 +139,22 @@ test('the swap moves the player up after 2 s, scrolls to top, and leaves the sav
   await page.clock.runFor(200);
   await expect(app.half('Home').getByTestId('swap-status')).toHaveText('#21 moved up');
   expect((await order(page, 'Home')).slice(0, 5)).toContain('21');
+  // Spec "scroll to top": the reorder alone leaves 0, so the old position is restored first and the
+  // scrollTo effect carries it there. Deleting that effect leaves the list at the old position.
   await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(0);
   expect(await savedGame(page)).toBe(saved); // inv. 5: display order never changes the saved game
+});
+
+test('with reduced motion the swap jumps the list to the top at once (spec: smooth unless reduced motion)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const app = await setup(page, 12);
+  await freeze(page);
+  const list = listOf(page, 'Home');
+  await list.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+  await app.quick2('Home', '21').click();
+  await page.clock.runFor(2100);
+  await expect(app.half('Home').getByTestId('swap-status')).toHaveText('#21 moved up');
+  await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBe(0);
 });
 
 for (const n of [10, 15]) {

@@ -145,11 +145,13 @@ export function TeamHalf({ side, name, tone, isUs, roster, team, lineup, settleK
     flashFor([...up, ...down], FLASH_SWAP_MS);
     const numbers = up.map((id) => r.find((p) => p.id === id)?.number).filter((n): n is string => n !== undefined);
     setSwapText(numbers.length > 0 ? movedUpText(numbers) : '');
+    // Kept either way: the reorder drops the list to 0, so the old position is put back before paint and
+    // the scroll back (if allowed) then travels from there.
+    holdTop.current = listRef.current?.scrollTop ?? null;
     if (scrollBackAllowed(lastHandScrollAt.current, at)) setScrollBack((n) => n + 1);
-    else holdTop.current = listRef.current?.scrollTop ?? null;
   });
   // Reordering the rows drops a scrolled list to the top (Chromium, measured 2026-11-24: scrollTop 412
-  // to 0 on a swap), so a list held by a hand scroll is put back before the new order paints.
+  // to 0 on a swap), so the list is put back before the new order paints.
   useLayoutEffect(() => {
     if (holdTop.current !== null && listRef.current) listRef.current.scrollTop = holdTop.current;
     holdTop.current = null;
