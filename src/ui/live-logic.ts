@@ -255,8 +255,12 @@ export type Feedback = { entry: { text: string; undoable: boolean; redoable: boo
 export const NOT_EXPORTED_CHIP = 'Not exported';
 
 /** The line's two parts. The chip is the check prompt, else the not-exported warning. */
-export function feedbackLine(banner: Banner | null, unexported: string | null, toast: Toast | null): Feedback {
-  const entry = toast ? { text: toast.text, undoable: toast.canUndo, redoable: Boolean(toast.canRedo) } : null;
+export function feedbackLine(banner: Banner | null, unexported: string | null, toast: Toast | null, tip: string | null = null): Feedback {
+  const entry = toast
+    ? { text: toast.text, undoable: toast.canUndo, redoable: Boolean(toast.canRedo) }
+    : tip
+      ? { text: tip, undoable: false, redoable: false }
+      : null;
   const prompt: Prompt | null = banner
     ? { kind: 'check', period: banner.period, text: banner.text, chip: `Check ${periodLabel(banner.period)}` }
     : unexported
@@ -310,8 +314,8 @@ export function playToast(before: Game, side: Side, p: Player | null, type: Play
   return text;
 }
 
-/** How long the scorer must stop tapping before an activity swap shows on Live (owner, 2026-11-23). */
-export const SETTLE_MS = 8000;
+/** How long the scorer must stop tapping before an activity swap shows on Live (owner, 2026-11-23; 2 s from 1.1, owner decision 4). */
+export const SETTLE_MS = 2000;
 
 /**
  * The card order Live shows: the order last shown, kept while the scorer is tapping. Ids no longer on
@@ -321,4 +325,67 @@ export function shownLayout(shown: string[], target: string[]): string[] {
   const now = new Set(target);
   const kept = shown.filter((id) => now.has(id));
   return [...kept, ...target.filter((id) => !kept.includes(id))];
+}
+
+// One-tap rows (1.1)
+
+/** Two taps on the same quick button inside this window are a double tap (spec invariant 3). */
+export const DOUBLE_TAP_MS = 400;
+/** After an activity swap shows, taps are ignored this long so a card sliding under a finger is not hit. */
+export const SWAP_GUARD_MS = 500;
+/** After the scorer scrolls the hand by hand, the app does not scroll it back for this long. */
+export const HAND_SCROLL_HOLD_MS = 5000;
+/** How long a row flashes after a tap, and after a swap. */
+export const FLASH_TAP_MS = 400;
+export const FLASH_SWAP_MS = 1000;
+
+export type QuickPlay = 'FG2' | 'FOUL';
+export type QuickTap = { key: string; at: number };
+
+export const ROW_TIP = 'Tap a number for 3s, free throws and fixes.';
+
+export function quickKey(side: Side, playerId: string, type: QuickPlay): string {
+  return `${side}:${playerId}:${type}`;
+}
+
+export function isDoubleTap(last: QuickTap | null, key: string, now: number): boolean {
+  return last !== null && last.key === key && now - last.at < DOUBLE_TAP_MS;
+}
+
+/** A player who is out opens the sheet (with its warning) instead of recording on one tap. */
+export function quickAction(line: { fouls: number; techs: number } | undefined): 'record' | 'open' {
+  return outReason(line) !== null ? 'open' : 'record';
+}
+
+export function swapGuarded(swapShownAt: number | null, now: number): boolean {
+  return swapShownAt !== null && now - swapShownAt < SWAP_GUARD_MS;
+}
+
+export function scrollBackAllowed(lastHandScrollAt: number | null, now: number): boolean {
+  return !(lastHandScrollAt !== null && now - lastHandScrollAt < HAND_SCROLL_HOLD_MS);
+}
+
+/** Ids in the top `top` of `after` that were not in the top `top` of `before`. */
+export function movedUp(before: string[], after: string[], top: number): string[] {
+  const was = new Set(before.slice(0, top));
+  return after.slice(0, top).filter((id) => !was.has(id));
+}
+
+export function quickLabel(tag: TeamTag, number: string, type: QuickPlay): string {
+  return `${tag} #${number}, ${type === 'FG2' ? '2 points' : 'foul'}`;
+}
+
+export function numberAreaLabel(number: string, points: number, fouls: number, out: boolean): string {
+  const parts = [`#${number}`, countText(points, 'point', 'points'), countText(fouls, 'foul', 'fouls')];
+  if (out) parts.push('out');
+  parts.push('more plays');
+  return parts.join(', ');
+}
+
+export function rowGroupLabel(tag: TeamTag, number: string, onFloor: boolean): string {
+  return `${tag} #${number}, ${onFloor ? 'on floor' : 'bench'}`;
+}
+
+export function movedUpText(numbers: string[]): string {
+  return `${numbers.map((n) => `#${n}`).join(' and ')} moved up`;
 }

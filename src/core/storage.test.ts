@@ -279,14 +279,14 @@ describe('migrateGame (checks typed per quarter before game totals)', () => {
 describe('prefs', () => {
   // Changed for usLeft (0.12.1): Prefs gained `usLeft`, off by default, so each expected shape carries it.
   // Changed for Task 6: Prefs gained `timeoutClock` (D15), so each expected shape carries it.
-  const off = { trackOpponentTaps: false, timeoutClock: false, usLeft: false };
+  const off = { trackOpponentTaps: false, timeoutClock: false, usLeft: false, rowTipShown: false };
   it('defaults to not keeping the opponent score and the clock off (D15)', () => {
     expect(loadPrefs(new FakeStorage())).toEqual(off);
   });
   it('round-trips true and then false', () => {
     const s = new FakeStorage();
-    expect(savePrefs(s, { trackOpponentTaps: true, timeoutClock: false, usLeft: false })).toBe(true);
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false, usLeft: false });
+    expect(savePrefs(s, { trackOpponentTaps: true, timeoutClock: false, usLeft: false, rowTipShown: false })).toBe(true);
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false, usLeft: false, rowTipShown: false });
     savePrefs(s, off);
     expect(loadPrefs(s)).toEqual(off);
   });
@@ -302,17 +302,22 @@ describe('prefs', () => {
     s.setItem(PREFS_KEY, '{"trackOpponentTaps":false}');
     expect(loadPrefs(s)).toEqual(off);
     s.setItem(PREFS_KEY, '{"trackOpponentTaps":true}');
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false, usLeft: false });
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false, usLeft: false, rowTipShown: false });
   });
   it('a saved timeoutClock true round-trips (D15)', () => {
     const s = new FakeStorage();
-    savePrefs(s, { trackOpponentTaps: false, timeoutClock: true, usLeft: false });
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false, timeoutClock: true, usLeft: false });
+    savePrefs(s, { trackOpponentTaps: false, timeoutClock: true, usLeft: false, rowTipShown: false });
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: false, timeoutClock: true, usLeft: false, rowTipShown: false });
   });
   it('a wrong-typed timeoutClock is off and does not drop the other field', () => {
     const s = new FakeStorage();
     s.setItem(PREFS_KEY, '{"trackOpponentTaps":true,"timeoutClock":"on"}');
-    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false, usLeft: false });
+    expect(loadPrefs(s)).toEqual({ trackOpponentTaps: true, timeoutClock: false, usLeft: false, rowTipShown: false });
+  });
+  it('rowTipShown: a saved true reads true with the others off (1.1 Prefs)', () => {
+    const s = new FakeStorage();
+    s.setItem(PREFS_KEY, '{"rowTipShown":true}');
+    expect(loadPrefs(s)).toEqual({ ...off, rowTipShown: true });
   });
   it('usLeft: off by default (Home left), a saved true round-trips, old prefs read off', () => {
     const s = new FakeStorage();

@@ -9,7 +9,10 @@ import {
   END_GUARD_MS, endTapAllowed, stripPeriodText, subButtonText, undoAriaLabel,
 } from './live-logic';
 import type { Lineup } from '../core/lineup';
-import { halfName, outReason, shownLayout } from './live-logic';
+import {
+  halfName, outReason, shownLayout, SETTLE_MS, ROW_TIP, quickKey, isDoubleTap, quickAction, swapGuarded, scrollBackAllowed, movedUp,
+  quickLabel, numberAreaLabel, rowGroupLabel, movedUpText,
+} from './live-logic';
 
 const issue = (period: number, status: PeriodCheck['status']): PeriodCheck => ({
   period, spanFrom: period, anchorBook: 0, anchorApp: 0, bookTotal: null, appTotal: 0, bookSpan: null, appSpan: 0,
@@ -299,5 +302,94 @@ describe('shownLayout (activity swap, owner 2026-11-23)', () => {
   });
   it('a new player shows at once, at the end; a removed one goes', () => {
     expect(shownLayout(['a', 'b', 'c'], ['d', 'a', 'c'])).toEqual(['a', 'c', 'd']);
+  });
+});
+
+// 1.1 one-tap rows. Sources: spec docs/superpowers/specs/2026-11-24-one-tap-rows-design.md, invariants named per test.
+describe('SETTLE_MS', () => {
+  it('is 2 s (spec: owner decision 4; was 8000, changed in 1.1)', () => {
+    expect(SETTLE_MS).toBe(2000);
+  });
+});
+
+describe('isDoubleTap', () => {
+  const k = quickKey('us', 'p1', 'FG2');
+  it('same key inside 400 ms only (invariant 3)', () => {
+    expect(isDoubleTap({ key: k, at: 1000 }, k, 1399)).toBe(true);
+    expect(isDoubleTap({ key: k, at: 1000 }, k, 1400)).toBe(false);
+  });
+  it('a different player, play or side is not a double tap', () => {
+    expect(isDoubleTap({ key: k, at: 1000 }, quickKey('us', 'p2', 'FG2'), 1100)).toBe(false);
+    expect(isDoubleTap({ key: k, at: 1000 }, quickKey('us', 'p1', 'FOUL'), 1100)).toBe(false);
+    expect(isDoubleTap({ key: k, at: 1000 }, quickKey('them', 'p1', 'FG2'), 1100)).toBe(false);
+  });
+  it('no last tap is not a double tap', () => {
+    expect(isDoubleTap(null, k, 0)).toBe(false);
+  });
+});
+
+describe('quickAction', () => {
+  it('opens the sheet for a player who is out (invariant 4)', () => {
+    expect(quickAction({ fouls: 5, techs: 0 })).toBe('open');
+    expect(quickAction({ fouls: 1, techs: 2 })).toBe('open');
+  });
+  it('records otherwise, including no line', () => {
+    expect(quickAction({ fouls: 4, techs: 1 })).toBe('record');
+    expect(quickAction(undefined)).toBe('record');
+  });
+});
+
+describe('swapGuarded', () => {
+  it('guards taps for 500 ms after a swap shows (invariant 7)', () => {
+    expect(swapGuarded(1000, 1499)).toBe(true);
+    expect(swapGuarded(1000, 1500)).toBe(false);
+    expect(swapGuarded(null, 0)).toBe(false);
+  });
+});
+
+describe('scrollBackAllowed', () => {
+  it('holds for 5 s after a hand scroll (brief)', () => {
+    expect(scrollBackAllowed(1000, 5999)).toBe(false);
+    expect(scrollBackAllowed(1000, 6000)).toBe(true);
+    expect(scrollBackAllowed(null, 0)).toBe(true);
+  });
+});
+
+describe('movedUp', () => {
+  it('lists ids newly inside the top n (brief)', () => {
+    expect(movedUp(['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'f', 'd', 'e', 'c'], 5)).toEqual(['f']);
+    expect(movedUp(['a', 'b'], ['a', 'b'], 5)).toEqual([]);
+  });
+});
+
+describe('one-tap row labels', () => {
+  it('quickLabel', () => {
+    expect(quickLabel('Home', '23', 'FG2')).toBe('Home #23, 2 points');
+    expect(quickLabel('Away', '23', 'FOUL')).toBe('Away #23, foul');
+  });
+  it('numberAreaLabel', () => {
+    expect(numberAreaLabel('23', 12, 3, false)).toBe('#23, 12 points, 3 fouls, more plays');
+    expect(numberAreaLabel('4', 1, 1, false)).toBe('#4, 1 point, 1 foul, more plays');
+    expect(numberAreaLabel('50', 0, 5, true)).toBe('#50, 0 points, 5 fouls, out, more plays');
+  });
+  it('rowGroupLabel', () => {
+    expect(rowGroupLabel('Home', '23', true)).toBe('Home #23, on floor');
+    expect(rowGroupLabel('Away', '7', false)).toBe('Away #7, bench');
+  });
+  it('movedUpText', () => {
+    expect(movedUpText(['32'])).toBe('#32 moved up');
+    expect(movedUpText(['32', '10'])).toBe('#32 and #10 moved up');
+  });
+});
+
+describe('feedbackLine tip', () => {
+  it('shows the tip as a plain entry when there is no toast', () => {
+    expect(feedbackLine(null, null, null, ROW_TIP).entry).toEqual({ text: ROW_TIP, undoable: false, redoable: false });
+  });
+  it('a toast wins over the tip', () => {
+    expect(feedbackLine(null, null, { text: 'x', canUndo: true }, ROW_TIP).entry?.text).toBe('x');
+  });
+  it('without a tip the entry is null as before', () => {
+    expect(feedbackLine(null, null, null).entry).toBeNull();
   });
 });

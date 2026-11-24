@@ -137,17 +137,19 @@ export interface Prefs {
   timeoutClock: boolean;
   /** Our team's half on the left of Live (and first in the Book), whether Home or Away. Off: Home left. */
   usLeft: boolean;
+  /** 1.1: the one-time row tip (ROW_TIP) has been shown. */
+  rowTipShown: boolean;
 }
 
 /** Each field is read on its own, so a missing or wrong-typed one falls back without dropping the others. */
 export function loadPrefs(s: Storage, keys: StorageKeys = REAL): Prefs {
-  const fallback: Prefs = { trackOpponentTaps: false, timeoutClock: false, usLeft: false };
+  const fallback: Prefs = { trackOpponentTaps: false, timeoutClock: false, usLeft: false, rowTipShown: false };
   const raw = safeRead(s, keys.prefs);
   if (raw === null) return fallback;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown> | null;
     const flag = (k: keyof Prefs) => (typeof parsed?.[k] === 'boolean' ? (parsed[k] as boolean) : fallback[k]);
-    return { trackOpponentTaps: flag('trackOpponentTaps'), timeoutClock: flag('timeoutClock'), usLeft: flag('usLeft') };
+    return { trackOpponentTaps: flag('trackOpponentTaps'), timeoutClock: flag('timeoutClock'), usLeft: flag('usLeft'), rowTipShown: flag('rowTipShown') };
   } catch {
     return fallback;
   }
