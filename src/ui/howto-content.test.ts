@@ -12,35 +12,51 @@ const text = (t: string) => byTitle(t).body.join(' ');
 describe('how-to content', () => {
   it('has the thirteen sections in order', () =>
     expect(HOWTO_SECTIONS.map((s) => s.title)).toEqual([
-      'What this is', 'Before tip-off', 'Record a play', 'Free throws', 'A player with no card', 'Subs',
+      'What this is', 'Before tip-off', 'Record a play', 'Free throws', 'A player with no row', 'Subs',
       'Timeouts and bench techs', 'Mistakes', 'End of quarter', 'Overtime and end of game', 'Export',
       'Reading the screen', "If something's wrong",
     ]));
   it('keeps each section short', () => HOWTO_SECTIONS.forEach((s) => expect(s.body.length).toBeLessThanOrEqual(2)));
   it('gives every section a distinct id', () =>
     expect(new Set(HOWTO_SECTIONS.map((s) => s.id)).size).toBe(HOWTO_SECTIONS.length));
-  it('puts bench techs on the Bench card', () => expect(text('Timeouts and bench techs')).toMatch(/Bench \/ coach tech card/));
-  it('puts each team\'s timeouts under its Bench card, with the guard at zero', () => {
-    expect(text('Timeouts and bench techs')).toMatch(/buttons under its Bench card/);
+  // 1.1 spec "The list and the swap": the bench-tech button reads Tech, beside + Play, with an amber count.
+  it('puts bench techs on the Tech button beside + Play', () => expect(text('Timeouts and bench techs')).toMatch(/Tech button, beside \+ Play.*amber.*Tech 2/));
+  it('puts each team\'s timeouts under its Tech button, with the guard at zero', () => {
+    expect(text('Timeouts and bench techs')).toMatch(/buttons under its Tech button/);
     expect(text('Timeouts and bench techs')).toMatch(/Full: 3.*OT: 1/);
     expect(text('Timeouts and bench techs')).toMatch(/At 0 .*Take one anyway/);
   });
   it('lays out Home and Away and the US tag', () => {
-    expect(text('Record a play')).toMatch(/Home is on the left with light cards, Away on the right with dark ones/);
+    expect(text('Record a play')).toMatch(/Home is on the left with light rows, Away on the right with dark ones/);
     expect(text('Record a play')).toMatch(/US tag/);
-    expect(text('Record a play')).toMatch(/Tap any player, on either team/);
   });
+  // 1.1 spec "Decided by the owner" 1-3 and the Constraints list.
+  it('explains one-tap rows: +2 and Foul, the number for the rest, the scrolling list', () => {
+    const t = text('Record a play');
+    expect(t).toMatch(/Each player is a row with their number.*no names/);
+    expect(t).toMatch(/\+2 and Foul are one tap on the row/);
+    expect(t).toMatch(/Tap the number.*\+3, free throws, a tech, fixes and subs/);
+    expect(t).toMatch(/list scrolls/);
+  });
+  it('says the 2 s move-up, the flash, the scroll back and the half-second guard', () => {
+    const t = text('Subs');
+    expect(t).toMatch(/Two seconds after you stop tapping or scrolling.*moves up into the top five/);
+    expect(t).toMatch(/flash blue and the list scrolls back to the top/);
+    expect(t).toMatch(/half a second.*\+2 and Foul on that half ignore taps/);
+  });
+  it('gives the first-use tip verbatim', () =>
+    expect(text('Reading the screen')).toContain('Tap a number for 3s, free throws and fixes.'));
   it('explains + Play and Whose number?', () => {
-    const t = text('A player with no card');
+    const t = text('A player with no row');
     for (const words of ['+ Play', 'Whose number?', 'No number', 'Stop asking this game', 'joins that team']) expect(t).toContain(words);
   });
   it('covers the floor and bench, Starters, the sub row and the three questions', () => {
     const t = text('Subs');
-    expect(t).toMatch(/Every card looks the same: the five on the floor come first, and the cards after them are a shade grayer \(Home\) or darker \(Away\)/);
+    expect(t).toMatch(/Every row looks the same: the five on the floor come first, and the rows after them are a shade grayer \(Home\) or darker \(Away\)/);
     expect(t).toMatch(/Starters/);
     expect(t).toMatch(/until that team's first play[^.]*, then Sub\./);
     expect(t).toMatch(/Subbing is optional: a bench player who makes a play goes on the floor/);
-    expect(t).toMatch(/tap #22, then #22 checks in/);
+    expect(t).toMatch(/tap the #22 number, then #22 checks in/);
     for (const q of ['Who went out?', 'Who came in?', "Who's on the floor?"]) expect(t).toContain(q);
     expect(t).toMatch(/longest without a play/);
     expect(t).toMatch(/only a hint/);

@@ -5,6 +5,13 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- One-tap rows on the live screen: each player is a row with their number (no names), a small gray points figure, foul dots, and two buttons, **+2** (filled) and **Foul** (outlined). One tap records the play, the same event as the player's sheet. Tap the number for +3, free throws, a tech, fixes and subs; the sheet is unchanged. Rows are 56 px tall whatever the roster size, and the list scrolls inside its half with a fade at the foot.
+- A player at 4 fouls gets an amber ring around the row, and an out player a red ring with OUT; the out row's +2 and Foul are dashed and open the sheet instead of recording.
+- The activity swap now waits 2 seconds (was 8) after you stop tapping or scrolling. The moved rows flash blue, the half scrolls back to the top (unless you scrolled it by hand in the last 5 seconds; with reduced motion it jumps), and a hidden status line names who moved up.
+- Tap guards: the same row button tapped twice within 0.4 s records once, and for half a second after a swap that half's +2 and Foul ignore taps, so a finger on its way never lands on the row that slid in.
+- The bench-tech button is now **Tech**, beside + Play and Sub, with the count in amber; timeout buttons are 44 px tall.
+- A one-time tip on the live screen: "Tap a number for 3s, free throws and fixes." The How-to and its screenshots describe the rows.
+
 ## [1.0.1] - 2026-11-24
 
 - Timeout clock: the phone buzzes when the time left reaches half (30 s on a full, 15 s on a 30) and again at 0, and the clock closes itself 10 seconds after 0. It works on any screen, not only Live. Buzzing needs Android; iPhone browsers don't allow a web app to vibrate, so there the clock is silent.

@@ -103,6 +103,22 @@ they were first aimed at.
   alone for 1.1 ("it's solid"). Trigger: after 1.1 ships, or a real game where a foul count was
   misread.
 
+## After 1.1: from the one-tap rows design (2026-11-24)
+
+Left out of 1.1 on purpose; each waits for its trigger.
+
+- **A free-throw strip** that stays open and closes on the next play (about 11 taps a game, the
+  popup's Done). It changes the owner's "free throws stay a popup" call, so it waits for the owner.
+  Trigger: the owner reopens that call, or the Usage CSV shows free throws as the biggest tap cost.
+- **Shorter rows on short screens.** Rows stay 56 px whatever the roster. Trigger: more than 2
+  scroll-then-tap plays per game in the Usage CSV.
+- **Padding against Android's back-swipe** on the Away half's right edge, where +2 and Foul sit.
+  Trigger: a misfired back gesture at a game.
+- **Log taps within 1 s of a swap**, ignored or not, to see the guard's cost. Trigger: an undo
+  right after a swap.
+- **Names on rows** as an option (about two rows of view lost). Trigger: a scorer who cannot
+  work from numbers alone.
+
 ## Recorded, not planned
 
 - The quarter check compares team fouls too. Trigger: a second real game with a missed foul.
