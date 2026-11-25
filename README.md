@@ -10,7 +10,7 @@ The paper scorebook stays the official record. Bench Book sits beside it.
 **Open it:** <https://quiet-swan-ee2365.netlify.app>. To look around without a real roster, add
 `?demo` to the address: <https://quiet-swan-ee2365.netlify.app/?demo>.
 
-<img src="public/howto/reading-the-screen.png" alt="The live screen in Q1: Home on the left with light player cards, Away on the right with dark ones, each card showing a number, name, points and foul dots; the score and Away shoots at the top; Undo, Book, End Q1 and the three-dot menu on the bottom bar." width="300">
+<img src="public/howto/reading-the-screen.png" alt="The live screen in Q1: Home on the left with light rows, Away on the right with dark ones, one row per player showing the number, small gray points, foul dots and two buttons, +2 and Foul; the score and Away shoots at the top; Undo, Book, End Q1 and the three-dot menu on the bottom bar." width="300">
 
 - No login, no server. Everything stays on your phone.
 - Works offline once loaded.
@@ -49,29 +49,31 @@ in the middle of a game unless you tap it.
    date, MM-DD), the date, your team name, the coach, scorer and timekeeper. Your roster is saved
    on the phone for next time; theirs is not. ⋯ → **Edit teams** fixes a number, adds a name or
    adds a player mid-game.
-2. **Live.** Home is on the left with light cards, Away on the right with dark ones, and a small
+2. **Live.** Home is on the left with light rows, Away on the right with dark ones, and a small
    **US** tag marks your team (⋯ → Experiments → **Our team on the left** puts yours on the left
    either way; the colors stay with Home and Away). A team name you entered heads its half, under
-   a small Home or Away (the opponent's date default, MM-DD, is not shown as a name). Tap any
-   player card on either team, then `+2`, `+3`, `FT made`, `FT missed`, `Foul` or `Tech foul`.
-   Each half ends with a dashed **+ Play** card for a play with no card: pick the play, then
+   a small Home or Away (the opponent's date default, MM-DD, is not shown as a name). Each player
+   is a row with their number, small gray points, foul dots and two buttons: `+2` and `Foul` are
+   one tap on the row. Tap the number for everything else: `+3`, `FT made`, `FT missed`,
+   `Tech foul`, fixes and subs. The list scrolls when a team has more rows than fit. Under each
+   half's rows is a dashed **+ Play** button for a play with no row: pick the play, then
    **Whose number?** credits a typed number (adding a new one to that team), or **No number**
-   records it for the team only. Under it are the team's **Bench / coach tech** card and its
-   timeout buttons (`Full: 3`, `30s: 2`, plus `OT` in overtime), each showing what is left; one at
-   zero asks first. **Undo**, **Book**, **End Q** and **⋯** are on the bottom bar. One line above
-   the bar shows what was just entered, naming the team, and stays until the next entry, with a
-   chip at its right for a quarter still to check.
-3. **Subs (optional).** Every card looks the same; the five on the floor lead, and the cards after
-   them are a shade grayer (Home) or darker (Away). Each team's first five start (the
-   **Starters** button, beside + Play, changes them before that team's first play). A bench player
-   who makes a play goes on the floor on their own, so nothing is lost by skipping a sub, and a
-   foul-out takes the player off. Their card also trades places with the top-five card whose last
-   play is oldest (a fouled-out one first), but only once you stop tapping for about 8 seconds, so
-   a card never moves under your thumb; a recorded sub shows at once. For a sub, tap the player
-   checking in, then **#22 checks in** on their sheet, then who went out. The **Sub** button
-   (always gray) asks **Who went out?** (with a quiet "longest without a play" hint), **Who came
-   in?** or, for a line change, **Who's on the floor?**. Subs change no score or count and are in
-   neither CSV.
+   records it for the team only. Beside it are **Sub** and **Tech** (the bench or coach tech),
+   then the team's timeout buttons (`Full: 3`, `30s: 2`, plus `OT` in overtime), each showing
+   what is left; one at zero asks first. **Undo**, **Book**, **End Q** and **⋯** are on the
+   bottom bar. One line above the bar shows what was just entered, naming the team, and stays
+   until the next entry, with a chip at its right for a quarter still to check.
+3. **Subs (optional).** Every row looks the same; the five on the floor lead, and the rows after
+   them are a shade grayer (Home) or darker (Away), after a small gap. Each team's first five
+   start (the **Sub** button reads **Starters** before that team's first play, to change them). A
+   bench player who makes a play goes on the floor on their own, so nothing is lost by skipping a
+   sub, and a foul-out takes the player off. Two seconds after you stop tapping or scrolling,
+   their row moves up into the top five, trading places with the player who has gone longest
+   without a play (a fouled-out one first); the moved rows flash blue and the list scrolls back
+   to the top, so a row never moves under your thumb. For a sub, tap the player's number, then
+   **#22 checks in** on their sheet, then who went out. The **Sub** button (always gray) asks
+   **Who went out?** (with a quiet "longest without a play" hint), **Who came in?** or, for a
+   line change, **Who's on the floor?**. Subs change no score or count and are in neither CSV.
 4. **Fix mistakes.** Undo right away (Redo puts back one undone too many), or open **Book**, then
    **Plays** and tap a row: it opens the fix, where you change the play, the team, the player or
    the quarter, or delete it. **Book → Players** shows each player's points and fouls by quarter,
@@ -81,7 +83,10 @@ in the middle of a game unless you tap it.
    enter the game score after the quarter from the book's running score, and the app checks the
    quarter's own points against its plays. Their score, if you type it, only warns when it is
    off. **Add play** stays on the check after the score matches, for a foul the book has and the
-   app doesn't. You can leave the check for later.
+   app doesn't, and a table under the plays lists each player's points and fouls in that quarter
+   to compare with the book. You can leave the check for later. Tabs along the top of the check
+   (Q1, Q2 and so on) jump to any finished quarter, and ⋯ → **Quarter checks** opens the latest
+   one from the live screen, so a foul missed in Q1 can still go into Q1.
 6. **Final.** After Q4, choose Start overtime or End game (no overtime). The **Final** screen
    lists any quarter not yet checked, ends a game early with a confirm, and **Reopen game** puts
    an ended game back in play.
