@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { appendEvent, newGame } from '../core/events';
-import { checkPeriod, endGame, markExported, saveReconcile } from '../core/reconcile';
+import { checkPeriod, endGame, endPeriod, markExported, saveReconcile, startOvertime } from '../core/reconcile';
+import { derive } from '../core/derive';
 import type { Game } from '../core/types';
 import {
   MISMATCH_HINT, appHasText, compareText, isMismatch, cumulativeThrough, exportStateText, issueAction, sawMismatch, notExportedText, theirScoreLine, theirScoreLineIfRecorded, foulSidesOf, parseScore,
   comparePanel, reconcileDraftToSave, savedCheckText, statusChipText,
+  checkTabs, quarterChecksAvailable, latestFinishedPeriod, quarterPlayerRows, QUARTER_CHECK_TEXT, playersHeading,
 } from './reconcile-logic';
 
 const t0 = new Date('2026-11-10T10:00:00Z');
@@ -247,5 +249,93 @@ describe('the their-score gate and the fouls order', () => {
     expect(foulSidesOf(legacy)).toEqual(['us']);
     const roster = { ...base(), oppRoster: [{ id: 't1', number: '1', name: 'Rival One', pos: 'G' }] };
     expect(foulSidesOf(roster).length).toBe(2);
+  });
+});
+
+describe('quarter tabs and the menu item (spec Decided 1-3)', () => {
+  const withQ1 = () => {
+    let g = appendEvent(base(), { type: 'FG2', playerId: 'p1' }, t0);
+    g = endPeriod(g, t0);
+    return g;
+  };
+  it('a fresh game has no tabs and no menu item', () => {
+    expect(checkTabs(base())).toEqual([]);
+    expect(quarterChecksAvailable(base())).toBe(false);
+  });
+  it('after End Q1 there is one pending, plain Q1 tab and the menu item shows', () => {
+    const g = withQ1();
+    expect(checkTabs(g)).toEqual([{ period: 1, label: 'Q1', status: 'pending', text: 'Not checked', tone: 'plain' }]);
+    expect(quarterChecksAvailable(g)).toBe(true);
+    expect(latestFinishedPeriod(g)).toBe(1);
+    expect(QUARTER_CHECK_TEXT).toBe('Quarter checks');
+  });
+  it('a matched check is done, an unresolved one is off', () => {
+    const g = withQ1();
+    const m = checkTabs(saveReconcile(g, 1, 2, null, '', t0));
+    expect(m[0]).toMatchObject({ status: 'matched', text: '✓ Matched', tone: 'done' });
+    const u = checkTabs(saveReconcile(g, 1, 9, null, '', t0));
+    expect(u[0]).toMatchObject({ status: 'unresolved', text: 'Mismatch', tone: 'off' });
+  });
+  it('a fixed check is done and a noted one is plain', () => {
+    const g = withQ1();
+    expect(checkTabs(saveReconcile(g, 1, 2, null, '', t0, true))[0]).toMatchObject({ status: 'fixed', tone: 'done' });
+    expect(checkTabs(saveReconcile(g, 1, 9, null, 'book is off', t0))[0]).toMatchObject({ status: 'noted', tone: 'plain' });
+  });
+  it('an ended game in Q4 lists Q1 to Q4; the open quarter has no tab', () => {
+    let g = base();
+    for (let i = 0; i < 3; i++) g = endPeriod(g, t0);
+    expect(checkTabs(g).map((t) => t.label)).toEqual(['Q1', 'Q2', 'Q3']);
+    expect(latestFinishedPeriod(g)).toBe(3);
+    g = endGame(g, t0);
+    expect(checkTabs(g).map((t) => t.label)).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
+    expect(latestFinishedPeriod(g)).toBe(4);
+    expect(quarterChecksAvailable(g)).toBe(true);
+  });
+  it('an ended game still in Q1 offers Q1', () => {
+    const g = endGame(base(), t0);
+    expect(checkTabs(g).map((t) => t.label)).toEqual(['Q1']);
+    expect(quarterChecksAvailable(g)).toBe(true);
+  });
+  it('overtime is labeled OT1', () => {
+    let g = base();
+    for (let i = 0; i < 3; i++) g = endPeriod(g, t0);
+    g = endGame(g, t0);
+    g = startOvertime(g, t0);
+    g = endGame(g, t0);
+    expect(checkTabs(g).map((t) => t.label)).toEqual(['Q1', 'Q2', 'Q3', 'Q4', 'OT1']);
+  });
+});
+
+describe('quarterPlayerRows (spec Review Focus 3-5)', () => {
+  const game = () => {
+    let g = appendEvent(base(), { type: 'FG2', playerId: 'p1', period: 1 }, t0);
+    g = appendEvent(g, { type: 'FOUL', playerId: 'p1', period: 1 }, t0);
+    g = appendEvent(g, { type: 'FG3', playerId: 'p1', period: 2 }, t0);
+    return endPeriod(endPeriod(g, t0), t0);
+  };
+  it('reads each quarter\'s points and fouls, with the game fouls', () => {
+    expect(quarterPlayerRows(game(), 'us', 1)).toEqual([{ key: 'p1', who: '#1 Player One', pts: 2, fouls: 1, gameFouls: 1 }]);
+    expect(quarterPlayerRows(game(), 'us', 2)).toEqual([{ key: 'p1', who: '#1 Player One', pts: 3, fouls: 0, gameFouls: 1 }]);
+  });
+  it('adds a No number row for a no-number play', () => {
+    const g = appendEvent(game(), { type: 'FG2', period: 1 }, t0);
+    const rows = quarterPlayerRows(g, 'us', 1);
+    expect(rows.map((r) => r.who)).toEqual(['#1 Player One', 'No number']);
+    expect(rows[1]).toMatchObject({ key: 'none', pts: 2 });
+  });
+  it('trims a number with no name', () => {
+    const g = { ...game(), roster: [{ id: 'p1', number: '7', name: '', pos: '' }] };
+    expect(quarterPlayerRows(g, 'us', 1)[0].who).toBe('#7');
+  });
+  it('invariant 3: points over the rows equal the quarter\'s derived points', () => {
+    let g = appendEvent(game(), { type: 'FG2', period: 1 }, t0);
+    g = appendEvent(g, { type: 'FTM', playerId: 'p1', period: 2 }, t0);
+    for (const p of [1, 2]) {
+      const sum = quarterPlayerRows(g, 'us', p).reduce((a, r) => a + r.pts, 0);
+      expect(sum).toBe(derive(g).usByPeriod[p]);
+    }
+  });
+  it('heading names the quarter', () => {
+    expect(playersHeading(2)).toBe('Players in Q2 (compare with the book)');
   });
 });

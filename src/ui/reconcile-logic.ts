@@ -1,8 +1,9 @@
 import { derive, oppPlaysRecorded, oppPointsRecorded } from '../core/derive';
 import { periodLabel, spanLabel } from '../core/periods';
 import { hoursUntilPurge } from '../core/storage';
-import { isExported, type PeriodCheck, type PeriodStatus } from '../core/reconcile';
+import { checkPeriod, isExported, type PeriodCheck, type PeriodStatus } from '../core/reconcile';
 import { sideName } from '../core/events';
+import { statsGrid } from './stats-logic';
 import type { ExportKind, Game, PeriodRecord, Side } from '../core/types';
 
 /** The saved check's anchor values a live comparison needs (see `checkPeriod`). */
@@ -169,4 +170,48 @@ export function reconcileDraftToSave(
   const before = { bookUsTotal: saved?.bookUsTotal ?? null, bookOppTotal: saved?.bookOppTotal ?? null, note: saved?.note ?? '' };
   const same = rec.bookUsTotal === before.bookUsTotal && rec.bookOppTotal === before.bookOppTotal && rec.note === before.note;
   return same ? null : rec;
+}
+
+/** The More menu item that opens the quarter checks. */
+export const QUARTER_CHECK_TEXT = 'Quarter checks';
+
+/** The last period with a finished check screen: before the current one, or the current once the game ended. */
+export function latestFinishedPeriod(g: Game): number {
+  return g.endedAt ? g.currentPeriod : g.currentPeriod - 1;
+}
+
+/** Whether any quarter is finished, so the menu item shows. */
+export function quarterChecksAvailable(g: Game): boolean {
+  return latestFinishedPeriod(g) >= 1;
+}
+
+/** One tab per finished period, in order, toned like the Book chip: done (matched/fixed), off (unresolved), else plain. */
+export function checkTabs(g: Game): { period: number; label: string; status: PeriodStatus; text: string; tone: 'done' | 'off' | 'plain' }[] {
+  const last = latestFinishedPeriod(g);
+  const tabs = [];
+  for (let period = 1; period <= last; period++) {
+    const { status } = checkPeriod(g, period);
+    const tone = status === 'matched' || status === 'fixed' ? 'done' : status === 'unresolved' ? 'off' : 'plain';
+    tabs.push({ period, label: periodLabel(period), status, text: statusChipText(status), tone } as const);
+  }
+  return tabs.map((t) => ({ ...t }));
+}
+
+export function playersHeading(period: number): string {
+  return `Players in ${periodLabel(period)} (compare with the book)`;
+}
+
+/** One team's players for a quarter, to compare with the book: that quarter's points and fouls, and the game's fouls. */
+export function quarterPlayerRows(
+  g: Game, side: Side, period: number,
+): { key: string; who: string; pts: number; fouls: number; gameFouls: number }[] {
+  const grid = statsGrid(g, side);
+  const i = grid.periods.indexOf(period);
+  return grid.rows.map((r) => ({
+    key: r.key,
+    who: r.player ? `#${r.player.number} ${r.player.name}`.trim() : 'No number',
+    pts: i < 0 ? 0 : r.cells[i].points,
+    fouls: i < 0 ? 0 : r.cells[i].fouls,
+    gameFouls: r.fouls,
+  }));
 }
