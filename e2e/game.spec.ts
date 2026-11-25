@@ -619,7 +619,7 @@ test('the page has a favicon that loads', async ({ page, request }) => {
   expect((await request.get(href!)).status()).toBe(200);
 });
 
-test("the check's player fouls are labeled as whole-game totals, apart from the quarter's team fouls", async ({ page }) => {
+test("the check's player table shows the quarter's fouls apart from the game's, under the quarter's team fouls", async ({ page }) => {
   await onePlayerGame(page);
   await tap(page, card(page, '4', 'Player One'), 'Foul');
   await page.getByRole('button', { name: 'End Q1', exact: true }).click();
@@ -627,9 +627,11 @@ test("the check's player fouls are labeled as whole-game totals, apart from the 
   await page.getByRole('navigation').getByRole('button', { name: 'Book', exact: true }).click();
   await page.getByRole('tab', { name: 'Plays', exact: true }).click();
   await page.getByRole('region', { name: 'Q1', exact: true }).getByRole('button', { name: 'Not checked', exact: true }).click();
-  // Q1 had one of their two fouls: the quarter's count and their game total sit under separate labels.
+  // Spec decision 3: Q1 had one of their two fouls: the quarter's count stays above the table, whose row reads
+  // 0 points, 1 foul in Q1 and 2 fouls in the game.
   await expect(page.getByText(/^Team fouls in Q1:/)).toHaveText('Team fouls in Q1: 1');
-  await expect(page.getByRole('list', { name: 'Player fouls, whole game' }).getByRole('listitem')).toHaveText(['#4 Player One2']);
+  await expect(page.getByRole('heading', { name: 'Players in Q1 (compare with the book)' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Players in Q1' }).getByRole('row', { name: /#4 Player One/ }).getByRole('cell')).toHaveText(['0', '1', '2']);
 });
 
 test("setup: the other team's roster is optional, numbered, and starts the game with it", async ({ page }) => {
@@ -1787,6 +1789,8 @@ test('check: when the other team has plays, both teams get their quarter and who
   await app.banner('Q1').click();
   await expect(page.getByText(/^Team fouls in Q1 \(Home\):/)).toHaveText('Team fouls in Q1 (Home): 1');
   await expect(page.getByText(/^Team fouls in Q1 \(Away\):/)).toHaveText('Team fouls in Q1 (Away): 2');
-  await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem')).toHaveText(['#10 Player 11', '#11 Player 20']);
-  await expect(page.getByRole('list', { name: 'Away player fouls, whole game' }).getByRole('listitem')).toHaveText(['#50 2', '#51 0']);
+  // Replaces the two whole-game list assertions. Source: the taps above (#10 one foul, #50 two, no points); every foul
+  // is in Q1, so the Q1 and game columns agree. Row text is the name, then Pts, Fouls Q1, Fouls game.
+  await expect(page.getByRole('table', { name: 'Home players in Q1' }).locator('tbody tr')).toHaveText(['#10 Player 1011', '#11 Player 2000']);
+  await expect(page.getByRole('table', { name: 'Away players in Q1' }).locator('tbody tr')).toHaveText(['#50022', '#51000']);
 });

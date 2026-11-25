@@ -12,7 +12,7 @@ import { NO_NUMBER, feedbackLine, namedWho, outReason, type PlayType, type Toast
 import { addFeedback, addToCell } from './stats-logic';
 import { Log } from './Log';
 import {
-  MISMATCH_HINT, appHasText, comparePanel, isMismatch, savedCheckText, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, parseScore, reconcileDraftToSave, statusChipText,
+  MISMATCH_HINT, appHasText, comparePanel, isMismatch, savedCheckText, theirScoreLineIfRecorded, foulSidesOf, sawMismatch, checkTabs, playersHeading, quarterPlayerRows, parseScore, reconcileDraftToSave, statusChipText,
 } from './reconcile-logic';
 import type { GameStore } from './store';
 
@@ -44,7 +44,7 @@ export function StatusChip({ store, period }: { store: GameStore; period: number
 
 
 export function Reconcile({ store }: { store: GameStore }) {
-  const { game, reconcilePeriod, reconcileReturn, update, quiet, undo, redo, toast, setView } = store;
+  const { game, openReconcile, reconcilePeriod, reconcileReturn, update, quiet, undo, redo, toast, setView } = store;
   const period = reconcilePeriod ?? 1;
   const [usText, setUsText] = useState('');
   const [oppText, setOppText] = useState('');
@@ -54,6 +54,7 @@ export function Reconcile({ store }: { store: GameStore }) {
   // The team Add play records for; it opens on ours, so a one-team scorer taps no more than before.
   const [addSide, setAddSide] = useState<Side>('us');
   const seeded = useRef<number | null>(null);
+  const addPeriod = useRef(period);
   // The feedback present when Add play opened: its sheet shows only what came after it.
   const addOpenedWith = useRef<Toast | null>(null);
   // The feedback present when the check opened (End Q1 · Undo): it stays behind, so it does not cover the plays.
@@ -61,6 +62,14 @@ export function Reconcile({ store }: { store: GameStore }) {
   // The app's points over the checked span when the check was first opened (kept through Later in the
   // draft): a book number that disagreed with it was a mismatch, even if the plays were fixed before Save.
   const appAtOpen = useRef<number | null>(null);
+
+  // A new quarter starts with the Add play sheet closed, whatever the last one was doing.
+  if (addPeriod.current !== period) {
+    addPeriod.current = period;
+    if (addStep !== 'closed') setAddStep('closed');
+    if (addPlayer) setAddPlayer(null);
+    if (addSide !== 'us') setAddSide('us');
+  }
 
   // Seed the fields once per period from the draft Later left, else the saved record. The opponent
   // box is never prefilled from taps: a number in it must be one the scorer read off the book.
@@ -129,11 +138,21 @@ export function Reconcile({ store }: { store: GameStore }) {
     if (save()) setView(reconcileReturn);
   };
   // Later keeps what was typed as a draft (not a check); with every field blank it keeps nothing.
-  const later = () => {
+  const keepDraft = () => {
     const draft = { us: usText, opp: oppText, note, appSpanAtOpen: appAtOpen.current ?? c.appSpan };
     quiet((g, now) => setCheckDraft(g, period, draft, now));
+  };
+  const later = () => {
+    keepDraft();
     setView(reconcileReturn);
   };
+  // A tab keeps the leaving quarter's draft as Later does, then opens that quarter's check on the same return view.
+  const switchTo = (p: number) => {
+    if (p === period) return;
+    keepDraft();
+    openReconcile(p, reconcileReturn);
+  };
+  const tabs = checkTabs(game);
 
   return (
     <div class="flex min-h-0 flex-1 flex-col">
@@ -141,6 +160,24 @@ export function Reconcile({ store }: { store: GameStore }) {
         <h1 class="text-xl font-bold">Check {periodLabel(period)}</h1>
         <span class="ml-auto rounded border border-slate-500 px-2 py-1 text-sm font-semibold text-slate-200" data-testid="check-status">{statusChipText(c.status)}</span>
       </header>
+      <div class="flex shrink-0 gap-1.5 overflow-x-auto border-b border-slate-700 px-3 py-2">
+        {tabs.map((t) => {
+          const tone = t.tone === 'off' ? 'bg-amber-400 text-slate-900' : t.tone === 'plain' ? 'bg-slate-600 text-white' : 'bg-emerald-700 text-white';
+          const open = t.period === period;
+          return (
+            <button
+              key={t.period}
+              type="button"
+              class={`min-h-11 shrink-0 rounded-lg px-3 text-sm font-semibold ${tone} ${open ? 'ring-2 ring-white' : ''}`}
+              aria-label={`${t.label}, ${t.text}`}
+              aria-current={open ? 'page' : undefined}
+              onClick={() => switchTo(t.period)}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Clear of the fixed bar (64px) and the feedback line above it (44px, more when an entry wraps). */}
       <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 pb-36">
@@ -206,30 +243,32 @@ export function Reconcile({ store }: { store: GameStore }) {
               Team fouls in {periodLabel(period)}{both && ` (${sideName(game, side)})`}: <span class="font-bold text-white">{(side === 'us' ? d.us : d.opp).teamFoulsByPeriod[period] ?? 0}</span>
             </p>
           ))}
-          {/* Game totals, as the book keeps each player's fouls: labeled, so they are not read as this quarter's (UX audit v0.6.0, F2). */}
-          <h3 class="mt-2 text-sm text-slate-300">Player fouls, whole game</h3>
-          <div aria-label="Player fouls, whole game">
-            {foulSides.map((side) => {
-              const lines = (side === 'us' ? d.us : d.opp).players;
-              const byId = new Map(rosterOf(game, side).map((p) => [p.id, p]));
-              return (
-                <div key={side}>
-                  {both && <h4 class="mt-1 text-sm font-semibold text-slate-300">{sideName(game, side)}</h4>}
-                  <ul class="mt-1 grid grid-cols-2 gap-x-3" aria-label={both ? `${sideName(game, side)} player fouls, whole game` : 'Player fouls, whole game'}>
-                    {lines.map((l) => {
-                      const p = byId.get(l.playerId);
-                      return (
-                        <li key={l.playerId} class="flex justify-between border-b border-slate-800 py-1">
-                          <span class="truncate">#{p?.number} {p?.name}</span>
-                          <span class="font-bold">{l.fouls}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
+          <h3 class="mt-2 text-sm text-slate-300">{playersHeading(period)}</h3>
+          {foulSides.map((side) => (
+            <div key={side}>
+              {both && <h4 class="mt-1 text-sm font-semibold text-slate-300">{sideName(game, side)}</h4>}
+              <table class="mt-1 w-full text-left" aria-label={both ? `${sideName(game, side)} players in ${periodLabel(period)}` : `Players in ${periodLabel(period)}`}>
+                <thead class="text-xs text-slate-300">
+                  <tr>
+                    <th scope="col" class="py-1 font-semibold">Player</th>
+                    <th scope="col" class="py-1 text-right font-semibold">Pts {periodLabel(period)}</th>
+                    <th scope="col" class="py-1 text-right font-semibold">Fouls {periodLabel(period)}</th>
+                    <th scope="col" class="py-1 text-right font-semibold">Fouls game</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quarterPlayerRows(game, side, period).map((r) => (
+                    <tr key={r.key} class="border-b border-slate-800">
+                      <th scope="row" class="max-w-0 truncate py-1 font-normal">{r.who}</th>
+                      <td class="py-1 text-right font-bold">{r.pts}</td>
+                      <td class="py-1 text-right font-bold">{r.fouls}</td>
+                      <td class="py-1 text-right font-bold">{r.gameFouls}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
         </section>
       </div>
 

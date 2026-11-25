@@ -62,7 +62,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
   {
     id: 'mistakes',
     title: 'Mistakes',
-    body: ['Tap Undo right away, or open Book, then Plays, and tap the line to fix or delete it. Fix can change the play, the team, the player or the quarter, and can move the plays after it too. Book → Players shows each player\'s points and fouls by quarter, for either team, like the book\'s rows. Tap a quarter to see its plays, fix one, or add a missing one to that quarter.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
+    body: ['Tap Undo right away, or open Book, then Plays, and tap the line to fix or delete it. Fix can change the play, the team, the player or the quarter, and can move the plays after it too. Book → Players shows each player\'s points and fouls by quarter, for either team, like the book\'s rows. Tap a quarter to see its plays, fix one, or add a missing one to that quarter. To go back to an earlier quarter from anywhere, tap ⋯, then Quarter checks, and pick its tab.', 'Undid one too many? Redo on the line above the bar puts it back, until you enter something new.'],
     image: { src: '/howto/mistakes.png', alt: 'The Plays tab in Book with one play tapped: its fix sheet offers another play, team or player, Delete, Cancel and Save.' },
   },
   {
@@ -70,7 +70,7 @@ export const HOWTO_SECTIONS: HowtoSection[] = [
     title: 'End of quarter',
     body: [
       "Tap End Q1 (End Q2 and so on; it's outlined in blue, and in red once it can end the game), then type the game score after that quarter, the running score in the book's Score by Qtr box: yours, and theirs if you keep it. The app checks the quarter's own points, so a gap you noted earlier isn't counted twice.",
-      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed play with Add play (pick the team first, then the player or No number); it stays there after the score matches, for a foul the book has and the app doesn\'t. Their score only warns, in amber. Later keeps what you typed.',
+      'Tap Save when it matches. If not, fix the plays in the list below, or add a missed play with Add play (pick the team first, then the player or No number); it stays there after the score matches, for a foul the book has and the app doesn\'t. Their score only warns, in amber. Later keeps what you typed. The tabs along the top of the check (Q1, Q2 and so on) jump to any finished quarter, colored like the Book: green matched, amber unresolved, gray not checked. What you typed is kept when you switch. ⋯, then Quarter checks, opens the latest one from the live screen. Under the plays, a table lists each player\'s points and fouls in that quarter and their fouls for the game, to compare with the book.',
     ],
     image: { src: '/howto/end-of-quarter.png', alt: "Check Q1 with the book's 8 and 5 typed in: Matches, their score agreeing, and Add play to Q1 above the quarter's plays." },
   },

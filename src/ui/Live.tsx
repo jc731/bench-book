@@ -19,7 +19,7 @@ import {
   ROW_TIP, isDoubleTap, quickAction, quickKey, type QuickPlay, type QuickTap,
 } from './live-logic';
 import { validateRoster } from './roster';
-import { notExportedText } from './reconcile-logic';
+import { QUARTER_CHECK_TEXT, latestFinishedPeriod, notExportedText, quarterChecksAvailable } from './reconcile-logic';
 import { StatusStrip } from './StatusStrip';
 import { TeamHalf } from './TeamHalf';
 import { demoActive, resetDemo } from './demo';
@@ -401,6 +401,9 @@ export function Live({ store }: { store: GameStore }) {
         <Sheet title="More" onClose={() => setSheet(null)}>
           <button type="button" class={`${opt} w-full`} onClick={() => { setSheet(null); openHowto('live'); }}>How to use</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('running'); }}>Running score</button>
+          {quarterChecksAvailable(game) && (
+            <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); openReconcile(latestFinishedPeriod(game), 'live'); }}>{QUARTER_CHECK_TEXT}</button>
+          )}
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('teams'); }}>Edit teams</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={openEnd}>Final / export</button>
           <button type="button" class={`${opt} mt-2 w-full`} onClick={() => { setSheet(null); setView('setup'); }}>New game</button>

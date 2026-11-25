@@ -248,7 +248,11 @@ test('both teams: a game by number with a halftime fix, a foul-out, a timeout at
     await expect(awayFouls).toHaveText('Team fouls in Q2 (Away): 3');
     await app.expectAppHas('Q2', 5, 6, 12, 11);
     await app.expectMatches();
-    await expect(page.getByRole('list', { name: 'Home player fouls, whole game' }).getByRole('listitem').filter({ hasText: '#31 Player Six' })).toHaveText('#31 Player Six1');
+    // Replaces the whole-game list assertion: the Q2 table row's fouls cells (this quarter, then the game) read 1 and 1,
+    // the one foul added above (the player had none before it).
+    const six = page.getByRole('table', { name: 'Home players in Q2' }).getByRole('row', { name: /#31 Player Six/ }).getByRole('cell');
+    await expect(six.nth(1)).toHaveText('1');
+    await expect(six.nth(2)).toHaveText('1');
     await app.saveCheck();
     await expect(app.banner('Q2')).toHaveCount(0);
     // The foul added from the check was #31's while they were on: the floor is as the last sub left it.

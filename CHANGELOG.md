@@ -5,6 +5,10 @@ All notable changes to Bench Book are listed here, in the
 
 ## [Unreleased]
 
+- The check page has a tab for every finished quarter, colored like the Book's status chips (green matched or fixed, amber unresolved, gray not checked); the open one is outlined. Tap a tab to check or fix an earlier quarter, such as a foul missed in Q1. What you typed on the quarter you leave is kept.
+- More now has **Quarter checks** once a quarter has ended: it opens the latest finished quarter's check, and the tabs reach the others.
+- The check's "Player fouls, whole game" list is now a table per team for the quarter: each player's points and fouls in that quarter, plus their fouls for the game, to compare with the book.
+
 ## [1.1.1] - 2026-11-24
 
 - A player's points no longer touch the +2 button on a two-digit number with two-digit points: the number area keeps 4 px clear on its right.

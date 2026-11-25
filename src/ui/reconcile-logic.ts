@@ -188,15 +188,16 @@ export function quarterChecksAvailable(g: Game): boolean {
 /** One tab per finished period, in order, toned like the Book chip: done (matched/fixed), off (unresolved), else plain. */
 export function checkTabs(g: Game): { period: number; label: string; status: PeriodStatus; text: string; tone: 'done' | 'off' | 'plain' }[] {
   const last = latestFinishedPeriod(g);
-  const tabs = [];
+  const tabs: ReturnType<typeof checkTabs> = [];
   for (let period = 1; period <= last; period++) {
     const { status } = checkPeriod(g, period);
     const tone = status === 'matched' || status === 'fixed' ? 'done' : status === 'unresolved' ? 'off' : 'plain';
-    tabs.push({ period, label: periodLabel(period), status, text: statusChipText(status), tone } as const);
+    tabs.push({ period, label: periodLabel(period), status, text: statusChipText(status), tone });
   }
-  return tabs.map((t) => ({ ...t }));
+  return tabs;
 }
 
+/** The heading over the per-player table, naming the quarter it compares. */
 export function playersHeading(period: number): string {
   return `Players in ${periodLabel(period)} (compare with the book)`;
 }
